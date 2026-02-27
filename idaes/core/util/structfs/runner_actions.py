@@ -17,6 +17,7 @@ Predefined Actions for the generic Runner.
 # stdlib
 from collections.abc import Callable
 from io import StringIO
+import logging
 import re
 import sys
 import time
@@ -409,10 +410,39 @@ class ModelVariables(Action):
     VAR_TYPE, PARAM_TYPE = "V", "P"
 
     class Report(BaseModel):
-        """Report for ModelVariables."""
+        """Report for ModelVariables.
+
+        The value of `tree` is a tree represented as a nested dict,
+        where each sub-component has a class and sub-component key, and
+        values (variables or parameters), which are leaves of the tree
+        (i.e., do not have sub-components), have a type and value key.
+
+        A given component is represented a dict like:
+        `{'name': {'t': 'class.name', 'sub': { ...sub-components... }}}`
+
+        For the parameter/variable value node, the 'sub' key will be gone and
+        the value for 't' will be a code 'P' or 'V' for parameter or variable.
+        The values are given as a list of items under the 'v' key:
+        - For a parameter, each is `[index, value]`.
+        - For a variable, each is `[index, value, fixed, stale, lb, ub]`,
+          where 'lb' means lower bound and 'ub' means upper bound.
+          The lb and ub can be None (or, in JSON, null) if no bound exists.
+          Fixed and stale are boolean values corresponding to the Pyomo variable
+          attributes of the same name.
+        For scalar parameters/variables, there is only 1 item
+        and its index is None/null. Otherwise, it is an indexed parameter or variable.
+        Thus, the value dict will look like one of:
+
+        Parameter: `{'name': {'t': 'P', 'v': [[<index>, <value], ...]}}`
+        Variable: `{'name': {'t': 'V', 'v': [[<index>, <value>, True/False,
+                                              True/False, <lb>, <ub>], ...]}}`
+
+        This structure is designed so the value of 't' can determine the function
+        to call to process the contents of a node.
+        """
 
         #: Tree of variables
-        variables: dict = Field(default={})
+        tree: dict = Field(default={})
 
     def __init__(self, runner, **kwargs):
         assert isinstance(runner, FlowsheetRunner)  # makes no sense otherwise
@@ -420,6 +450,8 @@ class ModelVariables(Action):
 
     def after_run(self):
         """Actions performed after the run."""
+        self._saved_paths = {}  # fast lookup used in _add_block()
+        self.log = logging.getLogger(self.log.name)
         self._extract_vars(self._runner.model)
 
     def _extract_vars(self, m):
@@ -433,27 +465,25 @@ class ModelVariables(Action):
                 subtype = self.PARAM_TYPE
             else:
                 continue  # ignore other components
+            if self._dbg:
+                self.log.debug(f"_extract_vars: component {c} ({subtype})")
             # start new block
-            b = [subtype]
-            # add its variables
-            items = []
-            indexed = False
-            #   add each value from an indexed var/param,
-            #   this also works ok for non-indexed ones
+            b = []
+            # add its variables:
+            #   - add each value from an indexed var/param,
+            #   - this also works for scalars
             for index in c:
                 v = c[index]
-                indexed = index is not None
+                value = pyo.value(v, exception=False)
                 if subtype == self.VAR_TYPE:
                     # index, value, is-fixed, is-stale, lower-bound, upper-bound
-                    item = (index, pyo.value(v), v.fixed, v.stale, v.lb, v.ub)
+                    item = (index, value, v.fixed, v.stale, v.lb, v.ub)
                 else:
                     # index, value
-                    item = (index, pyo.value(v))
-                items.append(item)
-            b.append(indexed)
-            b.append(items)
+                    item = (index, value)
+                b.append(item)
             # add block to tree
-            self._add_block(var_tree, c.name, b)
+            self._add_block(m, var_tree, c.name, b, subtype)
 
         self._vars = var_tree
 
@@ -465,35 +495,76 @@ class ModelVariables(Action):
     def _is_param(c):
         return c.is_parameter_type() or isinstance(c, IndexedParam)
 
-    @staticmethod
-    def _add_block(tree: dict, name: str, block):
-        # get parts of the name
-        # - mostly logic to handle 'foo.bar[0.0].baz' crap
-        p = name.split(".")
-        parts, i, n = [], 0, len(p)
-        while i < n:
-            cur = p[i]
-            # since split('.') creates ('foo[0.', '0]') from 'foo[0.0]',
-            # we need to rejoin them
-            if i < n - 1 and re.match(r".*\[\d+$", cur):
-                next_ = p[i + 1]
-                parts.append(cur + "." + next_)
-                i += 2
-            else:
-                parts.append(cur)
-                i += 1
+    def _add_block(self, m, tree: dict, name: str, block, subtype):
+        # get parts of the name, accounting for indexes
+        tok_pat = r"[^.\[\]]+(?:\[[^\]]*\])?"
+        parts = re.findall(tok_pat, name)
         # insert in tree
         t, prev = tree, None
+        cur_cmp = m
+        type_key, child_key = "t", "sub"
+        # walk down tree to where this belongs
+        if self._dbg:
+            self.log.debug(f"_add_block: parts={parts}, name={name}")
+        cur_path = "m"
         for p in parts:
-            prev = t
-            if p not in t:
-                t[p] = {}
-            t = t[p]
-        prev[p] = block
+            cur_path += "." + p
+            if p in t:
+                cur_cmp = self._saved_paths[cur_path]
+            else:
+                # get the child component
+                if p.endswith("]"):  # indexed
+                    cur_cmp, cur_cmp_s = self._indexed_sub(cur_cmp, p)
+                else:  # scalar
+                    cur_cmp_s = cur_cmp = getattr(cur_cmp, p)
+                self._saved_paths[cur_path] = cur_cmp
+                try:
+                    # prefer IDAES process block class name
+                    clazz = str(cur_cmp_s.process_block_class())
+                except AttributeError:
+                    # fall back to component class name
+                    clazz = cur_cmp_s.__class__.__name__
+                t[p] = {type_key: self._bare_class(clazz), child_key: {}}
+            prev, t = t, t[p][child_key]
+        # put value in leaf node
+        type_code = "P" if subtype == self.PARAM_TYPE else "V"
+        prev[p] = {"v": block, type_key: type_code}
+
+    @classmethod
+    def _indexed_sub(cls, block, part):
+        """Get both indexed and scalar parts, e.g.,
+        if 'part' is "foo[0]" then return (block.foo[0], block.foo).
+        """
+        pos = part.find("[")
+        # scalar part of this subcomponent
+        part_s = part[:pos]
+        sub_s = getattr(block, part_s)
+        # extract index as tuple
+        str_idx = part[pos + 1 : -1]
+        idx_parts = str_idx.split(",")
+        idx_tuple = []
+        for ip in idx_parts:
+            try:
+                idx = int(ip)  # try int
+            except ValueError:
+                try:
+                    idx = float(ip)  # try float
+                except ValueError:
+                    idx = ip  # use string
+            idx_tuple.append(idx)
+        # use the index tuple to get the correct component
+        sub_i = sub_s[idx_tuple]
+
+        return sub_i, sub_s
+
+    @staticmethod
+    def _bare_class(s):
+        m = re.match(r"<class '(.*)'>", str(s))
+        return m.group(1) if m else s
 
     def report(self) -> Report:
         """Report containing model variable values."""
-        return self.Report(variables=self._vars)
+        return self.Report(tree=self._vars)
 
 
 class MermaidDiagram(Action):
@@ -504,13 +575,25 @@ class MermaidDiagram(Action):
 
         diagram: list[str]  #: each item is one line
 
+    def __init__(self, runner, **kwargs):
+        super().__init__(runner, **kwargs)
+        self._images = True
+
+    def show_unit_images(self, value: bool):
+        """Whether Mermaid displays images for units.
+
+        Args:
+            value: If true, display images. Otherwise, don't.
+        """
+        self._images = bool(value)
+
     def after_run(self):
         """Build Mermaid diagram after the run."""
         if Connectivity is None:
             self.diagram = None
         else:
             conn = Connectivity(input_model=self._runner.model)
-            self.diagram = Mermaid(conn, component_images=True)
+            self.diagram = Mermaid(conn, component_images=self._images)
 
     def report(self) -> Report | dict:
         """Report containing the Mermaid diagram.

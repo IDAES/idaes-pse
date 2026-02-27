@@ -205,3 +205,22 @@ def test_mermaid_report():
     else:
         print("Connectivity IS installed")
         assert report.diagram != {}
+
+
+@pytest.mark.unit
+def test_model_variables():
+    rn = flash_flowsheet.FS
+    rn.reset()
+    # turn off Mermaid features
+    dg = rn.get_action("mermaid_diagram")
+    dg.show_unit_images(False)
+    # get model vars
+    rn.run_steps()
+    mv = rn.get_action("model_variables")
+    report = mv.report()
+    tree = report.tree
+    assert tree
+    # check flash unit's heat_duty variable
+    assert tree["fs"]["sub"]["flash"]["sub"]["heat_duty"]["v"] == [
+        (0.0, 0, True, True, None, None)
+    ]
