@@ -35,6 +35,7 @@ classifiers=[
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 keywords=["IDAES", "idaes-pse", "energy systems", "chemical engineering", "process modeling"]
+requires-python = ">=3.10"
 version = "2.11.0dev0"
 # dynamic = ["version"]
 dependencies = [
