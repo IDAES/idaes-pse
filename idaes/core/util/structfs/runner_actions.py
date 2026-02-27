@@ -496,9 +496,11 @@ class ModelVariables(Action):
         return c.is_parameter_type() or isinstance(c, IndexedParam)
 
     def _add_block(self, m, tree: dict, name: str, block, subtype):
+        assert name
         # get parts of the name, accounting for indexes
         tok_pat = r"[^.\[\]]+(?:\[[^\]]*\])?"
         parts = re.findall(tok_pat, name)
+        assert parts
         # insert in tree
         t, prev = tree, None
         cur_cmp = m
@@ -506,7 +508,7 @@ class ModelVariables(Action):
         # walk down tree to where this belongs
         if self._dbg:
             self.log.debug(f"_add_block: parts={parts}, name={name}")
-        cur_path = "m"
+        cur_path, p, prev = "m", None, {}
         for p in parts:
             cur_path += "." + p
             if p in t:
