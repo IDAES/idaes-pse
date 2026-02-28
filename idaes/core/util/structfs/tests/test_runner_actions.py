@@ -10,13 +10,16 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+import json
 import pprint
 import time
+from pathlib import Path
 
 import pytest
 from pytest import approx
 from .. import runner
 from ..runner_actions import Timer, UnitDofChecker, MermaidDiagram
+from ..model_vars_schema import ModelVarsSchema
 from . import flash_flowsheet
 
 
@@ -92,6 +95,7 @@ def test_timer_runner():
 def test_unit_dof_action_base():
     rn = flash_flowsheet.FS
     rn.reset()
+    turn_off_mermaid_server(rn)
 
     def check_step(name, data):
         print(f"check_step {name} data: {data}")
@@ -120,6 +124,7 @@ def test_unit_dof_action_base():
 def test_unit_dof_action_getters():
     rn = flash_flowsheet.FS
     rn.reset()
+    turn_off_mermaid_server(rn)
 
     aname = "check_dof"
     rn.add_action(
@@ -147,6 +152,7 @@ def test_unit_dof_action_getters():
 def test_timer_report():
     rn = flash_flowsheet.FS
     rn.reset()
+    turn_off_mermaid_server(rn)
     rn.add_action("timer", Timer)
     rn.run_steps()
     report = rn.get_action("timer").report()
@@ -173,6 +179,7 @@ def test_timer_report():
 def test_dof_report():
     rn = flash_flowsheet.FS
     rn.reset()
+    turn_off_mermaid_server(rn)
     check_steps = (
         "build",
         "set_operating_conditions",
@@ -212,16 +219,21 @@ def test_mermaid_report():
 def test_model_variables():
     rn = flash_flowsheet.FS
     rn.reset()
-    # turn off Mermaid features
-    dg = rn.get_action("mermaid_diagram")
-    dg.show_unit_images(False)
+    turn_off_mermaid_server(rn)
+
     # get model vars
     rn.run_steps()
     mv = rn.get_action("model_variables")
     report = mv.report()
-    tree = report.tree
-    assert tree
+
+    # check the report root
+    fs = report.root["fs"]
+    assert fs
+
     # check flash unit's heat_duty variable
-    assert tree["fs"]["sub"]["flash"]["sub"]["heat_duty"]["v"] == [
-        (0.0, 0, True, True, None, None)
-    ]
+    assert fs.sub["flash"].sub["heat_duty"].v == [(0.0, 0, True, True, None, None)]
+
+
+def turn_off_mermaid_server(runner):
+    dg = runner.get_action("mermaid_diagram")
+    dg.show_unit_images(False)

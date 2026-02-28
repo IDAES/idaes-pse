@@ -40,6 +40,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.base.unit_model import ProcessBlockData
 from .runner import Action
 from .fsrunner import FlowsheetRunner
+from .model_vars_schema import ModelVarsSchema
 
 
 class Timer(Action):
@@ -409,40 +410,42 @@ class ModelVariables(Action):
 
     VAR_TYPE, PARAM_TYPE = "V", "P"
 
-    class Report(BaseModel):
-        """Report for ModelVariables.
+    # class Report(BaseModel):
+    #     """Report for ModelVariables.
 
-        The value of `tree` is a tree represented as a nested dict,
-        where each sub-component has a class and sub-component key, and
-        values (variables or parameters), which are leaves of the tree
-        (i.e., do not have sub-components), have a type and value key.
+    #     The value of `tree` is a tree represented as a nested dict,
+    #     where each sub-component has a class and sub-component key, and
+    #     values (variables or parameters), which are leaves of the tree
+    #     (i.e., do not have sub-components), have a type and value key.
 
-        A given component is represented a dict like:
-        `{'name': {'t': 'class.name', 'sub': { ...sub-components... }}}`
+    #     A given component is represented a dict like:
+    #     `{'name': {'t': 'class.name', 'sub': { ...sub-components... }}}`
 
-        For the parameter/variable value node, the 'sub' key will be gone and
-        the value for 't' will be a code 'P' or 'V' for parameter or variable.
-        The values are given as a list of items under the 'v' key:
-        - For a parameter, each is `[index, value]`.
-        - For a variable, each is `[index, value, fixed, stale, lb, ub]`,
-          where 'lb' means lower bound and 'ub' means upper bound.
-          The lb and ub can be None (or, in JSON, null) if no bound exists.
-          Fixed and stale are boolean values corresponding to the Pyomo variable
-          attributes of the same name.
-        For scalar parameters/variables, there is only 1 item
-        and its index is None/null. Otherwise, it is an indexed parameter or variable.
-        Thus, the value dict will look like one of:
+    #     For the parameter/variable value node, the 'sub' key will be gone and
+    #     the value for 't' will be a code 'P' or 'V' for parameter or variable.
+    #     The values are given as a list of items under the 'v' key:
+    #     - For a parameter, each is `[index, value]`.
+    #     - For a variable, each is `[index, value, fixed, stale, lb, ub]`,
+    #       where 'lb' means lower bound and 'ub' means upper bound.
+    #       The lb and ub can be None (or, in JSON, null) if no bound exists.
+    #       Fixed and stale are boolean values corresponding to the Pyomo variable
+    #       attributes of the same name.
+    #     For scalar parameters/variables, there is only 1 item
+    #     and its index is None/null. Otherwise, it is an indexed parameter or variable.
+    #     Thus, the value dict will look like one of:
 
-        Parameter: `{'name': {'t': 'P', 'v': [[<index>, <value], ...]}}`
-        Variable: `{'name': {'t': 'V', 'v': [[<index>, <value>, True/False,
-                                              True/False, <lb>, <ub>], ...]}}`
+    #     Parameter: `{'name': {'t': 'P', 'v': [[<index>, <value], ...]}}`
+    #     Variable: `{'name': {'t': 'V', 'v': [[<index>, <value>, True/False,
+    #                                           True/False, <lb>, <ub>], ...]}}`
 
-        This structure is designed so the value of 't' can determine the function
-        to call to process the contents of a node.
-        """
+    #     This structure is designed so the value of 't' can determine the function
+    #     to call to process the contents of a node.
+    #     """
 
-        #: Tree of variables
-        tree: dict = Field(default={})
+    #     #: Tree of variables
+    #     tree: dict = Field(default={})
+
+    Report = ModelVarsSchema
 
     def __init__(self, runner, **kwargs):
         assert isinstance(runner, FlowsheetRunner)  # makes no sense otherwise
@@ -482,8 +485,8 @@ class ModelVariables(Action):
                     # index, value
                     item = (index, value)
                 b.append(item)
-            # add block to tree
-            self._add_block(m, var_tree, c.name, b, subtype)
+            # add leaf to tree
+            self._add_leaf(m, var_tree, c.name, b, subtype)
 
         self._vars = var_tree
 
@@ -495,7 +498,7 @@ class ModelVariables(Action):
     def _is_param(c):
         return c.is_parameter_type() or isinstance(c, IndexedParam)
 
-    def _add_block(self, m, tree: dict, name: str, block, subtype):
+    def _add_leaf(self, m, tree: dict, name: str, block, subtype):
         assert name
         # get parts of the name, accounting for indexes
         tok_pat = r"[^.\[\]]+(?:\[[^\]]*\])?"
@@ -566,7 +569,7 @@ class ModelVariables(Action):
 
     def report(self) -> Report:
         """Report containing model variable values."""
-        return self.Report(tree=self._vars)
+        return ModelVarsSchema.model_validate(self._vars)
 
 
 class MermaidDiagram(Action):
