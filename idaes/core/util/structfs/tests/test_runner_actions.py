@@ -195,9 +195,10 @@ def test_dof_report():
 def test_mermaid_report():
     rn = flash_flowsheet.FS
     rn.reset()
-    rn.add_action("diagram", MermaidDiagram, "fs")
+    rn.add_action("diagram", MermaidDiagram)
     rn.run_steps()
     action = rn.get_action("diagram")
+    action.set_model_root("fs")
     report = action.report()
     if action.diagram is None:
         print("Connectivity not installed")

@@ -580,6 +580,7 @@ class MermaidDiagram(Action):
     def __init__(self, runner, **kwargs):
         super().__init__(runner, **kwargs)
         self._images = True
+        self._model_root_split = []
 
     def show_unit_images(self, value: bool):
         """Whether Mermaid displays images for units.
@@ -589,12 +590,23 @@ class MermaidDiagram(Action):
         """
         self._images = bool(value)
 
+    def set_model_root(self, path: str):
+        """Set path to root of model to display (default is model itself).
+
+        Args:
+            path: Dotted path like "fs" or "fs.component"
+        """
+        self._model_root_split = path.split(".")
+
     def after_run(self):
         """Build Mermaid diagram after the run."""
         if Connectivity is None:
             self.diagram = None
         else:
-            conn = Connectivity(input_model=self._runner.model)
+            root = self._runner.model
+            for p in self._model_root_split:
+                root = getattr(root, p)
+            conn = Connectivity(input_model=root)
             self.diagram = Mermaid(conn, component_images=self._images)
 
     def report(self) -> Report | dict:
