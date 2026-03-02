@@ -11,7 +11,15 @@
 # for full copyright and license information.
 #################################################################################
 """
-Predefined Actions for the generic Runner.
+## Runner actions
+
+This module defines a set of 'actions' that can be automatically
+executed before, during, and after a run of a flowsheet that is
+wrapped with the `Runner` decorators.
+
+The Action subclasses in this module return Pydantic models
+that can be formatted as JSON. By convention, the model is
+defined in a nested class called `Report`.
 """
 
 # stdlib
@@ -195,8 +203,14 @@ class UnitDofChecker(Action):
     class Report(BaseModel):
         """Report on degrees of freedom in a model."""
 
-        steps: dict[str, UnitDofType] = Field(default={})
-        model: int = Field(default=0)
+        steps: dict[str, UnitDofType] = Field(
+            default={},
+            description="Degrees of freedom for each named step",
+            examples=[{"build": 2, "set_operating_conditions": 1, "solve": 1}],
+        )
+        model: int = Field(
+            default=0, description="Degrees of freedom for the entire model"
+        )
 
     def __init__(
         self,
@@ -410,42 +424,7 @@ class ModelVariables(Action):
 
     VAR_TYPE, PARAM_TYPE = "V", "P"
 
-    # class Report(BaseModel):
-    #     """Report for ModelVariables.
-
-    #     The value of `tree` is a tree represented as a nested dict,
-    #     where each sub-component has a class and sub-component key, and
-    #     values (variables or parameters), which are leaves of the tree
-    #     (i.e., do not have sub-components), have a type and value key.
-
-    #     A given component is represented a dict like:
-    #     `{'name': {'t': 'class.name', 'sub': { ...sub-components... }}}`
-
-    #     For the parameter/variable value node, the 'sub' key will be gone and
-    #     the value for 't' will be a code 'P' or 'V' for parameter or variable.
-    #     The values are given as a list of items under the 'v' key:
-    #     - For a parameter, each is `[index, value]`.
-    #     - For a variable, each is `[index, value, fixed, stale, lb, ub]`,
-    #       where 'lb' means lower bound and 'ub' means upper bound.
-    #       The lb and ub can be None (or, in JSON, null) if no bound exists.
-    #       Fixed and stale are boolean values corresponding to the Pyomo variable
-    #       attributes of the same name.
-    #     For scalar parameters/variables, there is only 1 item
-    #     and its index is None/null. Otherwise, it is an indexed parameter or variable.
-    #     Thus, the value dict will look like one of:
-
-    #     Parameter: `{'name': {'t': 'P', 'v': [[<index>, <value], ...]}}`
-    #     Variable: `{'name': {'t': 'V', 'v': [[<index>, <value>, True/False,
-    #                                           True/False, <lb>, <ub>], ...]}}`
-
-    #     This structure is designed so the value of 't' can determine the function
-    #     to call to process the contents of a node.
-    #     """
-
-    #     #: Tree of variables
-    #     tree: dict = Field(default={})
-
-    Report = ModelVarsSchema
+    Report = ModelVarsSchema  # see model_vars_schema.py
 
     def __init__(self, runner, **kwargs):
         assert isinstance(runner, FlowsheetRunner)  # makes no sense otherwise

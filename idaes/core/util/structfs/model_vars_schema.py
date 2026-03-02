@@ -10,7 +10,41 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-"""Pydantic schema for ModelVariables JSON payloads."""
+"""
+Pydantic schema for the model variables returned by the ModelVariables action
+in `runner_actions.py`.
+
+The structure is:
+
+```
+{"<IDAES/pyomo.component.name>":
+    {
+        "t": "<IDAES/Pyomo type>",
+        "sub": {
+           "<nested.IDAES/pyomo.component.name">:
+           {
+                # ..etc..
+                # ..until you reach a "leaf"
+                #  parameter or variable, which you
+                # can tell with special values for "t"
+                # t = "V" => variable
+                  "t": "V",
+                  # List of one or more values. For a scalar variable,
+                  # there is only one value and the 'index' is None/null
+                  v:  [[index, value, fixed, stale, lower_bound, upper_bound], ...]
+                # t = "P" => parameter
+                  "t": "P",
+                  # List of one or more values. For a scalar parameter,
+                  # there is only one value and the 'index' is None/null
+                  v: [[index, value], ...]
+
+           }
+        }
+    }
+}
+```
+
+"""
 
 from __future__ import annotations
 
