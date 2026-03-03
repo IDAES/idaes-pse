@@ -16,6 +16,7 @@ in `FlowsheetRunner`.
 """
 
 # stdlib
+from enum import Enum
 
 # third-party
 from pyomo.environ import ConcreteModel
@@ -233,6 +234,11 @@ class BaseFlowsheetRunner(Runner):
         return self._ann.copy()
 
 
+class DiagnosticReportType(Enum):
+    STRUCTURAL = "structural"
+    NUMERICAL = "numerical"
+
+
 class FlowsheetRunner(BaseFlowsheetRunner):
     """Interface for running and inspecting IDAES flowsheets."""
 
@@ -301,6 +307,7 @@ class FlowsheetRunner(BaseFlowsheetRunner):
             CaptureSolverOutput,
             ModelVariables,
             MermaidDiagram,
+            Diagnostics,
         )
 
         super().__init__(**kwargs)
@@ -309,6 +316,26 @@ class FlowsheetRunner(BaseFlowsheetRunner):
         self.add_action("capture_solver_output", CaptureSolverOutput)
         self.add_action("model_variables", ModelVariables)
         self.add_action("mermaid_diagram", MermaidDiagram)
+        self.add_action("diagnostics", Diagnostics)
+
+    def diagnostic_report_types(self, types: list[DiagnosticReportType]):
+        """Set diagnostic report types to generate.
+
+        Args:
+            types: One of more report types
+
+        Raises:
+            ValueError: Invalid type given
+        """
+        diag = self.get_action("diagnostics")
+        for arg in types:
+            t = DiagnosticReportType(arg)
+            if t == DiagnosticReportType.STRUCTURAL:
+                diag.set_option(structural_issues=True)
+            elif t == DiagnosticReportType.NUMERICAL:
+                diag.set_option(numerical_issues=True)
+            else:
+                raise RuntimeError(f"Unhandled report type: {t}")
 
     def build(self):
         """Run just the build step"""
