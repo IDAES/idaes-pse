@@ -13,7 +13,7 @@
 """
 Model diagnostics
 """
-
+from collections import defaultdict
 from io import StringIO
 import re
 
@@ -58,10 +58,28 @@ class StructuralData(pc.BaseModel):
     )
 
 
-# class NumericalData(pc.BaseModel):
-#     """Numerical issues"""
-
-#     pass
+class NumericalData(pc.BaseModel):
+    statistics: list[str] = pc.Field(
+        default_factory=list, description="Model statistics from numerical diagnostics"
+    )
+    warnings: int = pc.Field(
+        default=0, description="Number of numerical warnings identified by diagnostics"
+    )
+    warning_details: list[StructuralIssueData] = pc.Field(
+        default_factory=list, description="Structured details for numerical warnings"
+    )
+    cautions: int = pc.Field(
+        default=0, description="Number of numerical cautions identified by diagnostics"
+    )
+    caution_details: list[StructuralIssueData] = pc.Field(
+        default_factory=list, description="Structured details for numerical cautions"
+    )
+    next_steps: list[str] = pc.Field(
+        default_factory=list, description="Suggested numerical next-step commands"
+    )
+    report: str = pc.Field(
+        default="", description="Raw numerical diagnostics report text"
+    )
 
 
 class SolverResultData(pc.BaseModel):
@@ -82,9 +100,9 @@ class ModelDiagnosticsData(pc.BaseModel):
 
     result: SolverResultData = pc.Field(description="Solver result", default={})
     structural: StructuralData = pc.Field(description="Structural issues")
-
-
-#   numerical: NumericalData = pc.Field(description="Numerical issues", default={})
+    numerical: NumericalData = pc.Field(
+        description="Numerical issues", default_factory=NumericalData
+    )
 
 
 class ModelDiagnostics:
@@ -115,7 +133,8 @@ class ModelDiagnostics:
 
         d = DiagnosticsToolbox(model)
 
-        print(f"@@ self.structural_issues={self.structural_issues}")
+        struct = StructuralData()
+        num = NumericalData()
         # Extract structural issues (uses _functions, thus pylint pragma)
         # pylint: disable=W0212
         if self.structural_issues:
@@ -127,7 +146,8 @@ class ModelDiagnostics:
             report = stream.getvalue()
 
             struct = StructuralData()
-            struct.statistics = _collect_model_statistics(model)
+            raw_stats = _collect_model_statistics(model)
+            struct.statistics = [s[4:] for s in raw_stats]
             struct.warnings = len(warnings)
             struct.warning_details = [
                 self._parse_issue_line(msg, kind="warning") for msg in warnings
@@ -138,10 +158,13 @@ class ModelDiagnostics:
             ]
             struct.next_steps = next_steps
             struct.report = report
-        else:
-            struct = StructuralData()
-
-        self._data = ModelDiagnosticsData(result=solver_result, structural=struct)
+        if self.numerical_issues:
+            stream = StringIO()
+            d.report_numerical_issues(stream=stream)
+            num = self._parse_numerical_report(stream.getvalue())
+        self._data = ModelDiagnosticsData(
+            result=solver_result, structural=struct, numerical=num
+        )
         return self._data
 
     @property
@@ -178,4 +201,63 @@ class ModelDiagnostics:
             count=count,
             message=body,
             details=lines[1:],
+        )
+
+    def _parse_numerical_report(self, report: str) -> NumericalData:
+        stats = []
+        warning_lines = []
+        caution_lines = []
+        next_steps = []
+        warnings = 0
+        cautions = 0
+        section = ""
+
+        for raw in report.splitlines():
+            line = raw.strip()
+            if not line or line.startswith("=") or line.startswith("-"):
+                continue
+            if line == "Model Statistics":
+                section = "stats"
+                continue
+            match = re.match(r"^(\d+)\s+WARNINGS$", line)
+            if match is not None:
+                warnings = int(match.group(1))
+                section = "warnings"
+                continue
+            match = re.match(r"^(\d+)\s+Cautions$", line)
+            if match is not None:
+                cautions = int(match.group(1))
+                section = "cautions"
+                continue
+            if line == "Suggested next steps:":
+                section = "next_steps"
+                continue
+            if line in (
+                "No warnings found!",
+                "No cautions found!",
+                "If you still have issues converging your model consider:",
+            ):
+                continue
+
+            if section == "stats":
+                stats.append(line)
+            elif section == "warnings":
+                warning_lines.append(line)
+            elif section == "cautions":
+                caution_lines.append(line)
+            elif section == "next_steps" and line.endswith("()"):
+                next_steps.append(line)
+
+        return NumericalData(
+            statistics=stats,
+            warnings=warnings,
+            warning_details=[
+                self._parse_issue_line(msg, kind="warning") for msg in warning_lines
+            ],
+            cautions=cautions,
+            caution_details=[
+                self._parse_issue_line(msg, kind="caution") for msg in caution_lines
+            ],
+            next_steps=next_steps,
+            report=report,
         )
