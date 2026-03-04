@@ -31,7 +31,6 @@ from pyomo.core.expr.numeric_expr import ExternalFunctionExpression
 from pyomo.core import expr as EXPR, native_types
 from pyomo.common.collections import ComponentMap
 
-
 _log = logging.getLogger(__name__)
 
 

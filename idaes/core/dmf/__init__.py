@@ -16,10 +16,10 @@ IDAES Data Management Framework (DMF)
 The DMF lets you save, search, and retrieve provenance related
 to your models.
 """
+
 __author__ = "Dan Gunter"
 
 from pyomo.common.deprecation import deprecation_warning
-
 
 deprecation_warning(
     msg=(

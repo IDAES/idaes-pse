@@ -48,7 +48,6 @@ from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.logger as idaeslog
 from idaes.core.util.config import DefaultBool
 
-
 __author__ = "Paul Akula, John Eslick, Anuja Deshpande, Andrew Lee"
 
 

@@ -11,6 +11,7 @@
 # for full copyright and license information.
 #################################################################################
 """Tests that helmholtz specific models match generic models"""
+
 import pytest
 
 import pyomo.environ as pyo

@@ -13,6 +13,7 @@
 """
 Tests for InitializerBase class
 """
+
 import pytest
 import re
 import types

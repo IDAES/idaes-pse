@@ -15,6 +15,7 @@ Tests for Phase objects
 
 Author: Andrew Lee
 """
+
 from pyomo.environ import ConcreteModel, Set
 
 from idaes.core.base.phases import (

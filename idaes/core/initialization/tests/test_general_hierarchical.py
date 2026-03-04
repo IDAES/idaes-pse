@@ -13,6 +13,7 @@
 """
 Tests for general hierarchical initialization routines
 """
+
 import pytest
 import re
 import types
@@ -24,7 +25,6 @@ from idaes.core.initialization.general_hierarchical import (
 )
 
 from idaes.core.util.exceptions import InitializationError
-
 
 __author__ = "Andrew Lee"
 

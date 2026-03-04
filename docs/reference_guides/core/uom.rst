@@ -56,7 +56,7 @@ UnitSet Class
 -------------
 
 .. module:: idaes.core.base.property_meta
-  :noindex:
+  :no-index:
 
 .. autoclass:: UnitSet
   :members:

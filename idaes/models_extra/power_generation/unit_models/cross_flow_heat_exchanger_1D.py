@@ -16,7 +16,6 @@
 Discretization based on tube rows
 """
 
-
 # Import Pyomo libraries
 from pyomo.environ import (
     assert_optimal_termination,
@@ -48,7 +47,6 @@ from idaes.models.unit_models.heat_exchanger import (
 from idaes.models.unit_models.heat_exchanger_1D import HeatExchanger1DData
 from idaes.models_extra.power_generation.unit_models import heat_exchanger_common
 from idaes.core.initialization import SingleControlVolumeUnitInitializer
-
 
 __author__ = "Jinliang Ma, Douglas Allan"
 

@@ -16,6 +16,7 @@ package
 
 Authors: Andrew Lee, Douglas Allan
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
@@ -55,7 +56,6 @@ from idaes.core.scaling import (
     ConstraintScalingScheme,
 )
 from .electrolyte_states import define_electrolyte_state, calculate_electrolyte_scaling
-
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)

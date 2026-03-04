@@ -13,6 +13,7 @@
 """
 Tests for constructing and using component lists in electrolyte systems
 """
+
 # Import Python libraries
 import logging
 import pytest
@@ -33,7 +34,6 @@ from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
     StateIndex,
 )
-
 
 # Set up logger
 _log = logging.getLogger(__name__)

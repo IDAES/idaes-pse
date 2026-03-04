@@ -15,6 +15,7 @@ Common methods used by generic framework
 
 Author: A Lee
 """
+
 # TODO: Missing doc strings
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring

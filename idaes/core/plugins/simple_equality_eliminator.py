@@ -11,6 +11,7 @@
 # for full copyright and license information.
 #################################################################################
 """Transformation to replace variables with other variables."""
+
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
 
@@ -21,7 +22,6 @@ from pyomo.core import expr as EXPR
 from pyomo.contrib.fbbt.fbbt import compute_bounds_on_expr
 from pyomo.repn import generate_standard_repn
 import idaes.logger as idaeslog
-
 
 __author__ = "John Eslick"
 
