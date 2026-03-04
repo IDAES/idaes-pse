@@ -14,6 +14,7 @@
 This module contains regression tests for the DiagnosticsToolbox to verify
 its behavior with variables that have None values.
 """
+
 from io import StringIO
 
 import pytest
@@ -28,7 +29,6 @@ from pyomo.environ import (
 from idaes.core.util.diagnostics_tools.diagnostics_toolbox import (
     DiagnosticsToolbox,
 )
-
 
 __author__ = "Alex Dowling, Douglas Allan, Andrew Lee"
 

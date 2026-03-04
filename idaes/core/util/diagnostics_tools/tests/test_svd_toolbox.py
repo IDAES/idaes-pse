@@ -42,7 +42,6 @@ from idaes.core.util.diagnostics_tools.tests.utils import (
     dummy_problem,
 )
 
-
 __author__ = "Alex Dowling, Douglas Allan, Andrew Lee"
 
 

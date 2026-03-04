@@ -13,6 +13,7 @@
 """
 This module contains tests for diagnostics writer utils.
 """
+
 from io import StringIO
 
 import pytest

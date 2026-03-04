@@ -88,7 +88,6 @@ from idaes.core.util.diagnostics_tools.utils import (
     vars_with_extreme_values,
 )
 
-
 _log = idaeslog.getLogger(__name__)
 
 

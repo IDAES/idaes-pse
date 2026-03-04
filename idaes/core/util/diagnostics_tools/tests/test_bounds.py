@@ -30,7 +30,6 @@ from idaes.core.util.diagnostics_tools.bounds import (
     list_components_with_values_outside_valid_range,
 )
 
-
 __author__ = "Alex Dowling, Douglas Allan, Andrew Lee"
 
 

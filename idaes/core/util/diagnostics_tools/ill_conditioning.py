@@ -34,7 +34,6 @@ from idaes.core.scaling.util import (
 )
 import idaes.logger as idaeslog
 
-
 _log = idaeslog.getLogger(__name__)
 
 

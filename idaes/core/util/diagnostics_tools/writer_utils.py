@@ -41,7 +41,6 @@ from idaes.core.util.diagnostics_tools.utils import (
     var_in_block,
 )
 
-
 MAX_STR_LENGTH = 84
 TAB = " " * 4
 

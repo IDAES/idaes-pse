@@ -13,6 +13,7 @@
 """
 This module contains tests for the convergence analysis tools.
 """
+
 from copy import deepcopy
 from io import StringIO
 import os

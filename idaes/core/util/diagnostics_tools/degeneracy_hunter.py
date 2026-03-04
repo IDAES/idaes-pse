@@ -52,7 +52,6 @@ from idaes.core.util.diagnostics_tools.writer_utils import (
     TAB,
 )
 
-
 _log = idaeslog.getLogger(__name__)
 
 

@@ -13,6 +13,7 @@
 """
 This module contains test for the diagnostics utility functions.
 """
+
 import re
 
 import pytest

@@ -13,6 +13,7 @@
 """
 This module contains tests for integrating infeasibility explanation into the DiagnosticsToolbox.
 """
+
 from io import StringIO
 
 import pytest
@@ -26,7 +27,6 @@ from pyomo.environ import (
 from idaes.core.util.model_diagnostics import (
     DiagnosticsToolbox,
 )
-
 
 __author__ = "Alex Dowling, Douglas Allan, Andrew Lee"
 

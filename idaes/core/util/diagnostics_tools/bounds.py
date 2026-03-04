@@ -25,7 +25,6 @@ from pyomo.core.base.block import BlockData
 
 import idaes.logger as idaeslog
 
-
 _log = idaeslog.getLogger(__name__)
 
 

@@ -14,6 +14,7 @@
 This module contains tests for integrating evaluation error detection into
 the DiagnosticsToolbox.
 """
+
 from io import StringIO
 import math
 from unittest import TestCase
@@ -37,7 +38,6 @@ from pyomo.environ import (
 from idaes.core.util.diagnostics_tools.diagnostics_toolbox import (
     DiagnosticsToolbox,
 )
-
 
 __author__ = "Alex Dowling, Douglas Allan, Andrew Lee"
 
