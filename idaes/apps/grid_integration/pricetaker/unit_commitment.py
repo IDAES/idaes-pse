@@ -15,11 +15,16 @@
 This module contains functions that build unit commitment-type
 constraints: startup/shutdown, uptime/downtime constraints,
 capacity limit constraints, and ramping constraints.
+
+The unit commitment model is taken from: 
+Knueven, Bernard, James Ostrowski, and Jean-Paul Watson. 
+"On mixed-integer programming formulations for the unit commitment problem." 
+INFORMS Journal on Computing 32, no. 4 (2020): 857-876.
 """
 
-from typing import Union
+from typing import Union, Optional
 from pyomo.common.config import ConfigDict, ConfigValue
-from pyomo.environ import Block, Constraint, Var, RangeSet
+from pyomo.environ import Block, Constraint, Var, Param, RangeSet, Binary
 from idaes.core.util.config import ConfigurationError, is_in_range
 
 
@@ -141,9 +146,15 @@ def startup_shutdown_constraints(
     minimum_up_time: int,
     minimum_down_time: int,
     set_time: RangeSet,
+    startup_transition_time: Optional[dict] = None,
 ):
     """
-    Appends startup and shutdown constraints for a given unit/process
+    Appends startup and shutdown constraints for a given unit/process.
+    Supports multiples types of startup.
+
+    Args:
+        startup_transition_time (dict or None): A dictionary with keys as startup types and values are the time of startup transition.
+
     """
 
     @blk.Constraint(set_time)
@@ -175,6 +186,60 @@ def startup_shutdown_constraints(
             sum(op_blocks[i].shutdown for i in range(t - minimum_down_time + 1, t + 1))
             <= install_unit - op_blocks[t].op_mode
         )
+
+    if startup_transition_time is None or len(startup_transition_time) == 0:
+        # if there is only one startup type, return
+        # startup_transition_time can be None.
+        # This is a double insurance check, that empty dict or None will skip the following.
+        return
+
+    # there will be at least two types of startup
+    startup_names = list(startup_transition_time.keys())
+
+    # assume the first should be max(min_down_time, startup_transition_time["hot"])
+    startup_transition_time[startup_names[0]] = max(
+        minimum_down_time, startup_transition_time[startup_names[0]]
+    )
+
+    # this is necessary, because we have updated the startup_transition_time.
+    blk.startup_duration = Param(startup_names, initialize=startup_transition_time)
+
+    @blk.Constraint(set_time)
+    def tot_startup_type_rule(_, t):
+        """
+        Eq 55 in Knueven et.al.
+        """
+
+        return (
+            sum(op_blocks[t].startup_type_vars[k] for k in startup_names)
+            == op_blocks[t].startup
+        )
+
+    # add the startup type constraints for each type of startup
+    for idx, key in enumerate(startup_names):
+        if idx == 0:
+            prev_key = key
+            continue
+
+        def startup_type_rule(_, t, key=key, prev_key=prev_key):
+            """
+            Eq 54 in Knueven et.al.
+            """
+            if t < blk.startup_duration[key]:
+                return Constraint.Skip
+            return op_blocks[t].startup_type_vars[prev_key] <= sum(
+                op_blocks[t - i].shutdown
+                for i in range(
+                    blk.startup_duration[prev_key], blk.startup_duration[key]
+                )
+            )
+
+        setattr(
+            blk,
+            f"Startup_Type_Constraint_{key}",
+            Constraint(set_time, rule=startup_type_rule),
+        )
+        prev_key = key
 
 
 def capacity_limits(

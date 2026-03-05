@@ -23,8 +23,53 @@ from idaes.apps.grid_integration.pricetaker.design_and_operation_models import (
     _is_valid_data_type_for_storage_model,
     is_valid_variable_design_data,
     is_valid_polynomial_surrogate_data,
+    is_valid_startup_types,
 )
 from idaes.core.util.config import ConfigurationError
+
+
+@pytest.mark.unit
+def test_is_valid_startup_types_empty_dict():
+    """Tests that is_valid_startup_types raises error for empty dictionary"""
+    with pytest.raises(
+        ConfigurationError, match="Received an empty dictionary for startup types"
+    ):
+        is_valid_startup_types({})
+
+
+@pytest.mark.unit
+def test_is_valid_startup_types_invalid_inputs():
+    """Tests that is_valid_startup_types rejects invalid inputs"""
+
+    with pytest.raises(TypeError, match="Data must be a dictionary."):
+        is_valid_startup_types([("hot", 4), ("warm", 8)])
+
+    with pytest.raises(TypeError, match="Data must be a dictionary."):
+        is_valid_startup_types(3.14)
+
+    with pytest.raises(
+        ConfigurationError,
+        match="At least two startup types must be defined for the unit/process.",
+    ):
+        is_valid_startup_types({"hot": 4})
+
+    with pytest.raises(TypeError, match="key must be a valid string."):
+        is_valid_startup_types({1: 4, 2: 8})
+
+    with pytest.raises(
+        ConfigurationError,
+        match="Key 'hot-start' is not a valid Python variable name. Keys must be valid identifiers.",
+    ):
+        is_valid_startup_types({"hot-start": 4, "warm-start": 8})
+
+    with pytest.raises(TypeError, match="value must be an int"):
+        is_valid_startup_types({"hot": 4.2, "warm": 8.1})
+
+    with pytest.raises(
+        ConfigurationError,
+        match="Startup time for two or more startup types is the same.",
+    ):
+        is_valid_startup_types({"hot": 4, "warm": 4})
 
 
 @pytest.mark.unit
@@ -270,6 +315,22 @@ def test_operation_model_class():
     for attr in ["op_mode", "startup", "shutdown", "power", "LMP"]:
         assert not hasattr(blk.unit_2_op, attr)
 
+    # test the multiple startup types
+    blk.unit_3_op = OperationModel(
+        model_func=op_model,
+        model_args={"des_blk": blk.unit_1_design},
+        startup_types={"hot": 4, "warm": 8, "cold": 12},
+    )
+    assert hasattr(blk.unit_3_op, "startup_type_vars")
+
+    # test the startup types = None
+    blk.unit_3_op = OperationModel(
+        model_func=op_model,
+        model_args={"des_blk": blk.unit_1_design},
+        startup_types=None,
+    )
+    assert not hasattr(blk.unit_3_op, "startup_type_vars")
+
 
 @pytest.mark.unit
 def test_operation_model_class_logger_message1(caplog):
@@ -395,6 +456,15 @@ def test_is_valid_data_type_for_storage_model():
         str(_is_valid_data_type_for_storage_model(m.blk.x[1] + m.blk.x[2] + m.blk.x[3]))
         == "blk.x[1] + blk.x[2] + blk.x[3]"
     )
+
+
+@pytest.mark.unit
+def test_is_valid_startup_types():
+    """Tests the is_valid_startup_types function"""
+    # Test the correct data structure is returned
+    data = is_valid_startup_types({"warm": 8, "hot": 4, "cold": 12})
+    assert list(data.keys()) == ["hot", "warm", "cold"]
+    assert data == {"hot": 4, "warm": 8, "cold": 12}
 
 
 @pytest.mark.unit
