@@ -479,6 +479,7 @@ class Action(ABC):
         if log is None:
             log = _log
         self.log = log
+        self._dbg = self.log.isEnabledFor(logging.DEBUG)
 
     def before_step(self, step_name: str):
         """Perform this action before the named step.
