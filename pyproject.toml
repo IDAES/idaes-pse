@@ -40,7 +40,7 @@ keywords = [
 # We will rely on classifiers and documentation to communicate supported versions.
 # requires-python = ">=3.10"
 
-version = "2.11.0dev0"
+version = "2.11.0rc0"
 
 dependencies = [
   "pyomo >= 6.10.0",
