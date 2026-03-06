@@ -13,6 +13,7 @@
 """
 Model diagnostics
 """
+
 from collections import defaultdict
 from io import StringIO
 import re
@@ -22,6 +23,7 @@ from idaes.core.util.model_diagnostics import (
     DiagnosticsToolbox,
     _collect_model_statistics,
 )
+from pyomo.environ import TerminationCondition, SolverStatus
 
 
 class StructuralIssueData(pc.BaseModel):
@@ -85,7 +87,7 @@ class NumericalData(pc.BaseModel):
 class SolverResultData(pc.BaseModel):
     """Solver result"""
 
-    status: bool = pc.Field(description="General status, True if OK")
+    status: bool = pc.Field(description="Simple solve status, True if OK")
     termination_condition: str = pc.Field(
         "Provides the specific reason the solver stopped (e.g., 'optimal', 'infeasible', 'unbounded', 'maxTime')."
     )
@@ -93,13 +95,16 @@ class SolverResultData(pc.BaseModel):
         default=0,
         description="The optimal objective function value (if a feasible solution was found",
     )
+    details: dict = pc.Field(description="Entire result object from Pyomo")
 
 
 class ModelDiagnosticsData(pc.BaseModel):
     """Data fetched from the IDAES Diagnostics Toolkit"""
 
     result: SolverResultData = pc.Field(description="Solver result", default={})
-    structural: StructuralData = pc.Field(description="Structural issues")
+    structural: StructuralData = pc.Field(
+        description="Structural issues", default_factory=StructuralData
+    )
     numerical: NumericalData = pc.Field(
         description="Numerical issues", default_factory=NumericalData
     )
@@ -120,13 +125,17 @@ class ModelDiagnostics:
         Returns:
             The current data from the diagnostics
         """
+        if results is None:
+            return ModelDiagnosticsData()
+
         self._model = model
 
         # Extract results from Pyomo results object
-        solve_ok = results.solver.status.lower() == "ok"
+        solve_ok = results.solver.status == SolverStatus.ok
         solver_result = SolverResultData(
             status=solve_ok,
             termination_condition=results.solver.termination_condition,
+            details=results.json_repn(),
         )
         if solve_ok and hasattr(results.problem, "objective"):
             solver_result.objective_value = results.problem.objective.value

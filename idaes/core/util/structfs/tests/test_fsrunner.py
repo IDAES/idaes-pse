@@ -11,7 +11,8 @@
 # for full copyright and license information.
 #################################################################################
 import pytest
-from pyomo.environ import ConcreteModel
+from types import SimpleNamespace
+from pyomo.environ import ConcreteModel, SolverStatus, TerminationCondition
 from idaes.core import FlowsheetBlock
 from ..fsrunner import FlowsheetRunner, BaseFlowsheetRunner
 from .flash_flowsheet import FS as flash_fs
@@ -48,7 +49,26 @@ def add_costing(context):
 def solve_opt(context):
     print("flowsheet - solve")
     assert context.model is not None
-    context["results"] = 123
+
+    class MockSolveResult:
+        def __init__(self):
+            self.solver = SimpleNamespace(
+                status=SolverStatus.ok,
+                termination_condition=TerminationCondition.optimal,
+            )
+            self.problem = SimpleNamespace(objective=SimpleNamespace(value=123))
+
+        def json_repn(self):
+            return {
+                "solver": {
+                    "status": str(self.solver.status),
+                    "termination_condition": str(self.solver.termination_condition),
+                },
+                "problem": {"objective": {"value": self.problem.objective.value}},
+            }
+            status = results.solver.stau
+
+    context["results"] = MockSolveResult()
 
 
 # -- end setup --
@@ -57,7 +77,7 @@ def solve_opt(context):
 @pytest.mark.unit
 def test_run_all():
     fsr.run_steps()
-    assert fsr.results == 123
+    assert fsr.results.solver.status == "ok"
 
 
 @pytest.mark.unit

@@ -19,7 +19,7 @@ in `FlowsheetRunner`.
 from enum import Enum
 
 # third-party
-from pyomo.environ import ConcreteModel
+from pyomo.environ import ConcreteModel, SolverFactory
 from pyomo.environ import units as pyunits
 from idaes.core import FlowsheetBlock
 
@@ -31,6 +31,8 @@ except ImportError:
 
 # package
 from .runner import Runner
+
+DEFAULT_SOLVER_NAME = "ipopt"
 
 
 class Context(dict):
@@ -57,6 +59,16 @@ class Context(dict):
     def solver(self, value):
         """The solver used to solve the model."""
         self["solver"] = value
+
+    def solve(self):
+        """Perform solve, store results"""
+        if self.solver is None:
+            self.solver = SolverFactory(DEFAULT_SOLVER_NAME)
+        self["results"] = self.solver.solve(self.model, tee=self["tee"])
+
+    @property
+    def results(self):
+        return self.get("results", None)
 
 
 class BaseFlowsheetRunner(Runner):
@@ -136,8 +148,11 @@ class BaseFlowsheetRunner(Runner):
 
     @property
     def results(self):
-        """Syntactic sugar to return the `results` in the context."""
-        return self._context["results"]
+        """Syntactic sugar to return the `results` in the context.
+        Returns:
+            Results from Pyomo, or None if not set
+        """
+        return self._context.results
 
     def annotate_var(
         self,

@@ -26,7 +26,7 @@ from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import
 from idaes.models.unit_models import Flash
 from idaes.core.util.structfs.fsrunner import FlowsheetRunner
 
-FS = FlowsheetRunner()
+FS = FlowsheetRunner(solver=SolverFactory("ipopt"))
 
 # # Flash Unit Model
 #
@@ -68,18 +68,12 @@ def init_model(ctx):
     m.fs.flash.initialize(outlvl=idaeslog.INFO)
 
 
-@FS.step("set_solver")
-def set_solver(ctx):
-    """Set the solver."""
-    ctx.solver = SolverFactory("ipopt")
-
-
 @FS.step("solve_initial")
 def solve(ctx):
     """Perform the initial model solve."""
-    ctx["results"] = ctx.solver.solve(ctx.model, tee=ctx["tee"])
+    ctx.solve()
 
 
 @FS.step("solve_optimization")
 def solve_o(ctx):
-    ctx["results"] = ctx.solver.solve(ctx.model, tee=ctx["tee"])
+    ctx.solve()
