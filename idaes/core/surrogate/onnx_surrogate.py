@@ -129,6 +129,7 @@ class ONNXSurrogate(OMLTSurrogate):
             "Sigmoid",
             "LogSoftmax",
             "Tanh",
+            "Softplus"
         ]
 
         # pylint: disable-next=used-before-assignment
