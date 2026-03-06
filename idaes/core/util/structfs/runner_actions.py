@@ -39,6 +39,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.base.unit_model import ProcessBlockData
 from .runner import Action
 from .fsrunner import FlowsheetRunner
+from .actions.diagnostics import ModelDiagnostics, ModelDiagnosticsData
 
 
 class Timer(Action):
@@ -523,3 +524,27 @@ class MermaidDiagram(Action):
             return {}
         mermaid_lines = self.diagram.write(None).split("\n")
         return self.Report(diagram=mermaid_lines)
+
+
+class Diagnostics(Action):
+    """Action to run and return diagnostic information using the
+    IDAES diagnostics toolkit.
+    """
+
+    Report = ModelDiagnosticsData
+
+    def __init__(self, runner, **kwargs):
+        super().__init__(runner, **kwargs)
+        self._md = ModelDiagnostics()
+
+    def after_run(self):
+        """Get diagnostics after the run."""
+        self._md.generate(self._runner.model, self._runner.results)
+
+    def set_option(self, **kwargs):
+        """Set an option on the underlying object."""
+        for k, v in kwargs.items():
+            setattr(self._md, k, v)
+
+    def report(self) -> Report:
+        return self._md.data

@@ -323,16 +323,11 @@ def initialization(ctx):
     seq.run(m, init_function)
 
 
-@FS.step("set_solver")
-def set_solver(ctx):
-    ctx.solver = SolverFactory("ipopt")
-
-
 @FS.step("solve_initial")
 def solve(ctx):
     """Perform the initial model solve."""
-    ctx["status"] = results = ctx.solver.solve(ctx.model, tee=ctx["tee"])
-    assert results.solver.termination_condition == TerminationCondition.optimal
+    ctx.solve()
+    assert ctx.results.solver.termination_condition == TerminationCondition.optimal
 
 
 @FS.step("solve_optimization")
@@ -373,5 +368,4 @@ def solve_opt(ctx):
 
     m.fs.product_purity = Constraint(expr=m.fs.purity >= 0.80)
 
-    results = ctx.solver.solve(ctx.model, tee=ctx["tee"])
-    ctx["results"] = results
+    ctx.solve()
