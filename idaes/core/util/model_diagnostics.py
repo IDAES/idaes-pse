@@ -485,7 +485,15 @@ class DiagnosticsToolbox:
 
     """
 
-    def __init__(self, model: BlockData, **kwargs):
+    def __init__(self, model: BlockData, keep_history: bool = False, **kwargs):
+        """Constructor.
+
+        Args:
+            model: Model on which to operate
+            keep_history: If True, keep a history of the inputs/results of
+                calls to a given instance of this class
+            kwargs: Additional arguments passed to the CONFIG block
+        """
         # TODO: In future may want to generalise this to accept indexed blocks
         # However, for now some of the tools do not support indexed blocks
         if not isinstance(model, BlockData):
