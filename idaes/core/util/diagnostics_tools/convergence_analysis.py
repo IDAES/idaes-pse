@@ -39,7 +39,7 @@ from idaes.core.util.parameter_sweep import (
     ParameterSweepBase,
     is_psweepspec,
 )
-from idaes.core.util.model_diagnostics import (
+from idaes.core.util.diagnostics_tools.diagnostics_toolbox import (
     DiagnosticsToolbox,
 )
 

@@ -24,7 +24,7 @@ from pyomo.environ import (
     Var,
 )
 
-from idaes.core.util.model_diagnostics import (
+from idaes.core.util.diagnostics_tools.diagnostics_toolbox import (
     DiagnosticsToolbox,
 )
 
