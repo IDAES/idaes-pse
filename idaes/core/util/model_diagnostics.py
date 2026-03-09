@@ -24,7 +24,6 @@ __author__ = "Alexander Dowling, Douglas Allan, Andrew Lee, Robby Parker, Ben Kn
 
 from pyomo.common.deprecation import relocated_module_attribute
 
-
 relocated_module_attribute(
     "ConstraintTermAnalysisVisitor",
     "idaes.core.util.diagnostics_tools.constraint_term_analysis.ConstraintTermAnalysisVisitor",
