@@ -18,6 +18,8 @@ This module contains a tool for analyzing convergence characteristics of a model
 __author__ = "Alexander Dowling, Douglas Allan, Andrew Lee, Robby Parker, Ben Knueven"
 
 import json
+import sys
+
 from math import isclose
 
 from pyomo.environ import (

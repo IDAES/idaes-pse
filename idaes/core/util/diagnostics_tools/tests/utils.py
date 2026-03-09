@@ -28,6 +28,12 @@ __author__ = "Alex Dowling, Douglas Allan, Andrew Lee"
 
 @pytest.fixture()
 def dummy_problem():
+    """
+    Create a dummy problem for testing purposes.
+
+    Returns:
+        A dummy Pyomo model.
+    """
     m = ConcreteModel()
 
     m.I = Set(initialize=[i for i in range(5)])

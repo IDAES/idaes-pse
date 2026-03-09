@@ -46,6 +46,9 @@ TAB = " " * 4
 
 
 def collect_model_statistics(model):
+    """
+    Collects statistics about the model that are relevant for diagnostics tools.
+    """
     vars_in_constraints = variables_in_activated_constraints_set(model)
     fixed_vars_in_constraints = ComponentSet()
     free_vars_in_constraints = ComponentSet()

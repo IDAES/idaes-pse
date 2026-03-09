@@ -41,7 +41,6 @@ from pyomo.environ import (
 from pyomo.core.expr.visitor import identify_variables
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
 from pyomo.contrib.pynumero.asl import AmplInterface
-from pyomo.contrib.iis import mis
 from pyomo.common.deprecation import deprecation_warning
 
 from idaes.core.util.model_statistics import (

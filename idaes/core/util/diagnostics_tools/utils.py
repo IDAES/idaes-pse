@@ -228,6 +228,16 @@ def extreme_jacobian_columns(
 
 
 def var_in_block(var, block):
+    """
+    Check if a variable is within a specific block.
+
+    Args:
+        var: The variable to check.
+        block: The block to check against.
+
+    Returns:
+        True if the variable is within the block, False otherwise.
+    """
     parent = var.parent_block()
     while parent is not None:
         if parent is block:
@@ -237,7 +247,15 @@ def var_in_block(var, block):
 
 
 def vars_fixed_to_zero(model):
-    # Set of variables fixed to 0
+    """
+    Set of variables fixed to 0.
+
+    Args:
+        model: The model to check.
+
+    Returns:
+        A set of variables fixed to 0.
+    """
     zero_vars = ComponentSet()
     for v in model.component_data_objects(Var, descend_into=True):
         if v.fixed and value(v) == 0:
@@ -246,7 +264,18 @@ def vars_fixed_to_zero(model):
 
 
 def vars_near_zero(model, variable_zero_value_tolerance):
-    # Set of variables with values close to 0
+    """
+    Set of variables with value near 0, as determined by the provided tolerance.
+
+    Args:
+        
+        model: The model to check.
+        variable_zero_value_tolerance: The tolerance to use when determining if a variable is near zero.
+        This is applied to the scaled value of the variable, so should be chosen with scaling in mind.
+
+    Returns:
+        A set of variables with value near 0.
+    """
     near_zero_vars = ComponentSet()
     for v in model.component_data_objects(Var, descend_into=True):
         sf = get_scaling_factor(v, default=1, warning=False)
@@ -256,6 +285,17 @@ def vars_near_zero(model, variable_zero_value_tolerance):
 
 
 def vars_violating_bounds(model, tolerance):
+    """
+    Set of variables with values violating their bounds by more than the provided tolerance.
+
+    Args:
+        model: The model to check.
+        tolerance: The tolerance to use when determining if a variable is violating its bounds.
+        This is applied to the scaled value of the variable, so should be chosen with scaling in mind.
+
+    Returns:
+        A set of variables with values violating their bounds by more than the provided tolerance.
+    """
     violated_bounds = ComponentSet()
     for v in model.component_data_objects(Var, descend_into=True):
         sf = get_scaling_factor(v, default=1, warning=False)
@@ -269,6 +309,15 @@ def vars_violating_bounds(model, tolerance):
 
 
 def vars_with_none_value(model):
+    """
+    Set of variables with value None.
+
+    Args:
+        model: The model to check.
+
+    Returns:
+        A set of variables with value None.
+    """
     none_value = ComponentSet()
     for v in model.component_data_objects(Var, descend_into=True):
         if v.value is None:
@@ -278,6 +327,19 @@ def vars_with_none_value(model):
 
 
 def vars_with_extreme_values(model, large, small, zero):
+    """
+    Set of variables with very large or very small values, as determined by the provided tolerances.
+
+    Tolerances are applied to the scaled value of the variable, so should be chosen with scaling in mind.
+
+    Args:
+        model: The model to check.
+        large: The threshold above which a variable is considered to have a very large value.
+        small: The threshold below which a variable is considered to have a very small value.
+        zero: The threshold below which a variable is considered to have a zero value and thus ignored.
+    Returns:
+        A set of variables with very large or very small values.
+    """
     extreme_vars = ComponentSet()
     for v in model.component_data_objects(Var, descend_into=True):
         sf = get_scaling_factor(v, default=1, warning=False)
