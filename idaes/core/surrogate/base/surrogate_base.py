@@ -31,7 +31,7 @@ class SurrogateTrainer(object):
         training_dataframe,
         validation_dataframe=None,
         input_bounds=None,
-        **settings
+        **settings,
     ):
         """
         This is the base class for IDAES surrogate training objects.

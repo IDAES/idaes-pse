@@ -90,7 +90,7 @@ def initialize_by_element_in_range(
     time_linking_vars=[],
     dae_vars=[],
     max_linking_range=0,
-    **kwargs
+    **kwargs,
 ):
     """Function for solving a square model, time element-by-time element,
     between specified start and end times.
