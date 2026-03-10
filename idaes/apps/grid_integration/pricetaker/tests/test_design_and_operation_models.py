@@ -73,6 +73,15 @@ def test_is_valid_startup_types_invalid_inputs():
 
 
 @pytest.mark.unit
+def test_is_valid_startup_types():
+    """Tests the is_valid_startup_types function"""
+    # Test the correct data structure is returned
+    data = is_valid_startup_types({"warm": 8, "hot": 4, "cold": 12})
+    assert list(data.keys()) == ["hot", "warm", "cold"]
+    assert data == {"hot": 4, "warm": 8, "cold": 12}
+
+
+@pytest.mark.unit
 def test_format_data():
     """Tests the _format_data function"""
     m = ConcreteModel()
@@ -456,15 +465,6 @@ def test_is_valid_data_type_for_storage_model():
         str(_is_valid_data_type_for_storage_model(m.blk.x[1] + m.blk.x[2] + m.blk.x[3]))
         == "blk.x[1] + blk.x[2] + blk.x[3]"
     )
-
-
-@pytest.mark.unit
-def test_is_valid_startup_types():
-    """Tests the is_valid_startup_types function"""
-    # Test the correct data structure is returned
-    data = is_valid_startup_types({"warm": 8, "hot": 4, "cold": 12})
-    assert list(data.keys()) == ["hot", "warm", "cold"]
-    assert data == {"hot": 4, "warm": 8, "cold": 12}
 
 
 @pytest.mark.unit

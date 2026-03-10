@@ -413,6 +413,7 @@ class PriceTakerModel(ConcreteModel):
                     des_block_name=blk.config.design_block_name,
                     minimum_up_time=blk.config.minimum_up_time,
                     minimum_down_time=blk.config.minimum_down_time,
+                    startup_transition_time=blk.config.startup_types,
                 )
 
             if blk.config.capacity is None or blk.config.commodity is None:
