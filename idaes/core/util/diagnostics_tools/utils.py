@@ -268,7 +268,7 @@ def vars_near_zero(model, variable_zero_value_tolerance):
     Set of variables with value near 0, as determined by the provided tolerance.
 
     Args:
-        
+
         model: The model to check.
         variable_zero_value_tolerance: The tolerance to use when determining if a variable is near zero.
         This is applied to the scaled value of the variable, so should be chosen with scaling in mind.

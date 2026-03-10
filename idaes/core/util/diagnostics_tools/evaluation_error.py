@@ -193,6 +193,7 @@ class EvalErrorWalker(StreamBasedExpressionVisitor):
     """
     Expression walker that looks for potential numerical evaluation errors.
     """
+
     def __init__(self, config: ConfigDict):
         super().__init__()
         self._warn_list = list()

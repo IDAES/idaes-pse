@@ -25,7 +25,7 @@ import pytest
 class TestDeprecationPaths:
     """
     Test that all deprecated import paths in model_diagnostics.py still work.
-    
+
     These imports should work but may emit deprecation warnings.
     """
 
@@ -35,6 +35,7 @@ class TestDeprecationPaths:
         from idaes.core.util.diagnostics_tools.constraint_term_analysis import (
             ConstraintTermAnalysisVisitor as NewConstraintTermAnalysisVisitor,
         )
+
         assert ConstraintTermAnalysisVisitor is NewConstraintTermAnalysisVisitor
 
     def test_compute_ill_conditioning_certificate_import(self):
@@ -45,6 +46,7 @@ class TestDeprecationPaths:
         from idaes.core.util.diagnostics_tools.ill_conditioning import (
             compute_ill_conditioning_certificate as new_compute_ill_conditioning_certificate,
         )
+
         assert (
             compute_ill_conditioning_certificate
             is new_compute_ill_conditioning_certificate
@@ -56,6 +58,7 @@ class TestDeprecationPaths:
         from idaes.core.util.diagnostics_tools.deprecated.degeneracy_hunter_legacy import (
             DegeneracyHunter as NewDegeneracyHunter,
         )
+
         assert DegeneracyHunter is NewDegeneracyHunter
 
     def test_degeneracy_hunter2_import(self):
@@ -64,6 +67,7 @@ class TestDeprecationPaths:
         from idaes.core.util.diagnostics_tools.degeneracy_hunter import (
             DegeneracyHunter as NewDegeneracyHunter,
         )
+
         assert DegeneracyHunter2 is NewDegeneracyHunter
 
     def test_dhconfig_import(self):
@@ -72,6 +76,7 @@ class TestDeprecationPaths:
         from idaes.core.util.diagnostics_tools.degeneracy_hunter import (
             DHCONFIG as NewDHCONFIG,
         )
+
         assert DHCONFIG is NewDHCONFIG
 
     def test_diagnostics_toolbox_import(self):
@@ -80,6 +85,7 @@ class TestDeprecationPaths:
         from idaes.core.util.diagnostics_tools.diagnostics_toolbox import (
             DiagnosticsToolbox as NewDiagnosticsToolbox,
         )
+
         assert DiagnosticsToolbox is NewDiagnosticsToolbox
 
     def test_config_import(self):
@@ -88,6 +94,7 @@ class TestDeprecationPaths:
         from idaes.core.util.diagnostics_tools.diagnostics_toolbox import (
             CONFIG as NewCONFIG,
         )
+
         assert CONFIG is NewCONFIG
 
     def test_ipopt_convergence_analysis_import(self):
@@ -96,6 +103,7 @@ class TestDeprecationPaths:
         from idaes.core.util.diagnostics_tools.convergence_analysis import (
             IpoptConvergenceAnalysis as NewIpoptConvergenceAnalysis,
         )
+
         assert IpoptConvergenceAnalysis is NewIpoptConvergenceAnalysis
 
     def test_psweep_runner_validator_import(self):
@@ -104,6 +112,7 @@ class TestDeprecationPaths:
         from idaes.core.util.diagnostics_tools.convergence_analysis import (
             psweep_runner_validator as new_psweep_runner_validator,
         )
+
         assert psweep_runner_validator is new_psweep_runner_validator
 
     def test_caconfig_import(self):
@@ -112,6 +121,7 @@ class TestDeprecationPaths:
         from idaes.core.util.diagnostics_tools.convergence_analysis import (
             CACONFIG as NewCACONFIG,
         )
+
         assert CACONFIG is NewCACONFIG
 
     def test_ipopt_solve_halt_on_error_import(self):
@@ -120,6 +130,7 @@ class TestDeprecationPaths:
         from idaes.core.util.diagnostics_tools.ipopt_halt_on_error import (
             ipopt_solve_halt_on_error as new_ipopt_solve_halt_on_error,
         )
+
         assert ipopt_solve_halt_on_error is new_ipopt_solve_halt_on_error
 
     def test_get_valid_range_of_component_import(self):
@@ -128,6 +139,7 @@ class TestDeprecationPaths:
         from idaes.core.util.diagnostics_tools.bounds import (
             get_valid_range_of_component as new_get_valid_range_of_component,
         )
+
         assert get_valid_range_of_component is new_get_valid_range_of_component
 
     def test_list_components_with_values_outside_valid_range_import(self):
@@ -138,6 +150,7 @@ class TestDeprecationPaths:
         from idaes.core.util.diagnostics_tools.bounds import (
             list_components_with_values_outside_valid_range as new_list_components_with_values_outside_valid_range,
         )
+
         assert (
             list_components_with_values_outside_valid_range
             is new_list_components_with_values_outside_valid_range
@@ -149,6 +162,7 @@ class TestDeprecationPaths:
         from idaes.core.util.diagnostics_tools.bounds import (
             set_bounds_from_valid_range as new_set_bounds_from_valid_range,
         )
+
         assert set_bounds_from_valid_range is new_set_bounds_from_valid_range
 
     def test_svd_toolbox_import(self):
@@ -157,6 +171,7 @@ class TestDeprecationPaths:
         from idaes.core.util.diagnostics_tools.svd_toolbox import (
             SVDToolbox as NewSVDToolbox,
         )
+
         assert SVDToolbox is NewSVDToolbox
 
     def test_svdconfig_import(self):
@@ -165,6 +180,7 @@ class TestDeprecationPaths:
         from idaes.core.util.diagnostics_tools.svd_toolbox import (
             SVDCONFIG as NewSVDCONFIG,
         )
+
         assert SVDCONFIG is NewSVDCONFIG
 
     def test_svd_callback_validator_import(self):
@@ -173,6 +189,7 @@ class TestDeprecationPaths:
         from idaes.core.util.diagnostics_tools.svd_toolbox import (
             svd_callback_validator as new_svd_callback_validator,
         )
+
         assert svd_callback_validator is new_svd_callback_validator
 
     def test_svd_dense_import(self):
@@ -181,6 +198,7 @@ class TestDeprecationPaths:
         from idaes.core.util.diagnostics_tools.svd_toolbox import (
             svd_dense as new_svd_dense,
         )
+
         assert svd_dense is new_svd_dense
 
     def test_svd_sparse_import(self):
@@ -189,6 +207,7 @@ class TestDeprecationPaths:
         from idaes.core.util.diagnostics_tools.svd_toolbox import (
             svd_sparse as new_svd_sparse,
         )
+
         assert svd_sparse is new_svd_sparse
 
     def test_check_parallel_jacobian_import(self):
@@ -197,6 +216,7 @@ class TestDeprecationPaths:
         from idaes.core.util.diagnostics_tools.utils import (
             check_parallel_jacobian as new_check_parallel_jacobian,
         )
+
         assert check_parallel_jacobian is new_check_parallel_jacobian
 
 
