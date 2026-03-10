@@ -10,11 +10,10 @@ The IDAES toolset contains a number of utility functions which can be useful for
     diagnostics/svd_toolbox
     diagnostics/degeneracy_hunter
     diagnostics/degeneracy_hunter_legacy
-
-Other Methods
-^^^^^^^^^^^^^
-
-.. automodule:: idaes.core.util.model_diagnostics
-    :exclude-members: DegeneracyHunter, DiagnosticsToolbox, SVDToolbox, DegeneracyHunter2, svd_dense, svd_sparse
-    :members:
-
+    diagnostics/bounds_analysis
+    diagnostics/constraint_analysis
+    diagnostics/convergence_analysis
+    diagnostics/evaluation_error
+    diagnostics/ill_conditioning
+    diagnostics/ipopt_halt_on_error
+    diagnostics/util_funcs

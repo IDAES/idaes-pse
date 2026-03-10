@@ -1,6 +1,6 @@
 Degeneracy Hunter
 =================
 
-.. autoclass:: idaes.core.util.model_diagnostics.DegeneracyHunter2
+.. autoclass:: idaes.core.util.diagnostics_tools.degeneracy_hunter.DegeneracyHunter
     :members:
 
