@@ -17,6 +17,7 @@ This module contains a collection of tools for diagnosing modeling issues.
 
 __author__ = "Alexander Dowling, Douglas Allan, Andrew Lee, Robby Parker, Ben Knueven"
 
+from enum import StrEnum
 from operator import itemgetter
 import sys
 from inspect import signature
@@ -134,6 +135,7 @@ from idaes.core.util.model_diagnostics_data import (
     ReportSectionData,
     StructuralIssuesData,
     TextListData,
+    VariableListData,
 )
 import idaes.logger as idaeslog
 
@@ -453,6 +455,18 @@ DHCONFIG.declare(
 )
 
 
+class VariableConditions(StrEnum):
+    external = "are external variables that appear in constraints"
+    unused = "do not appear in any activated constraints"
+    fixed_to_zero = "are fixed to zero"
+    at_or_outside_bounds = "have values that fall at or outside their bounds"
+    with_none_value = "have a value of none"
+    value_near_zero = "have a value near zero"
+    extreme_values = "have extreme values"
+    near_bounds = "have values close to their bounds"
+    extreme_jacobians = "corresponding to Jacobian columns with extreme norms"
+
+
 @document_kwargs_from_configdict(CONFIG)
 class DiagnosticsToolbox:
     """
@@ -528,182 +542,107 @@ class DiagnosticsToolbox:
         """
         return self._model
 
-    def _display_report_section(self, section_data: ReportSectionData, stream=None):
-        section_data.display(stream=stream, max_str_length=MAX_STR_LENGTH, tab=TAB)
+    #    def _display_report_section(self, section_data: ReportSectionData, stream=None):
+    #       section_data.display(stream=stream, max_str_length=MAX_STR_LENGTH, tab=TAB)
 
-    def compute_external_variables(self) -> TextListData:
-        ext_vars = []
-        for v in variables_in_activated_constraints_set(self._model):
-            if not _var_in_block(v, self._model):
-                ext_vars.append(v.name)
-        return TextListData(entries=ext_vars)
-
-    def display_external_variables(self, stream=None):
-        """
-        Prints a list of variables that appear within activated Constraints in the
-        model but are not contained within the model themselves.
+    def compute_variables(self, cond: VariableConditions) -> VariableListData:
+        """Select variables meeting various conditions and return as Pydantic object.
 
         Args:
-            stream: an I/O object to write the list to (default = stdout)
+            cond: Selected variable conditions (enumeration)
 
         Returns:
-            None
-
+            Selected variables and associated metadata
         """
-        data = self.compute_external_variables()
-        section = ReportSectionData(
-            lines_list=data.entries,
-            title="The following external variable(s) appear in constraints within the model:",
-            header="=",
-            footer="=",
-        )
-        self._display_report_section(section, stream=stream)
-
-    def compute_unused_variables(self) -> TextListData:
-        return TextListData(
-            entries=[
+        desc = str(cond)  # default description
+        details, values = None, None
+        if cond == VariableConditions.external:
+            cvars = variables_in_activated_constraints_set(self._model)
+            variables = [v.name for v in cvars if not _var_in_block(v, self._model)]
+        elif cond == VariableConditions.unused:
+            variables = [
                 str(v) for v in variables_not_in_activated_constraints_set(self._model)
             ]
-        )
-
-    def display_unused_variables(self, stream=None):
-        """
-        Prints a list of variables that do not appear in any activated Constraints.
-
-        Args:
-            stream: an I/O object to write the list to (default = stdout)
-
-        Returns:
-            None
-
-        """
-        data = self.compute_unused_variables()
-        section = ReportSectionData(
-            lines_list=data.entries,
-            title="The following variable(s) do not appear in any activated constraints within the model:",
-            header="=",
-            footer="=",
-        )
-        self._display_report_section(section, stream=stream)
-
-    def compute_variables_fixed_to_zero(self) -> TextListData:
-        return TextListData(entries=[str(v) for v in _vars_fixed_to_zero(self._model)])
-
-    def display_variables_fixed_to_zero(self, stream=None):
-        """
-        Prints a list of variables that are fixed to an absolute value of 0.
-
-        Args:
-            stream: an I/O object to write the list to (default = stdout)
-
-        Returns:
-            None
-
-        """
-        data = self.compute_variables_fixed_to_zero()
-        section = ReportSectionData(
-            lines_list=data.entries,
-            title="The following variable(s) are fixed to zero:",
-            header="=",
-            footer="=",
-        )
-        self._display_report_section(section, stream=stream)
-
-    def compute_variables_at_or_outside_bounds(self) -> NamedValueListData:
-        return NamedValueListData(
-            entries=[
-                NamedValueData(
-                    name=f"{v.name} ({'fixed' if v.fixed else 'free'})",
-                    value=value(v),
-                    details=f"bounds={v.bounds}",
-                )
-                for v in _vars_violating_bounds(
-                    self._model,
-                    tolerance=self.config.variable_bounds_violation_tolerance,
-                )
-            ]
-        )
-
-    def display_variables_at_or_outside_bounds(self, stream=None):
-        """
-        Prints a list of variables with values that fall at or outside the bounds
-        on the variable.
-
-        Args:
-            stream: an I/O object to write the list to (default = stdout)
-
-        Returns:
-            None
-
-        """
-        data = self.compute_variables_at_or_outside_bounds()
-        section = ReportSectionData(
-            lines_list=[e.format_line(include_value_label=True) for e in data.entries],
-            title="The following variable(s) have values at or outside their bounds "
-            f"(tol={self.config.variable_bounds_violation_tolerance:.1E}):",
-            header="=",
-            footer="=",
-        )
-        self._display_report_section(section, stream=stream)
-
-    def compute_variables_with_none_value(self) -> TextListData:
-        return TextListData(
-            entries=[str(v) for v in _vars_with_none_value(self._model)]
-        )
-
-    def display_variables_with_none_value(self, stream=None):
-        """
-        Prints a list of variables with a value of None.
-
-        Args:
-            stream: an I/O object to write the list to (default = stdout)
-
-        Returns:
-            None
-
-        """
-        data = self.compute_variables_with_none_value()
-        section = ReportSectionData(
-            lines_list=data.entries,
-            title="The following variable(s) have a value of None:",
-            header="=",
-            footer="=",
-        )
-        self._display_report_section(section, stream=stream)
-
-    def compute_variables_with_none_value_in_activated_constraints(
-        self,
-    ) -> TextListData:
-        return TextListData(
-            entries=[
-                f"{v.name}"
+        elif cond == VariableConditions.fixed_to_zero:
+            variables = [str(v) for v in _vars_fixed_to_zero(self._model)]
+        elif cond == VariableConditions.at_or_outside_bounds:
+            variables, details = [], []
+            for v in _vars_violating_bounds(
+                self._model,
+                tolerance=self.config.variable_bounds_violation_tolerance,
+            ):
+                variables.append(f"{v.name} ({'fixed' if v.fixed else 'free'})")
+                details.append(f"bounds={v.bounds}")
+        elif cond == VariableConditions.with_none_value:
+            variables = [
+                v.name
                 for v in variables_with_none_value_in_activated_equalities_set(
                     self._model
                 )
             ]
+        elif cond == VariableConditions.value_near_zero:
+            variables, values = [], []
+            for v in _vars_near_zero(
+                self._model, self.config.variable_zero_value_tolerance
+            ):
+                variables.append(v.name)
+                values.append(value(v))
+        elif cond == VariableConditions.extreme_values:
+            desc += f" (<{self.config.variable_small_value_tolerance:.1E} or "
+            desc += f"> {self.config.variable_large_value_tolerance:.1E})"
+            variables, values = [], []
+            for v in _vars_with_extreme_values(
+                model=self._model,
+                large=self.config.variable_large_value_tolerance,
+                small=self.config.variable_small_value_tolerance,
+                zero=self.config.variable_zero_value_tolerance,
+            ):
+                variables.append(v.name)
+                values.append(value(v))
+        elif cond == VariableConditions.near_bounds:
+            desc += f" (abs={self.config.variable_bounds_absolute_tolerance:.1E}, "
+            desc += f"rel={self.config.variable_bounds_relative_tolerance:.1E})"
+            variables, values = [], []
+            for v in variables_near_bounds_set(
+                self._model,
+                abs_tol=self.config.variable_bounds_absolute_tolerance,
+                rel_tol=self.config.variable_bounds_relative_tolerance,
+            ):
+                variables.append(v.name)
+                values.append(value(v))
+        elif cond == VariableConditions.extreme_jacobians:
+            self._verify_active_variables_initialized()
+            desc += f" (<{self.config.jacobian_small_value_caution:.1E} or "
+            desc += f">{self.config.jacobian_large_value_caution:.1E})"
+            # compute the extreme jacobians
+            jac, nlp = get_jacobian(self._model)
+            xjc = _extreme_jacobian_columns(
+                jac=jac,
+                nlp=nlp,
+                large=self.config.jacobian_large_value_caution,
+                small=self.config.jacobian_small_value_caution,
+            )
+            xjc.sort(key=lambda i: abs(log(i[0])), reverse=True)
+            # place in output object
+            variables, values = [], []
+            for v in xjc:
+                variables.append(v[1].name)
+                values.append(format(v[0], ".3E"))
+
+        # Fill out optional parts, if missing
+        if details is None:
+            details = [""] * len(variables)
+        if values is None:
+            values = [None] * len(variables)
+
+        # return as Pydantic data object
+        return VariableListData(
+            tag=cond.value, description=desc, variables=variables, details=details
         )
 
-    def display_variables_with_none_value_in_activated_constraints(self, stream=None):
-        """
-        Prints a list of variables with values of None that are present in the
-        mathematical program generated to solve the model. This list includes only
-        variables in active constraints that are reachable through active blocks.
-
-        Args:
-            stream: an I/O object to write the list to (default = stdout)
-
-        Returns:
-            None
-
-        """
-        data = self.compute_variables_with_none_value_in_activated_constraints()
-        section = ReportSectionData(
-            lines_list=data.entries,
-            title="The following variable(s) have a value of None:",
-            header="=",
-            footer="=",
-        )
-        self._display_report_section(section, stream=stream)
+    def display_variables(self, t: VariableConditions, stream=None, **kwargs):
+        v = self.compute_external_variables(t)
+        v.display(stream=stream, **kwargs)
 
     def _verify_active_variables_initialized(self, stream=None):
         """
@@ -718,118 +657,11 @@ class DiagnosticsToolbox:
         if n_uninit > 0:
             raise RuntimeError(
                 f"Found {n_uninit} variables with a value of None in the mathematical "
-                "program generated by the model. They must be initialized with non-None "
-                "values before numerical analysis can proceed. Run "
-                + self.display_variables_with_none_value_in_activated_constraints.__name__
-                + " to display a list of these variables."
+                f"program generated by the model. They must be initialized with non-None "
+                f"values before numerical analysis can proceed. Run "
+                f"display_variables(VariableConditions.with_none_value) "
+                f"to display a list of these variables."
             )
-
-    def compute_variables_with_value_near_zero(self) -> NamedValueListData:
-        return NamedValueListData(
-            entries=[
-                NamedValueData(name=v.name, value=value(v))
-                for v in _vars_near_zero(
-                    self._model, self.config.variable_zero_value_tolerance
-                )
-            ]
-        )
-
-    def display_variables_with_value_near_zero(self, stream=None):
-        """
-        Prints a list of variables with a value close to zero. The tolerance
-        for determining what is close to zero can be set in the class configuration
-        options.
-
-        Args:
-            stream: an I/O object to write the list to (default = stdout)
-
-        Returns:
-            None
-
-        """
-        data = self.compute_variables_with_value_near_zero()
-        section = ReportSectionData(
-            lines_list=[e.format_line(include_value_label=True) for e in data.entries],
-            title=f"The following variable(s) have a value close to zero "
-            f"(tol={self.config.variable_zero_value_tolerance:.1E}):",
-            header="=",
-            footer="=",
-        )
-        self._display_report_section(section, stream=stream)
-
-    def compute_variables_with_extreme_values(self) -> NamedValueListData:
-        return NamedValueListData(
-            entries=[
-                NamedValueData(name=i.name, value=value(i))
-                for i in _vars_with_extreme_values(
-                    model=self._model,
-                    large=self.config.variable_large_value_tolerance,
-                    small=self.config.variable_small_value_tolerance,
-                    zero=self.config.variable_zero_value_tolerance,
-                )
-            ]
-        )
-
-    def display_variables_with_extreme_values(self, stream=None):
-        """
-        Prints a list of variables with extreme values.
-
-        Tolerances can be set in the class configuration options.
-
-        Args:
-            stream: an I/O object to write the list to (default = stdout)
-
-        Returns:
-            None
-
-        """
-        data = self.compute_variables_with_extreme_values()
-        section = ReportSectionData(
-            lines_list=[e.format_line() for e in data.entries],
-            title=f"The following variable(s) have extreme values "
-            f"(<{self.config.variable_small_value_tolerance:.1E} or "
-            f"> {self.config.variable_large_value_tolerance:.1E}):",
-            header="=",
-            footer="=",
-        )
-        self._display_report_section(section, stream=stream)
-
-    def compute_variables_near_bounds(self) -> NamedValueListData:
-        return NamedValueListData(
-            entries=[
-                NamedValueData(
-                    name=v.name, value=value(v), details=f"bounds={v.bounds}"
-                )
-                for v in variables_near_bounds_set(
-                    self._model,
-                    abs_tol=self.config.variable_bounds_absolute_tolerance,
-                    rel_tol=self.config.variable_bounds_relative_tolerance,
-                )
-            ]
-        )
-
-    def display_variables_near_bounds(self, stream=None):
-        """
-        Prints a list of variables with values close to their bounds. Tolerance can
-        be set in the class configuration options.
-
-        Args:
-            stream: an I/O object to write the list to (default = stdout)
-
-        Returns:
-            None
-
-        """
-        data = self.compute_variables_near_bounds()
-        section = ReportSectionData(
-            lines_list=[e.format_line(include_value_label=True) for e in data.entries],
-            title=f"The following variable(s) have values close to their bounds "
-            f"(abs={self.config.variable_bounds_absolute_tolerance:.1E}, "
-            f"rel={self.config.variable_bounds_relative_tolerance:.1E}):",
-            header="=",
-            footer="=",
-        )
-        self._display_report_section(section, stream=stream)
 
     def compute_components_with_inconsistent_units(self) -> TextListData:
         return TextListData(
@@ -1061,50 +893,6 @@ class DiagnosticsToolbox:
             lines.append("")
         section = ReportSectionData(
             title=data.title, lines_list=lines, header=data.header, footer=data.footer
-        )
-        self._display_report_section(section, stream=stream)
-
-    def compute_variables_with_extreme_jacobians(self) -> NamedValueListData:
-        self._verify_active_variables_initialized()
-
-        jac, nlp = get_jacobian(self._model)
-        xjc = _extreme_jacobian_columns(
-            jac=jac,
-            nlp=nlp,
-            large=self.config.jacobian_large_value_caution,
-            small=self.config.jacobian_small_value_caution,
-        )
-        xjc.sort(key=lambda i: abs(log(i[0])), reverse=True)
-
-        return NamedValueListData(
-            entries=[
-                NamedValueData(name=i[1].name, value=i[0], value_format=".3E")
-                for i in xjc
-            ]
-        )
-
-    def display_variables_with_extreme_jacobians(self, stream=None):
-        """
-        Prints the variables corresponding to columns in the Jacobian with extreme
-        L2 norms. This often indicates poorly scaled variables.
-
-        Tolerances can be set via the DiagnosticsToolbox config.
-
-        Args:
-            stream: an I/O object to write the output to (default = stdout)
-
-        Returns:
-            None
-
-        """
-        data = self.compute_variables_with_extreme_jacobians()
-        section = ReportSectionData(
-            lines_list=[e.format_line() for e in data.entries],
-            title=f"The following variable(s) correspond to Jacobian columns with extreme norms"
-            f"(<{self.config.jacobian_small_value_caution:.1E} or"
-            f">{self.config.jacobian_large_value_caution:.1E}):",
-            header="=",
-            footer="=",
         )
         self._display_report_section(section, stream=stream)
 

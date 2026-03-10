@@ -14,8 +14,67 @@
 """Pydantic data structures for model diagnostics reporting."""
 
 import sys
-
 from pydantic import BaseModel, Field
+
+
+class Printable:
+    """Interface class to pretty-print the contents to the console.
+
+    Subclasses should implement `get_lines()` to return a title
+    and list of lines for the content.
+    """
+
+    def print(self, stream=None, indent=4, width=80):
+        # use stdout if no stream is given
+        if stream is None:
+            stream = sys.stdout
+        # setup
+        tab = " " * indent
+
+        # write top divider
+        stream.write("=" * width)
+        stream.write("\n")
+
+        # get title and content
+        title, lines = self.get_lines()
+
+        # write title and divider
+        if title:
+            stream.write(title)
+            stream.write("\n")
+            stream.write("-" * width)
+            stream.write("\n")
+
+        # write content
+        for line in lines:
+            stream.write(f"{tab}{line}\n")
+
+        # write bottom divider
+        stream.write("=" * width)
+        stream.write("\n")
+
+    def get_lines(self) -> tuple[str, list[str]]:
+        return "", []  # override in subclasses
+
+
+class VariableListData(BaseModel, Printable):
+    tag: str
+    description: str
+    #: Names of variables
+    variables: list[str] = Field(default_factory=list)
+    #: Optional values of variables
+    values: list[float] = Field(default_factory=list)
+    #: Optional descriptive details for variables
+    details: list[str] = Field(default_factory=list)
+
+    def get_lines(self) -> list[str]:
+        title = "Model variables that {description}"
+        lines = []
+        for i in range(len(self.variables)):
+            spc = " " if self.details[i] else ""
+            line = f"{self.variables[i]}{spc}{self.details[i]}"
+            lines.append(line)
+        return title, lines
 
 
 class ReportSectionData(BaseModel):
