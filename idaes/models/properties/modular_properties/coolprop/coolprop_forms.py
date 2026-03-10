@@ -13,11 +13,11 @@
 """
 This module contains functions for constructing CoolProp expressions.
 """
+
 from pyomo.environ import exp, units as pyunits, Var
 from pyomo.core.expr.calculus.derivatives import Modes, differentiate
 
 from idaes.core.util.exceptions import ConfigurationError
-
 
 # TODO : Only have temperature derivative expression for exponential_tau form
 # TODO : Add other derivative forms as/if required

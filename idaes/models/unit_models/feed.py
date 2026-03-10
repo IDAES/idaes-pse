@@ -13,6 +13,7 @@
 """
 Standard IDAES Feed block.
 """
+
 # Import Pyomo libraries
 from pyomo.environ import Block, Reference
 from pyomo.common.config import ConfigBlock, ConfigValue, In
@@ -24,7 +25,6 @@ from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.logger as idaeslog
 from idaes.core.initialization import ModularInitializerBase
 from idaes.core.scaling import CustomScalerBase
-
 
 __author__ = "Andrew Lee, Douglas Allan"
 
@@ -169,7 +169,7 @@ see property package for documentation.}""",
             doc="Material properties in feed",
             defined_state=True,
             has_phase_equilibrium=False,
-            **self.config.property_package_args
+            **self.config.property_package_args,
         )
 
         # Add references to all state vars

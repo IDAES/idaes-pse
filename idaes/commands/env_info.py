@@ -10,8 +10,8 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-"""Get info about the environment IDAES is running in and the IDAES version
-"""
+"""Get info about the environment IDAES is running in and the IDAES version"""
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 

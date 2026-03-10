@@ -15,6 +15,7 @@ Sub-methods for eNRTL activity coefficient method.
 
 Includes temperature dependence rules for alpha and tau
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 

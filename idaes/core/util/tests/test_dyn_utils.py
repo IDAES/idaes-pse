@@ -28,7 +28,7 @@ from pyomo.common.collections import ComponentSet
 import idaes.logger as idaeslog
 from idaes.core.util.dyn_utils import *
 
-__author__ = "Robert Parker"
+__author__ = "Robert Parker, Douglas Allan"
 
 
 @pytest.mark.unit
@@ -392,3 +392,60 @@ def test_get_implicit_index_of_set():
 
     with pytest.raises(ValueError) as exc_test:
         get_implicit_index_of_set(m.b1.b2["e", 5, 2].b3.v2[1], m.s1)
+
+
+@pytest.mark.unit
+def test_copy_values_from_point():
+    m = ConcreteModel()
+    m.time = Set(initialize=[1, 2, 3, 4, 5])
+
+    def initialize_v1(b, t):
+        return t
+
+    m.v1 = Var(m.time, initialize=initialize_v1)
+    m.v2 = Var(initialize=1)
+
+    def initialize_v3(b):
+        i = b.local_name[-2]
+        if i == "a":
+            return -13
+        if i == "b":
+            return 47
+
+    def initialize_v4(b):
+        t = float(b.local_name[-2])
+        return 5 - t
+
+    def initialize_v5(b):
+        t = float(b.local_name[-2])
+        return 3 * t
+
+    @m.Block(["a", "b"])
+    def b1(b, i):
+        b.v3 = Var(initialize=initialize_v3)
+
+        @b.Block(m.time)
+        def b2(b, t):
+            b.v4 = Var(initialize=initialize_v4)
+
+        @b.Block()
+        def b4(b):
+            b.v6 = Var(initialize=31)
+
+    @m.Block(m.time)
+    def b3(b, t):
+        b.v5 = Var(initialize=initialize_v5)
+
+    m.b1["b"].b4.v6.value = 71
+    m.b1["b"].b2[2].v4.value = 53
+    copy_values_from_point(m, m.time, 2)
+    for t in m.time:
+        assert m.v1[t].value == m.v1[2].value == 2
+        assert m.b1["a"].b2[t].v4.value == m.b1["a"].b2[2].v4.value == 3
+        assert m.b1["b"].b2[t].v4.value == m.b1["b"].b2[2].v4.value == 53
+        assert m.b3[t].v5.value == m.b3[2].v5.value == 6
+    assert m.v2.value == 1
+    assert m.b1["a"].v3.value == -13
+    assert m.b1["b"].v3.value == 47
+    assert m.b1["a"].b4.v6.value == 31
+    assert m.b1["b"].b4.v6.value == 71

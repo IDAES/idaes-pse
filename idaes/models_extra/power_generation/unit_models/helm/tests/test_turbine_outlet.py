@@ -15,6 +15,7 @@ Tests for turbine outlet model.
 
 Author: John Eslick
 """
+
 import pytest
 import re
 

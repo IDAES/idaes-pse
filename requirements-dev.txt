@@ -4,11 +4,12 @@
 # Newer sphinx needed for proper type hint support in docstrings
 sphinx>=3.0.0,!=8.2.0
 sphinxcontrib-napoleon>=0.5.0
-# sphinx-argparse 0.4.0 is the last version to support Python 3.9
-# see https://sphinx-argparse.readthedocs.io/en/latest/changelog.html#id3
-sphinx-argparse==0.4.0
+sphinx-argparse==0.5.2
 sphinx-book-theme<=1.1.2,>=1.0.0
 sphinx-copybutton==0.5.2
+nbsphinx  # for Jupyter Notebooks in the docs
+myst-parser  # for MystMD
+sphinx-autodoc2>=0.5.0 # for autodoc2
 
 ### testing and linting
 # TODO/NOTE pytest is specified as a dependency in setup.py, but we might want to pin a specific version here
@@ -18,7 +19,7 @@ pytest-cov
 # @lbianchi-lbl: both pylint and astroid should be tightly pinned; see .pylint/idaes_transform.py for more info
 pylint==3.3.9
 astroid==3.3.11
-black==24.3.0
+black==26.1.0
 # pre-commit install, manage, and run pre-commit hooks
 pre-commit
 

@@ -67,6 +67,7 @@ The surrogate models are typically a function of:
 * Secondary air temperature
 
 """
+
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, Bool
 

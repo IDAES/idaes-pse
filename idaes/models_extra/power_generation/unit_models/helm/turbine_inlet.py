@@ -17,6 +17,7 @@ Liese, (2014). "Modeling of a Steam Turbine Including Partial Arc Admission
     for Use in a Process Simulation Software Environment." Journal of Engineering
     for Gas Turbines and Power. v136.
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
 
@@ -31,7 +32,6 @@ from idaes.core.util import from_json, to_json, StoreSpec
 from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
-
 
 _log = idaeslog.getLogger(__name__)
 

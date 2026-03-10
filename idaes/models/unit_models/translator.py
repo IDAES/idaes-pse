@@ -13,6 +13,7 @@
 """
 Generic template for a translator block.
 """
+
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 
@@ -172,7 +173,7 @@ see property package for documentation.}""",
             doc="Material properties in incoming stream",
             defined_state=True,
             has_phase_equilibrium=False,
-            **self.config.inlet_property_package_args
+            **self.config.inlet_property_package_args,
         )
 
         self.properties_out = self.config.outlet_property_package.build_state_block(
@@ -180,7 +181,7 @@ see property package for documentation.}""",
             doc="Material properties in outgoing stream",
             defined_state=self.config.outlet_state_defined,
             has_phase_equilibrium=self.config.has_phase_equilibrium,
-            **self.config.outlet_property_package_args
+            **self.config.outlet_property_package_args,
         )
 
         # Add outlet port

@@ -19,6 +19,7 @@ Main assumptions:
 
 Created August 27, 2020
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 

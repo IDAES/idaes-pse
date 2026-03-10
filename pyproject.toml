@@ -1,57 +1,62 @@
 [build-system]
 build-backend = "setuptools.build_meta"
-requires = [
-  "setuptools >= 64",
-  "setuptools_scm >= 8",
-]
+requires = ["setuptools >= 64", "setuptools_scm >= 8"]
 
 [project]
 name = "idaes-pse"
-description="IDAES Process Systems Engineering Framework"
+description = "IDAES Process Systems Engineering Framework"
 readme = { file = "README.md", content-type = "text/markdown" }
-maintainers = [
-{ name = "Keith Beattie", email = "ksbeattie@lbl.gov" }
-]
+maintainers = [{ name = "Keith Beattie", email = "ksbeattie@lbl.gov" }]
 license = { text = "BSD" }
 urls = { Homepage = "https://idaes.org" }
-classifiers=[
-    "Development Status :: 5 - Production/Stable",
-    "Intended Audience :: End Users/Desktop",
-    "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: BSD License",
-    "Natural Language :: English",
-    "Operating System :: MacOS",
-    "Operating System :: Microsoft :: Windows",
-    "Operating System :: Unix",
-    "Programming Language :: Python",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
-    "Programming Language :: Python :: Implementation :: CPython",
-    "Topic :: Scientific/Engineering :: Mathematics",
-    "Topic :: Scientific/Engineering :: Chemistry",
-    "Topic :: Software Development :: Libraries :: Python Modules",
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: End Users/Desktop",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: BSD License",
+  "Natural Language :: English",
+  "Operating System :: MacOS",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: Unix",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Topic :: Scientific/Engineering :: Mathematics",
+  "Topic :: Scientific/Engineering :: Chemistry",
+  "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-keywords=["IDAES", "idaes-pse", "energy systems", "chemical engineering", "process modeling"]
-version = "2.11.0dev0"
-# dynamic = ["version"]
+keywords = [
+  "IDAES",
+  "idaes-pse",
+  "energy systems",
+  "chemical engineering",
+  "process modeling",
+]
+# Minimum python version is not set since legacy projects or other edge cases may use or rely unsupported versions. 
+# We will rely on classifiers and documentation to communicate supported versions.
+# requires-python = ">=3.10"
+
+version = "2.12.0dev0"
+
 dependencies = [
-  "pyomo >= 6.9.3",
-  "pint >= 0.24.1", # required to use Pyomo units. Pint 0.24.1 needed for Python 3.9 support
+  "pyomo >= 6.10.0",
+  "pint >= 0.24.1",   # required to use Pyomo units. Pint 0.24.1 needed for Python 3.9 support,
   "networkx", # required to use Pyomo network
-  "numpy>=1,<3", 
+  "numpy>=1,<3",
   "pandas!=2.1.0,<3", # pandas constraint added on 2023-08-30 b/c bug in v2.1. See IDAES/idaes-pse#1253
   "scipy",
-  "sympy", # idaes.core.util.expr_doc
+  "sympy",            # idaes.core.util.expr_doc
   "matplotlib",
   "click>=8",
+  "pydantic",         # used by core.util.structfs, at a minimum
 ]
 
 [project.optional-dependencies]
-ui = ["idaes-ui",]
+ui = ["idaes-ui", "idaes-connectivity"]
 coolprop = [
   "coolprop>=7.0", # idaes.generic_models.properties.general.coolprop
 ]
@@ -59,15 +64,11 @@ grid = [
   "gridx-prescient>=2.2.1", # idaes.tests.prescient
 ]
 omlt = [
-  "omlt==1.1", # fix the version for now as package evolves
+  "omlt==1.1",  # fix the version for now as package evolves
   "tensorflow",
   "onnx",
 ]
-testing = [
-  "pytest",
-  "addheader",
-  "pyyaml",
-]
+testing = ["pytest", "addheader", "pyyaml"]
 
 # this will install all optional dependencies
 all = ["idaes-pse[ui,grid,omlt,coolprop]"]
@@ -79,8 +80,8 @@ all = ["idaes-pse[ui,grid,omlt,coolprop]"]
 # version_scheme = "only-version"
 
 [tool.setuptools]
-zip-safe = false                     
-include-package-data = true   
+zip-safe = false
+include-package-data = true
 
 
 [tool.pylint.main]
@@ -91,32 +92,33 @@ include = ["idaes*"]
 
 [tool.setuptools.package-data]
 "*" = [
-    "*.template",
-    "*.json",
-    "*.yaml",
-    "*.svg",
-    "*.png",
-    "*.jpg",
-    "*.csv",
-    "*.ipynb",
-    "*.txt",
-    "*.js",
-    "*.css",
-    "*.html",
-    "*.json.gz",
-    "*.dat",
-    "*.h5",
-    "*.pb",  # for Keras Surrogate folder
-    "*.data-00000-of-00001",  # for Keras Surrogate folder
-    "*.index",  # for Keras Surrogate folder
-    "*.trc",
-    "*.nl",
-    "*.keras",  # idaes/core/surrogate/tests/data/keras_models
-    "*.onnx",
+  "*.template",
+  "*.json",
+  "*.yaml",
+  "*.svg",
+  "*.png",
+  "*.jpg",
+  "*.csv",
+  "*.ipynb",
+  "*.txt",
+  "*.js",
+  "*.css",
+  "*.html",
+  "*.json.gz",
+  "*.dat",
+  "*.h5",
+  "*.pb",                  # for Keras Surrogate folder
+  "*.data-00000-of-00001", # for Keras Surrogate folder
+  "*.index",               # for Keras Surrogate folder
+  "*.trc",
+  "*.nl",
+  "*.keras",               # idaes/core/surrogate/tests/data/keras_models
+  "*.onnx",
 ]
 
 [project.scripts]
 idaes = "idaes.commands.base:command_base"
+idaes-run = "idaes.commands.run_flowsheet:main"
 
 [project.entry-points."idaes.flowsheets"]
 "0D_Fixed_Bed_TSA" = "idaes.models_extra.temperature_swing_adsorption.fixed_bed_tsa0d_ui"
@@ -144,6 +146,6 @@ enable = [
 ]
 
 [tool.flake8]
-ignore = ["W293","W291","W503","W504","E203"]
+ignore = ["W293", "W291", "W503", "W504", "E203"]
 exclude = "tests"
 max-line-length = 88

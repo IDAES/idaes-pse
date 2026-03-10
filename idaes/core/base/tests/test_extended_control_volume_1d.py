@@ -15,6 +15,7 @@ Tests for ExtendedControlVolumeBlockData.
 
 Author: Andrew Lee
 """
+
 import pytest
 from pyomo.environ import ConcreteModel, Constraint, units
 from pyomo.util.check_units import assert_units_consistent

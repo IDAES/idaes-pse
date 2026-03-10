@@ -29,6 +29,7 @@ ISRN Chemical Engineering, 2012, doi:10.5402/2012/730154
 
 Author: Andrew Lee
 """
+
 import pyomo.environ as pyo
 
 from idaes.core import AqueousPhase, Solvent, Apparent, Anion, Cation

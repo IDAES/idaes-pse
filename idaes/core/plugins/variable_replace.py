@@ -11,6 +11,7 @@
 # for full copyright and license information.
 #################################################################################
 """Transformation to replace variables with other variables."""
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
@@ -26,7 +27,6 @@ from pyomo.core.base.var import VarData, Var
 from pyomo.core.base.constraint import Constraint
 from pyomo.core.base.expression import Expression
 from pyomo.core.base.objective import Objective
-
 
 __author__ = "John Eslick"
 

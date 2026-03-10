@@ -13,6 +13,7 @@
 """
 Standard IDAES StateJunction model.
 """
+
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
@@ -110,7 +111,7 @@ see property package for documentation.}""",
             doc="Material properties",
             has_phase_equilibrium=False,
             defined_state=True,
-            **self.config.property_package_args
+            **self.config.property_package_args,
         )
 
         # Add Ports

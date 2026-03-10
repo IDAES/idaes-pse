@@ -15,6 +15,7 @@ Base class for custom scaling routines.
 
 Authors: Andrew Lee, Douglas Allan
 """
+
 from __future__ import annotations  # For type hinting with unions using |
 from copy import copy
 
@@ -367,7 +368,7 @@ class CustomScalerBase(ScalerBase):
             sf = self.get_scaling_factor(component)
             if sf is None or overwrite:
                 # If the user told us to overwrite scaling factors, then
-                # accepting a preexisiting scaling factor is not good enough.
+                # accepting a preexisting scaling factor is not good enough.
                 # They need to go manually alter the default entry to
                 # DefaultScalingRecommendation.userInputRecommended
                 raise ValueError(
