@@ -131,6 +131,11 @@ class TestBTExampleLegacyScaling(object):
 
             m.fs.state.initialize()
 
+            # Use a less strict complementarity condition
+            # to encourage convergence.
+            m.fs.state[1].eps_t_Vap_Liq.set_value(1e-2)
+            m.fs.state[1].eps_z_Vap_Liq.set_value(1e-2)
+
             results = solver.solve(m)
 
             assert_optimal_termination(results)

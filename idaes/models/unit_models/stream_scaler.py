@@ -14,6 +14,7 @@
 Unit model to adjust size of streams to represent, for example, a stream being split across several identical units,
 which are then all modeled as a single IDAES unit
 """
+
 from functools import partial
 
 from pyomo.environ import (

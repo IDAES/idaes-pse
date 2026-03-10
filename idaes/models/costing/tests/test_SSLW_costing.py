@@ -19,6 +19,7 @@ Tests for costing package based on methods from:
     Chapter 22. Cost Accounting and Capital Cost Estimation
     22.2 Cost Indexes and Capital Investment
 """
+
 import pytest
 
 from pyomo.environ import (

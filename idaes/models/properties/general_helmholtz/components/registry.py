@@ -10,8 +10,7 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-"""This module provides functions to register and retrieve component information
-"""
+"""This module provides functions to register and retrieve component information"""
 
 _components = {}
 

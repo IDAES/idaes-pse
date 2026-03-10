@@ -15,6 +15,7 @@ Tests for process_base.
 
 Author: Andrew Lee
 """
+
 import pytest
 from io import StringIO
 import types
@@ -145,8 +146,8 @@ Unit : b                                                                   Time:
     Variables: 
 
     Key           : Value  : Units  : Fixed : Bounds
-    Indexed Var 1 : 42.000 : second : False : (None, None)
        Scalar Var : 7.0000 :  meter : False : (None, None)
+    Indexed Var 1 : 42.000 : second : False : (None, None)
 
     Expressions: 
 

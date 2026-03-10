@@ -15,6 +15,7 @@ Methods for cubic equations of state.
 
 Currently only supports liquid and vapor phases
 """
+
 # TODO: Pylint complains about variables with _x names as they are built by other classes
 # pylint: disable=protected-access
 # pylint: disable=missing-function-docstring

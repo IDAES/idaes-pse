@@ -13,6 +13,7 @@
 """
 Base classes for process costing
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
@@ -32,7 +33,6 @@ from idaes.core.util.misc import add_object_reference, StrEnum
 from idaes.core.util.exceptions import ConfigurationError
 
 import idaes.logger as idaeslog
-
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)

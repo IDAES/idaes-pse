@@ -12,6 +12,7 @@ import sphinx_book_theme as theme
 
 # For importing from idaes.<modules..>
 sys.path.insert(0, os.path.abspath(".."))
+sys.path.insert(0, os.path.abspath("."))
 
 
 # -- General configuration ------------------------------------------------
@@ -36,7 +37,24 @@ extensions = [
     "sphinxarg.ext",
     "sphinx.ext.doctest",
     "sphinx_copybutton",
+    "nbsphinx",
+    # MystMD extensions
+    "myst_parser",
+    "autodoc2",
 ]
+
+# Myst autodoc2 (experimental)
+autodoc2_packages = [
+    "../idaes/core/util/structfs",
+]
+autodoc2_output_dir = "reference_guides/core/util"
+autodoc2_render_plugin = "myst"
+autodoc2_docstring_parser_regexes = [
+    # render docstrings in matching files as Markdown
+    ("../idaes/core/util/structfs/.*", "myst"),
+]
+autodoc2_no_index = True
+autodoc2_index_template = None  # don't write index.rst
 
 # Put type hints in the description, not signature
 autodoc_typehints = "description"
@@ -51,7 +69,10 @@ templates_path = ["_templates"]
 # You can specify multiple suffix as a list of string:
 #
 # source_suffix = ['.rst', '.md']
-source_suffix = ".rst"
+source_suffix = {
+    ".rst": "restructuredtext",
+    ".md": "markdown",
+}
 
 # The encoding of source files.
 #
@@ -62,7 +83,7 @@ main_doc = "index"
 
 # General information about the project.
 project = "IDAES"
-copyright = "2016-2024, David Miller et al."
+copyright = "2016-2026, David Miller et al."
 author = "The IDAES project"
 
 
@@ -85,7 +106,14 @@ language = "en"
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This patterns also effect to html_static_path and html_extra_path
-exclude_patterns = ["apidoc/*tests*"]
+exclude_patterns = [
+    "apidoc/*tests*",
+    "../idaes/core/util/structfs",
+    "build",
+    "build/**",
+    "_build",
+    "_build/**",
+]
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False
@@ -139,6 +167,11 @@ intersphinx_mapping = {
     # add links to Pyomo
     "pyomo": ("https://pyomo.readthedocs.io/en/stable/", None),
 }
+
+# nbsphinx notebook execution
+# other options are "never" and "always"
+nbsphinx_execute = "auto"
+
 
 # -- Options for HTML output ----------------------------------------------
 

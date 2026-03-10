@@ -13,6 +13,7 @@
 """
 Base command for 'idaes' commandline script
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
@@ -91,8 +92,7 @@ def command_base(verbose, quiet):
 
 @command_base.command(help="Show IDAES copyright information")
 def copyright():  # pylint: disable=W0622
-    click.echo(
-        """
+    click.echo("""
 ================================================================================
  Institute for the Design of Advanced Energy Systems Process Systems
  Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
@@ -104,8 +104,7 @@ def copyright():  # pylint: disable=W0622
  license information, respectively. Both files are also available online
  at the URL "https://github.com/IDAES/idaes-pse".
 ================================================================================
-"""
-    )
+""")
 
 
 @command_base.command(help="Show how long it takes to import command modules")

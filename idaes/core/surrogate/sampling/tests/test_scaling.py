@@ -13,6 +13,7 @@
 """
 Tests for surrogates/sampling/scaling module
 """
+
 import pytest
 import pandas as pd
 from idaes.core.surrogate.sampling.scaling import OffsetScaler

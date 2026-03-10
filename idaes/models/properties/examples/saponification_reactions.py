@@ -14,6 +14,7 @@
 Example property package for the saponification of Ethyl Acetate with NaOH
 Assumes dilute solutions with properties of H2O.
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
@@ -32,7 +33,6 @@ from idaes.core.util.misc import add_object_reference
 from idaes.core.util.constants import Constants as const
 import idaes.logger as idaeslog
 from idaes.core.scaling import CustomScalerBase
-
 
 # Some more information about this module
 __author__ = "Andrew Lee"

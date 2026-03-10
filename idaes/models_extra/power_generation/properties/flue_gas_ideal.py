@@ -17,6 +17,7 @@ Main assumptions:
     - ideal gas
     - components in flue gas: O2, N2, NO, CO2, H2O, SO2
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
@@ -58,7 +59,6 @@ from idaes.core.util.exceptions import ConfigurationError, InitializationError
 
 # Import Python libraries
 import idaes.logger as idaeslog
-
 
 # Some more information about this module
 __author__ = "Boiler Subsystem Team  J. Ma, M. Zamarripa, T. Burgard"

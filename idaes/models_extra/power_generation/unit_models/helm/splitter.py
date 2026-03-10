@@ -19,6 +19,7 @@ have n_outlets - 1 specified split fractions or outlet flows.
 
 This model is pseudo-steady-state when used in dynamic mode.
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
@@ -38,7 +39,6 @@ from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.core.util.scaling as iscale
-
 
 __author__ = "John Eslick"
 
@@ -181,7 +181,7 @@ from 1 to num_outlets).}""",
         self.mixed_state = self.config.property_package.build_state_block(
             self.flowsheet().time,
             doc="Material properties of mixed (inlet) stream",
-            **tmp_dict
+            **tmp_dict,
         )
         self.add_port(name="inlet", block=self.mixed_state, doc="Inlet Port")
 

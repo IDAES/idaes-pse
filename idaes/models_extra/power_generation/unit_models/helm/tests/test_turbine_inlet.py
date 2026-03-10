@@ -15,6 +15,7 @@ Tests for turbine inlet model.
 
 Author: John Eslick
 """
+
 import pytest
 
 from pyomo.environ import ConcreteModel, TransformationFactory, units as pyunits, value

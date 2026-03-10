@@ -15,6 +15,7 @@ Tests for CustomScalerBase.
 
 Author: Andrew Lee, Douglas Allan
 """
+
 import pytest
 import re
 

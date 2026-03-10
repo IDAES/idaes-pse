@@ -13,6 +13,7 @@
 """
 Framework for generic property packages
 """
+
 # TODO: Pylint complains about variables with _x names as they are built by sub-classes
 # pylint: disable=protected-access
 
@@ -2872,6 +2873,7 @@ class GenericStateBlockData(StateBlockData):
                 initialize=t_value,
                 doc="Temperature for calculating phase equilibrium",
                 units=t_units,
+                bounds=self.temperature.bounds,
             )
 
         # Create common components for each property package
