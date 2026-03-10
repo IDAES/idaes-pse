@@ -24,34 +24,40 @@ class Printable:
     and list of lines for the content.
     """
 
-    def print(self, stream=None, indent=4, width=80):
+    def print(self, stream=None, indent=4, width=80, border=True):
         # use stdout if no stream is given
         if stream is None:
             stream = sys.stdout
         # setup
         tab = " " * indent
 
-        # write top divider
-        stream.write("=" * width)
-        stream.write("\n")
+        # write top border
+        if border:
+            stream.write("=" * width)
+            stream.write("\n")
 
         # get title and content
         title, lines = self.get_lines()
 
-        # write title and divider
-        if title:
+        if lines is None:
             stream.write(title)
             stream.write("\n")
-            stream.write("-" * width)
-            stream.write("\n")
+        else:
+            # write title and divider
+            if title:
+                stream.write(title)
+                stream.write("\n")
+                stream.write("-" * width)
+                stream.write("\n")
 
-        # write content
-        for line in lines:
-            stream.write(f"{tab}{line}\n")
+            # write content
+            for line in lines:
+                stream.write(f"{tab}{line}\n")
 
         # write bottom divider
-        stream.write("=" * width)
-        stream.write("\n")
+        if border:
+            stream.write("=" * width)
+            stream.write("\n")
 
     def get_lines(self) -> tuple[str, list[str]]:
         return "", []  # override in subclasses
@@ -63,16 +69,25 @@ class VariableListData(BaseModel, Printable):
     #: Names of variables
     variables: list[str] = Field(default_factory=list)
     #: Optional values of variables
-    values: list[float] = Field(default_factory=list)
+    values: list[float | None] = Field(default_factory=list)
+    value_format: str = ".6E"
     #: Optional descriptive details for variables
     details: list[str] = Field(default_factory=list)
 
-    def get_lines(self) -> list[str]:
-        title = "Model variables that {description}"
+    def get_lines(self) -> tuple[str, list[str] | None]:
+        n = len(self.variables)
+        if n == 0:
+            title = f"No model variables {self.description}"
+            return title, None
+        title = f"Model variables that {self.description} ({n})"
         lines = []
-        for i in range(len(self.variables)):
-            spc = " " if self.details[i] else ""
-            line = f"{self.variables[i]}{spc}{self.details[i]}"
+        for i in range(n):
+            items = [self.variables[i]]
+            if self.details[i]:
+                items.append(self.details[i])
+            if self.values[i] is not None:
+                items.append(f"value={format(self.values[i], self.value_format)}")
+            line = " ".join(items)
             lines.append(line)
         return title, lines
 

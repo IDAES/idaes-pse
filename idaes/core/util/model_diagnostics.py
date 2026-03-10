@@ -542,11 +542,8 @@ class DiagnosticsToolbox:
         """
         return self._model
 
-    #    def _display_report_section(self, section_data: ReportSectionData, stream=None):
-    #       section_data.display(stream=stream, max_str_length=MAX_STR_LENGTH, tab=TAB)
-
     def compute_variables(self, cond: VariableConditions) -> VariableListData:
-        """Select variables meeting various conditions and return as Pydantic object.
+        """Compute the list of variables meeting various conditions and return as Pydantic object.
 
         Args:
             cond: Selected variable conditions (enumeration)
@@ -554,6 +551,7 @@ class DiagnosticsToolbox:
         Returns:
             Selected variables and associated metadata
         """
+        kwargs = {}  # additional kw for VariableListData
         desc = str(cond)  # default description
         details, values = None, None
         if cond == VariableConditions.external:
@@ -627,7 +625,8 @@ class DiagnosticsToolbox:
             variables, values = [], []
             for v in xjc:
                 variables.append(v[1].name)
-                values.append(format(v[0], ".3E"))
+                values.append(v[0])
+            kwargs["value_format"] = ".3E"
 
         # Fill out optional parts, if missing
         if details is None:
@@ -637,12 +636,34 @@ class DiagnosticsToolbox:
 
         # return as Pydantic data object
         return VariableListData(
-            tag=cond.value, description=desc, variables=variables, details=details
+            tag=cond.value,
+            description=desc,
+            variables=variables,
+            details=details,
+            values=values,
+            **kwargs,
         )
 
-    def display_variables(self, t: VariableConditions, stream=None, **kwargs):
-        v = self.compute_external_variables(t)
-        v.display(stream=stream, **kwargs)
+    def display_variables(self, cond: VariableConditions, stream=None, **kwargs):
+        """Syntactic sugar to display variables by calling `compute_variables()` to collect them, then the
+        `.display()` method on the returned object to print the variables to the provided stream.
+
+        Example usage::
+
+            from idaes.core.util.model_diagnostics import DiagnosticsToolbox, VariableConditions
+            # build flowsheet -> flowsheet_model
+            tbx = DiagnosticsToolbox(model=flowsheet_model)
+            tbx.display_variables(VariableConditions.fixed_to_zero)
+            print()
+            tbx.display_variables(VariableConditions.at_or_outside_bounds, border=False)
+
+        Arguments:
+            cond: A particular variable condition to display
+            stream: Output stream, stdout is used if none provided
+            kwargs: Additional keyword arguments for the `VariableListData.print()` method
+        """
+        v = self.compute_variables(cond)
+        v.print(stream=stream, **kwargs)
 
     def _verify_active_variables_initialized(self, stream=None):
         """
