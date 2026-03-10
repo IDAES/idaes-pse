@@ -17,9 +17,9 @@ constraints: startup/shutdown, uptime/downtime constraints,
 capacity limit constraints, and ramping constraints.
 
 The unit commitment model is taken from: 
-Knueven, Bernard, James Ostrowski, and Jean-Paul Watson. 
-"On mixed-integer programming formulations for the unit commitment problem." 
-INFORMS Journal on Computing 32, no. 4 (2020): 857-876.
+    Knueven, Bernard, James Ostrowski, and Jean-Paul Watson. 
+    "On mixed-integer programming formulations for the unit commitment problem." 
+    INFORMS Journal on Computing 32, no. 4 (2020): 857-876.
 """
 
 from typing import Union, Optional
