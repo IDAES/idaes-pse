@@ -512,6 +512,8 @@ class DiagnosticsToolbox:
 
     """
 
+    VC = VariableConditions  # alias
+
     def __init__(self, model: BlockData, keep_history: bool = False, **kwargs):
         """Constructor.
 
@@ -542,109 +544,119 @@ class DiagnosticsToolbox:
         """
         return self._model
 
-    def compute_variables(self, cond: VariableConditions) -> VariableListData:
-        """Compute the list of variables meeting various conditions and return as Pydantic object.
+    def compute_variables(self, *args) -> list[VariableListData]:
+        """Compute the list of variables meeting some condition and return as Pydantic object.
 
         Args:
-            cond: Selected variable conditions (enumeration)
+            cond: Zero or more conditions of type VariableConditions. If zero, look for all
+                  conditions. If one, just return one. If multiple, return one per condition.
 
         Returns:
-            Selected variables and associated metadata
+            Selected variables and associated metadata, as a list of length 1 or greater
         """
-        kwargs = {}  # additional kw for VariableListData
-        desc = str(cond)  # default description
-        details, values = None, None
-        if cond == VariableConditions.external:
-            cvars = variables_in_activated_constraints_set(self._model)
-            variables = [v.name for v in cvars if not _var_in_block(v, self._model)]
-        elif cond == VariableConditions.unused:
-            variables = [
-                str(v) for v in variables_not_in_activated_constraints_set(self._model)
-            ]
-        elif cond == VariableConditions.fixed_to_zero:
-            variables = [str(v) for v in _vars_fixed_to_zero(self._model)]
-        elif cond == VariableConditions.at_or_outside_bounds:
-            variables, details = [], []
-            for v in _vars_violating_bounds(
-                self._model,
-                tolerance=self.config.variable_bounds_violation_tolerance,
-            ):
-                variables.append(f"{v.name} ({'fixed' if v.fixed else 'free'})")
-                details.append(f"bounds={v.bounds}")
-        elif cond == VariableConditions.with_none_value:
-            variables = [
-                v.name
-                for v in variables_with_none_value_in_activated_equalities_set(
-                    self._model
+        if len(args) == 0:
+            return self.compute_variables(*list(VariableConditions))
+
+        results = []
+        for cond in args:
+            kwargs = {}  # additional kw for VariableListData
+            desc = str(cond)  # default description
+            details, values = None, None
+            if cond == VariableConditions.external:
+                cvars = variables_in_activated_constraints_set(self._model)
+                variables = [v.name for v in cvars if not _var_in_block(v, self._model)]
+            elif cond == VariableConditions.unused:
+                variables = [
+                    str(v)
+                    for v in variables_not_in_activated_constraints_set(self._model)
+                ]
+            elif cond == VariableConditions.fixed_to_zero:
+                variables = [str(v) for v in _vars_fixed_to_zero(self._model)]
+            elif cond == VariableConditions.at_or_outside_bounds:
+                variables, details = [], []
+                for v in _vars_violating_bounds(
+                    self._model,
+                    tolerance=self.config.variable_bounds_violation_tolerance,
+                ):
+                    variables.append(f"{v.name} ({'fixed' if v.fixed else 'free'})")
+                    details.append(f"bounds={v.bounds}")
+            elif cond == VariableConditions.with_none_value:
+                variables = [
+                    v.name
+                    for v in variables_with_none_value_in_activated_equalities_set(
+                        self._model
+                    )
+                ]
+            elif cond == VariableConditions.value_near_zero:
+                variables, values = [], []
+                for v in _vars_near_zero(
+                    self._model, self.config.variable_zero_value_tolerance
+                ):
+                    variables.append(v.name)
+                    values.append(value(v))
+            elif cond == VariableConditions.extreme_values:
+                desc += f" (<{self.config.variable_small_value_tolerance:.1E} or "
+                desc += f"> {self.config.variable_large_value_tolerance:.1E})"
+                variables, values = [], []
+                for v in _vars_with_extreme_values(
+                    model=self._model,
+                    large=self.config.variable_large_value_tolerance,
+                    small=self.config.variable_small_value_tolerance,
+                    zero=self.config.variable_zero_value_tolerance,
+                ):
+                    variables.append(v.name)
+                    values.append(value(v))
+            elif cond == VariableConditions.near_bounds:
+                desc += f" (abs={self.config.variable_bounds_absolute_tolerance:.1E}, "
+                desc += f"rel={self.config.variable_bounds_relative_tolerance:.1E})"
+                variables, values = [], []
+                for v in variables_near_bounds_set(
+                    self._model,
+                    abs_tol=self.config.variable_bounds_absolute_tolerance,
+                    rel_tol=self.config.variable_bounds_relative_tolerance,
+                ):
+                    variables.append(v.name)
+                    values.append(value(v))
+            elif cond == VariableConditions.extreme_jacobians:
+                self._verify_active_variables_initialized()
+                desc += f" (<{self.config.jacobian_small_value_caution:.1E} or "
+                desc += f">{self.config.jacobian_large_value_caution:.1E})"
+                # compute the extreme jacobians
+                jac, nlp = get_jacobian(self._model)
+                xjc = _extreme_jacobian_columns(
+                    jac=jac,
+                    nlp=nlp,
+                    large=self.config.jacobian_large_value_caution,
+                    small=self.config.jacobian_small_value_caution,
                 )
-            ]
-        elif cond == VariableConditions.value_near_zero:
-            variables, values = [], []
-            for v in _vars_near_zero(
-                self._model, self.config.variable_zero_value_tolerance
-            ):
-                variables.append(v.name)
-                values.append(value(v))
-        elif cond == VariableConditions.extreme_values:
-            desc += f" (<{self.config.variable_small_value_tolerance:.1E} or "
-            desc += f"> {self.config.variable_large_value_tolerance:.1E})"
-            variables, values = [], []
-            for v in _vars_with_extreme_values(
-                model=self._model,
-                large=self.config.variable_large_value_tolerance,
-                small=self.config.variable_small_value_tolerance,
-                zero=self.config.variable_zero_value_tolerance,
-            ):
-                variables.append(v.name)
-                values.append(value(v))
-        elif cond == VariableConditions.near_bounds:
-            desc += f" (abs={self.config.variable_bounds_absolute_tolerance:.1E}, "
-            desc += f"rel={self.config.variable_bounds_relative_tolerance:.1E})"
-            variables, values = [], []
-            for v in variables_near_bounds_set(
-                self._model,
-                abs_tol=self.config.variable_bounds_absolute_tolerance,
-                rel_tol=self.config.variable_bounds_relative_tolerance,
-            ):
-                variables.append(v.name)
-                values.append(value(v))
-        elif cond == VariableConditions.extreme_jacobians:
-            self._verify_active_variables_initialized()
-            desc += f" (<{self.config.jacobian_small_value_caution:.1E} or "
-            desc += f">{self.config.jacobian_large_value_caution:.1E})"
-            # compute the extreme jacobians
-            jac, nlp = get_jacobian(self._model)
-            xjc = _extreme_jacobian_columns(
-                jac=jac,
-                nlp=nlp,
-                large=self.config.jacobian_large_value_caution,
-                small=self.config.jacobian_small_value_caution,
+                xjc.sort(key=lambda i: abs(log(i[0])), reverse=True)
+                # place in output object
+                variables, values = [], []
+                for v in xjc:
+                    variables.append(v[1].name)
+                    values.append(v[0])
+                kwargs["value_format"] = ".3E"
+
+            # Fill out optional parts, if missing
+            if details is None:
+                details = [""] * len(variables)
+            if values is None:
+                values = [None] * len(variables)
+
+            # return as Pydantic data object
+            results.append(
+                VariableListData(
+                    tag=cond.value,
+                    description=desc,
+                    variables=variables,
+                    details=details,
+                    values=values,
+                    **kwargs,
+                )
             )
-            xjc.sort(key=lambda i: abs(log(i[0])), reverse=True)
-            # place in output object
-            variables, values = [], []
-            for v in xjc:
-                variables.append(v[1].name)
-                values.append(v[0])
-            kwargs["value_format"] = ".3E"
+        return results
 
-        # Fill out optional parts, if missing
-        if details is None:
-            details = [""] * len(variables)
-        if values is None:
-            values = [None] * len(variables)
-
-        # return as Pydantic data object
-        return VariableListData(
-            tag=cond.value,
-            description=desc,
-            variables=variables,
-            details=details,
-            values=values,
-            **kwargs,
-        )
-
-    def display_variables(self, cond: VariableConditions, stream=None, **kwargs):
+    def display_variables(self, *cond, stream=None, **kwargs):
         """Syntactic sugar to display variables by calling `compute_variables()` to collect them, then the
         `.display()` method on the returned object to print the variables to the provided stream.
 
@@ -662,8 +674,12 @@ class DiagnosticsToolbox:
             stream: Output stream, stdout is used if none provided
             kwargs: Additional keyword arguments for the `VariableListData.print()` method
         """
-        v = self.compute_variables(cond)
-        v.print(stream=stream, **kwargs)
+        v = self.compute_variables(*cond)
+        if isinstance(v, VariableListData):
+            v.print(stream=stream, **kwargs)
+        else:
+            for _v in v:
+                _v.print(stream=stream, **kwargs)
 
     def _verify_active_variables_initialized(self, stream=None):
         """
