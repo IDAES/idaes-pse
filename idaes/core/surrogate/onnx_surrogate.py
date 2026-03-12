@@ -121,16 +121,6 @@ class ONNXSurrogate(OMLTSurrogate):
         scaled_input_bounds = omlt_scaling.get_scaled_input_expressions(input_bounds)
         scaled_input_bounds = {i: tuple(bnd) for i, bnd in scaled_input_bounds.items()}
 
-        # TODO: remove this once new OMLT 1.2 is made available and includes tanh support
-        # overrides default available activation functions for ONNX, tanh is not listed in 1.1 but is supported
-
-        omltio.onnx_parser._ACTIVATION_OP_TYPES = [  # pylint: disable=protected-access
-            "Relu",
-            "Sigmoid",
-            "LogSoftmax",
-            "Tanh",
-        ]
-
         # pylint: disable-next=used-before-assignment
         net = load_onnx_neural_network(
             self._onnx_model,
