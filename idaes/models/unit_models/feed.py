@@ -169,7 +169,7 @@ see property package for documentation.}""",
             doc="Material properties in feed",
             defined_state=True,
             has_phase_equilibrium=False,
-            **self.config.property_package_args
+            **self.config.property_package_args,
         )
 
         # Add references to all state vars
