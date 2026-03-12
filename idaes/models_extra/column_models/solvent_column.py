@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -47,7 +47,6 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError, InitializationError
 import idaes.logger as idaeslog
 from idaes.core.util.config import DefaultBool
-
 
 __author__ = "Paul Akula, John Eslick, Anuja Deshpande, Andrew Lee"
 

@@ -4,10 +4,10 @@ on:
   push:
     branches:
       - main
-      - '*_rel'
+      - "*_rel"
   schedule:
     # run daily at 5:00 am UTC (12 am ET/9 pm PT)
-    - cron: '0 5 * * *'
+    - cron: "0 5 * * *"
   repository_dispatch:
     # to run this, send a POST API call at repos/IDAES/idaes-pse/dispatches with the specified event_type
     # e.g. `gh repos/IDAES/idaes-pse/dispatches -F event_type=ci_run_tests`
@@ -38,7 +38,7 @@ concurrency:
 
 env:
   # default Python version to use for checks that do not require multiple versions
-  DEFAULT_PYTHON_VERSION: '3.10'
+  DEFAULT_PYTHON_VERSION: "3.10"
   IDAES_CONDA_ENV_NAME_DEV: idaes-pse-dev
   PYTEST_ADDOPTS: "--color=yes"
 
@@ -54,6 +54,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
@@ -67,7 +68,7 @@ jobs:
           pip --no-cache-dir install --progress-bar off "$black_requirement"
       - name: Run Black to verify that the committed code is formatted
         run: |
-          black --check .
+          black --check --diff .
 
   spell-check:
     name: Check Spelling
@@ -75,9 +76,10 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
+
       - name: Run Spell Checker
         uses: crate-ci/typos@v1.24.5
-        with: 
+        with:
           config: ./.github/workflows/typos.toml
 
   pytest:
@@ -88,7 +90,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
         os:
           - linux
           - win64
@@ -97,7 +99,7 @@ jobs:
             runner-image: ubuntu-24.04
           - os: win64
             runner-image: windows-2022
-          - python-version: '3.11'
+          - python-version: "3.11"
             # only generate coverage report for a single python version in the matrix
             # to avoid overloading Codecov
             cov-report: true
@@ -111,7 +113,6 @@ jobs:
           activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
           python-version: ${{ matrix.python-version }}
           miniforge-version: latest
-
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
@@ -120,6 +121,8 @@ jobs:
         if: matrix.cov-report
         run: |
           echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov --cov-report=xml" >> "$GITHUB_ENV"
+      - name: Install pandoc
+        run: conda install -c conda-forge pandoc
       - name: Run pytest (not integration)
         run: |
           pytest --pyargs idaes -m "not integration"
@@ -130,7 +133,7 @@ jobs:
           name: coverage-report-${{ matrix.os }}
           path: coverage.xml
           if-no-files-found: error
-          
+
   upload-coverage:
     name: Upload coverage report (Codecov)
     needs: [pytest]
@@ -142,6 +145,7 @@ jobs:
     steps:
       # the checkout step is needed to have access to codecov.yml
       - uses: actions/checkout@v4
+
       - uses: actions/download-artifact@v4
         with:
           name: coverage-report-${{ matrix.report-variant }}
@@ -165,12 +169,15 @@ jobs:
     needs: [code-formatting, spell-check]
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Conda environment
         uses: conda-incubator/setup-miniconda@v3
         with:
           activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
           miniforge-version: latest
+      - name: Install pandoc
+        run: conda install -c conda-forge pandoc
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
@@ -200,6 +207,7 @@ jobs:
       # NOTE: using Conda instead of actions/setup-python in this job is not strictly necessary
       # as it doesn't need to run on Windows or use the setup-idaes local action,
       # but we do it for consistency with the other jobs
+
       - name: Set up Conda environment
         uses: conda-incubator/setup-miniconda@v3
         with:
@@ -233,6 +241,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Conda environment
         uses: conda-incubator/setup-miniconda@v3
         with:

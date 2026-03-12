@@ -1,9 +1,9 @@
-################################################################################
+#################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2025 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -11,11 +11,12 @@
 # for full copyright and license information.
 #################################################################################
 """
-Class implementing a variation of the enhancement factor model presented in Gaspar and Fosbol 
+Class implementing a variation of the enhancement factor model presented in Gaspar and Fosbol
 (2015, https://doi.org/10.1016/j.ces.2015.08.023). An expression giving the enhancement factor
-at equilibrium is used instead of solving the full system of equations. A paper containing a 
+at equilibrium is used instead of solving the full system of equations. A paper containing a
 full explanation of this model has been submitted to CAChe
 """
+
 from pyomo.environ import (
     value,
     Var,

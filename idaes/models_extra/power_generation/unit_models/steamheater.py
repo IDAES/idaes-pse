@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -20,6 +20,7 @@ and roof superheater, model main equations:
 * Consider a layer of metal and a layer of slag
 
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
@@ -44,7 +45,6 @@ import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 from idaes.core.solvers import get_solver
 from idaes.core.util.constants import Constants as const
-
 
 __author__ = "Boiler Subsystem Team (J. Ma, M. Zamarripa)"
 __version__ = "2.0.0"

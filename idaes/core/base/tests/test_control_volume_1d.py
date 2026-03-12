@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -15,6 +15,7 @@ Tests for ControlVolumeBlockData.
 
 Author: Andrew Lee
 """
+
 import pytest
 import re
 
@@ -195,6 +196,10 @@ def test_add_geometry_default():
         finite_elements=10,
     )
 
+    assert m.fs.cv.flow_direction == FlowDirection.notSet
+    with pytest.raises(AttributeError):
+        m.fs.cv.flow_direction = FlowDirection.backward
+
     m.fs.cv.add_geometry()
 
     assert isinstance(m.fs.cv.length_domain, ContinuousSet)
@@ -206,6 +211,9 @@ def test_add_geometry_default():
     assert len(m.fs.cv.length) == 1.0
     assert m.fs.cv.length.value == 1.0
     assert m.fs.cv._flow_direction == FlowDirection.forward
+    assert m.fs.cv.flow_direction == FlowDirection.forward
+    with pytest.raises(AttributeError):
+        m.fs.cv.flow_direction = FlowDirection.backward
 
 
 @pytest.mark.unit

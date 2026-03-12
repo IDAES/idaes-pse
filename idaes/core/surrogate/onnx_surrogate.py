@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -13,6 +13,7 @@
 """
 Interface for importing ONNX models into IDAES
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
@@ -28,6 +29,7 @@ from idaes.core.surrogate.sampling.scaling import OffsetScaler
 
 from idaes.core.surrogate.omlt_base_surrogate_class import OMLTSurrogate
 
+# pylint: disable=possibly-used-before-assignment
 onnx, onnx_available = attempt_import("onnx")
 omlt, omlt_available = attempt_import("omlt")
 
@@ -129,6 +131,7 @@ class ONNXSurrogate(OMLTSurrogate):
             "Tanh",
         ]
 
+        # pylint: disable-next=used-before-assignment
         net = load_onnx_neural_network(
             self._onnx_model,
             scaling_object=omlt_scaling,
@@ -178,6 +181,7 @@ class ONNXSurrogate(OMLTSurrogate):
                 The name for the model
         """
 
+        # pylint: disable-next=used-before-assignment
         write_onnx_model_with_bounds(
             os.path.join(save_location, "{}.onnx".format(save_name)),
             onnx_model=self._onnx_model,

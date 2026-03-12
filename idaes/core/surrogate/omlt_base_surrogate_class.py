@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -13,6 +13,7 @@
 """
 Interface for importing ONNX models into IDAES
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
@@ -25,6 +26,7 @@ from pyomo.common.dependencies import attempt_import
 from idaes.core.surrogate.base.surrogate_base import SurrogateBase
 from idaes.core.surrogate.sampling.scaling import OffsetScaler
 
+# pylint: disable=possibly-used-before-assignment
 keras, keras_available = attempt_import("tensorflow.keras")
 omlt, omlt_available = attempt_import("omlt")
 

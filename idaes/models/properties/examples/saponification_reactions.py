@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -14,6 +14,7 @@
 Example property package for the saponification of Ethyl Acetate with NaOH
 Assumes dilute solutions with properties of H2O.
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
@@ -32,7 +33,6 @@ from idaes.core.util.misc import add_object_reference
 from idaes.core.util.constants import Constants as const
 import idaes.logger as idaeslog
 from idaes.core.scaling import CustomScalerBase
-
 
 # Some more information about this module
 __author__ = "Andrew Lee"
@@ -136,7 +136,7 @@ class SaponificationReactionScaler(CustomScalerBase):
             else:
                 # Hopefully temperature has been scaled, so we can get the nominal value of k_rxn
                 # by walking the expression in the constraint.
-                nominals = self.get_expression_nominal_values(model.arrhenius_eqn)
+                nominals = self.get_sum_terms_nominal_values(model.arrhenius_eqn)
 
                 # We should get two values, k_rxn (LHS) and the Arrhenius equation (RHS)
                 # As of 10/3/2024, the LHS will be the 0-th element of the list, and the RHS the 1st

@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -41,10 +41,31 @@ from idaes.models.properties.modular_properties.eos.ceos import (
     calculate_equilibrium_cubic_coefficients,
 )
 import idaes.core.util.scaling as iscale
-
+from idaes.core.scaling import CustomScalerBase
 
 # Small value for initializing slack variables
 EPS_INIT = 1e-4
+
+
+class CubicComplementarityVLEScaler(CustomScalerBase):
+    """
+    Scaler for CubicComplementarityVLE
+    """
+
+    def variable_scaling_routine(self, model, phase_pair, overwrite: bool = False):
+        suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
+        sf_T = self.get_scaling_factor(model.temperature)
+        if model.is_property_constructed("_teq_constraint" + suffix):
+            teq = model._teq[phase_pair]  # pylint: disable=protected-access
+            self.set_component_scaling_factor(teq, sf_T, overwrite=overwrite)
+
+    def constraint_scaling_routine(self, model, phase_pair, overwrite: bool = False):
+        suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
+        if model.is_property_constructed("_teq_constraint" + suffix):
+            teq = model._teq[phase_pair]  # pylint: disable=protected-access
+            sf_T = self.get_scaling_factor(teq)
+            teq_cons = getattr(model, "_teq_constraint" + suffix)
+            self.set_component_scaling_factor(teq_cons, sf_T, overwrite=overwrite)
 
 
 # -----------------------------------------------------------------------------
@@ -52,6 +73,8 @@ class CubicComplementarityVLE:
     """
     Improved Vapor-Liquid Equilibrium complementarity formulation for Cubic Equations of State.
     """
+
+    default_scaler = CubicComplementarityVLEScaler
 
     @staticmethod
     def phase_equil(b, phase_pair):
@@ -220,12 +243,12 @@ class CubicComplementarityVLE:
         suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
         sf_T = iscale.get_scaling_factor(b.temperature, default=1, warning=True)
 
-        try:
+        if b.is_property_constructed("_teq_constraint" + suffix):
             teq_cons = getattr(b, "_teq_constraint" + suffix)
             # pylint: disable-next=protected-access
             iscale.set_scaling_factor(b._teq[phase_pair], sf_T)
             iscale.constraint_scaling_transform(teq_cons, sf_T, overwrite=False)
-        except AttributeError:
+        else:
             pass
 
     @staticmethod

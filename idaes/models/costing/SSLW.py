@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -22,6 +22,7 @@ Costing package based on methods from:
 Currently, this costing package only includes methods for capital costing of
 unit operations.
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
 
@@ -986,6 +987,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
             elif heat_source == HeaterSource.steamBoiler:
                 bc_expr = 0.367 * (Q / pyo.units.BTU * pyo.units.hr) ** 0.77
 
+            # pylint: disable-next=possibly-used-before-assignment
             return blk.base_cost_per_unit == bc_expr * pyo.units.USD_CE500
 
         @blk.Expression(doc="Base cost for all units installed")
@@ -1524,6 +1526,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
                     + 0.26986 * pyo.log(work / pyo.units.hp)
                     + 0.06718 * pyo.log(work / pyo.units.hp) ** 2
                 )
+            # pylint: disable-next=possibly-used-before-assignment
             return blk.base_pump_cost_per_unit == bpc * pyo.units.USD_CE394
 
         @blk.Expression(doc="Base cost for all pumps (less motors)")

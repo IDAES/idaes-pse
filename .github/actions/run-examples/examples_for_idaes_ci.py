@@ -15,7 +15,6 @@ import idaes_examples
 from idaes_examples import notebooks
 from idaes_examples import build
 
-
 matchmarker = pytest.StashKey()
 marked = pytest.StashKey()
 

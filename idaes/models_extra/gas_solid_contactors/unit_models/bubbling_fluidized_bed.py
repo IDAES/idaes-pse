@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -27,6 +27,7 @@ Gas emulsion is at minimum fluidization conditions
 Gas feeds into emulsion region before the excess enters into the bubble region
 Solid superficial velocity is constant throughout the bed
 """
+
 # Pylint doesn't like the fact that the reformulated variables are private
 # pylint: disable=protected-access
 
@@ -362,12 +363,14 @@ see reaction package for documentation.}""",
             )
 
         # Set flow directions for the control volume blocks
+        set_direction_gas = None
+        set_direction_solid = None
         # Gas flows from 0 to 1, solid flows from 0 to 1
         if self.config.flow_type == "co_current":
             set_direction_gas = FlowDirection.forward
             set_direction_solid = FlowDirection.forward
-            # Gas flows from 0 to 1, solid flows from 1 to 0
-        if self.config.flow_type == "counter_current":
+        # Gas flows from 0 to 1, solid flows from 1 to 0
+        elif self.config.flow_type == "counter_current":
             set_direction_gas = FlowDirection.forward
             set_direction_solid = FlowDirection.backward
 

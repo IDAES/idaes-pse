@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -34,6 +34,7 @@ References:
     [2] Morgan et.al (2015)
     [3] NIST Webbook, https://webbook.nist.gov/
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
@@ -62,7 +63,6 @@ from idaes.models.properties.modular_properties.phase_equil.henry import HenryTy
 
 from idaes.core.util.misc import set_param_from_config
 import idaes.logger as idaeslog
-
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)

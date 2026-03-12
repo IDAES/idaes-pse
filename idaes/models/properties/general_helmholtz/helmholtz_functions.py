@@ -3,15 +3,14 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-"""Generic Helmholtz EOS Functions and Parameters
-"""
+"""Generic Helmholtz EOS Functions and Parameters"""
 
 __author__ = "John Eslick"
 
@@ -52,7 +51,6 @@ import idaes.logger as idaeslog
 from idaes.models.properties.general_helmholtz.helmholtz_functions_map import (
     external_function_map as _external_function_map,
 )
-
 
 _log = idaeslog.getLogger(__name__)
 
@@ -267,12 +265,16 @@ class HelmholtzThermoExpressions(object):
                 p = kwargs["p"] * self.param.uc["Pa to kPa"]
             else:
                 p = kwargs["p"]
+        else:
+            p = None
         if "x" in kwargs:
             x = kwargs["x"]
         else:
             x = None
         if "T" in kwargs:
             T = kwargs["T"]
+        else:
+            T = None
         if {"h", "p"} == kwset:
             if convert_args:
                 if self.amount_basis == AmountBasis.MOLE:
@@ -451,7 +453,9 @@ class HelmholtzThermoExpressions(object):
                 + blk.s_vap_tp_func(c, state1, p, _get_data_dir()) * x
             )
         if result_basis == AmountBasis.MOLE:
+            # pylint: disable-next=possibly-used-before-assignment
             return s * self.param.uc["kJ/kg/K to J/mol/K"]
+        # pylint: disable-next=possibly-used-before-assignment
         return s * self.param.uc["kJ/kg/K to J/kg/K"]
 
     def s_liq(self, **kwargs):
@@ -499,7 +503,9 @@ class HelmholtzThermoExpressions(object):
                 + blk.h_vap_tp_func(c, state1, p, _get_data_dir()) * x
             )
         if result_basis == AmountBasis.MOLE:
+            # pylint: disable-next=possibly-used-before-assignment
             return h * self.param.uc["kJ/kg to J/mol"]
+        # pylint: disable-next=possibly-used-before-assignment
         return h * self.param.uc["kJ/kg to J/kg"]
 
     def h_liq(self, **kwargs):
@@ -547,7 +553,9 @@ class HelmholtzThermoExpressions(object):
                 + blk.u_vap_tp_func(c, state1, p, _get_data_dir()) * x
             )
         if result_basis == AmountBasis.MOLE:
+            # pylint: disable-next=possibly-used-before-assignment
             return u * self.param.uc["kJ/kg to J/mol"]
+        # pylint: disable-next=possibly-used-before-assignment
         return u * self.param.uc["kJ/kg to J/kg"]
 
     def u_liq(self, **kwargs):
@@ -957,7 +965,9 @@ class HelmholtzThermoExpressions(object):
                 p *= self.param.uc["Pa to kPa"]
             h = self.blk.h_vap_sat_p_func(self.param.pure_component, p, _get_data_dir())
         if result_basis == AmountBasis.MOLE:
+            # pylint: disable-next=possibly-used-before-assignment
             return h * self.param.uc["kJ/kg to J/mol"]
+        # pylint: disable-next=possibly-used-before-assignment
         return h * self.param.uc["kJ/kg to J/kg"]
 
     def h_liq_sat(self, T=None, p=None, result_basis=None, convert_args=True):
@@ -973,7 +983,9 @@ class HelmholtzThermoExpressions(object):
                 p *= self.param.uc["Pa to kPa"]
             h = self.blk.h_liq_sat_p_func(self.param.pure_component, p, _get_data_dir())
         if result_basis == AmountBasis.MOLE:
+            # pylint: disable-next=possibly-used-before-assignment
             return h * self.param.uc["kJ/kg to J/mol"]
+        # pylint: disable-next=possibly-used-before-assignment
         return h * self.param.uc["kJ/kg to J/kg"]
 
     def s_vap_sat(self, T=None, p=None, result_basis=None, convert_args=True):
@@ -989,7 +1001,9 @@ class HelmholtzThermoExpressions(object):
                 p *= self.param.uc["Pa to kPa"]
             s = self.blk.s_vap_sat_p_func(self.param.pure_component, p, _get_data_dir())
         if result_basis == AmountBasis.MOLE:
+            # pylint: disable-next=possibly-used-before-assignment
             return s * self.param.uc["kJ/kg/K to J/mol/K"]
+        # pylint: disable-next=possibly-used-before-assignment
         return s * self.param.uc["kJ/kg/K to J/kg/K"]
 
     def s_liq_sat(self, T=None, p=None, result_basis=None, convert_args=True):
@@ -1005,7 +1019,9 @@ class HelmholtzThermoExpressions(object):
                 p *= self.param.uc["Pa to kPa"]
             s = self.blk.s_liq_sat_p_func(self.param.pure_component, p, _get_data_dir())
         if result_basis == AmountBasis.MOLE:
+            # pylint: disable-next=possibly-used-before-assignment
             return s * self.param.uc["kJ/kg/K to J/mol/K"]
+        # pylint: disable-next=possibly-used-before-assignment
         return s * self.param.uc["kJ/kg/K to J/kg/K"]
 
     def u_vap_sat(self, T=None, p=None, result_basis=None, convert_args=True):
@@ -1021,7 +1037,9 @@ class HelmholtzThermoExpressions(object):
                 p *= self.param.uc["Pa to kPa"]
             u = self.blk.u_vap_sat_p_func(self.param.pure_component, p, _get_data_dir())
         if result_basis == AmountBasis.MOLE:
+            # pylint: disable-next=possibly-used-before-assignment
             return u * self.param.uc["kJ/kg to J/mol"]
+        # pylint: disable-next=possibly-used-before-assignment
         return u * self.param.uc["kJ/kg to J/kg"]
 
     def u_liq_sat(self, T=None, p=None, result_basis=None, convert_args=True):
@@ -1037,7 +1055,9 @@ class HelmholtzThermoExpressions(object):
                 p *= self.param.uc["Pa to kPa"]
             u = self.blk.u_liq_sat_p_func(self.param.pure_component, p, _get_data_dir())
         if result_basis == AmountBasis.MOLE:
+            # pylint: disable-next=possibly-used-before-assignment
             return u * self.param.uc["kJ/kg to J/mol"]
+        # pylint: disable-next=possibly-used-before-assignment
         return u * self.param.uc["kJ/kg to J/kg"]
 
     def v_vap_sat(self, T=None, p=None, result_basis=None, convert_args=True):
@@ -1053,7 +1073,9 @@ class HelmholtzThermoExpressions(object):
                 p *= self.param.uc["Pa to kPa"]
             v = self.blk.v_vap_sat_p_func(self.param.pure_component, p, _get_data_dir())
         if result_basis == AmountBasis.MOLE:
+            # pylint: disable-next=possibly-used-before-assignment
             return v * self.param.uc["m3/kg to m3/mol"]
+        # pylint: disable-next=possibly-used-before-assignment
         return v
 
     def v_liq_sat(self, T=None, p=None, result_basis=None, convert_args=True):
@@ -1069,7 +1091,9 @@ class HelmholtzThermoExpressions(object):
                 p *= self.param.uc["Pa to kPa"]
             v = self.blk.v_liq_sat_p_func(self.param.pure_component, p, _get_data_dir())
         if result_basis == AmountBasis.MOLE:
+            # pylint: disable-next=possibly-used-before-assignment
             return v * self.param.uc["m3/kg to m3/mol"]
+        # pylint: disable-next=possibly-used-before-assignment
         return v
 
 

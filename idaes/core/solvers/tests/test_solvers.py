@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -19,28 +19,27 @@ from idaes.core.solvers.features import lp, milp, nlp, minlp, nle, dae
 from idaes.core.solvers import get_solver, ipopt_has_linear_solver, petsc
 
 
-@pytest.mark.unit
-def test_petsc_available():
-    if not pyo.SolverFactory("petsc_snes").available():
-        raise RuntimeError("Could not find petsc (petsc is an optional extra).")
+class OptionalSolverChecks:
+    """Encapsulate optional solver checks.
+
+    Name of method matches `pyetst.mark.parametrize()` 'solver_name' argument
+    in the 'test_solver_available()' function.
+    """
+
+    @staticmethod
+    def petsc():
+        return petsc.petsc_available()
 
 
 @pytest.mark.unit
-def test_couenne_available():
-    if not pyo.SolverFactory("couenne").available():
-        raise RuntimeError("Could not find couenne.")
-
-
-@pytest.mark.unit
-def test_bonmin_available():
-    if not pyo.SolverFactory("bonmin").available():
-        raise RuntimeError("Could not find bonmin.")
-
-
-@pytest.mark.unit
-def test_sipopt_available():
-    if not pyo.SolverFactory("ipopt_sens").available():
-        raise RuntimeError("Could not find ipopt_sens.")
+@pytest.mark.parametrize(
+    "solver_name,optional",
+    [("couenne", False), ("bonmin", False), ("ipopt_sens", False), ("petsc", True)],
+)
+def test_solver_available(solver_name, optional):
+    if optional and not getattr(OptionalSolverChecks, solver_name)():
+        pytest.skip(reason=f"Optional solver '{solver_name}' is not installed.")
+    assert pyo.SolverFactory(solver_name).available(), f"Could not find {solver_name}."
 
 
 @pytest.mark.unit
@@ -165,7 +164,9 @@ def test_ipopt_has_mumps():
 
 
 @pytest.mark.unit
-@pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
+@pytest.mark.skipif(
+    not OptionalSolverChecks.petsc(), reason="PETSc solver not available"
+)
 def test_petsc_idaes_solve():
     """
     Make sure there is no issue with the solver class or default settings that
@@ -178,7 +179,9 @@ def test_petsc_idaes_solve():
 
 
 @pytest.mark.unit
-@pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
+@pytest.mark.skipif(
+    not OptionalSolverChecks.petsc(), reason="PETSc solver not available"
+)
 def test_petsc_dae_idaes_solve():
     """
     Check that the PETSc DAE solver works.
@@ -299,7 +302,7 @@ def test_get_solver_ipopt_v2():
     assert solver.options.max_iter == 200
 
     assert solver.config.writer_config.linear_presolve
-    assert not solver.config.writer_config.scale_model
+    assert solver.config.writer_config.scale_model
 
 
 @pytest.mark.skipif(not pyo.SolverFactory("ipopt").available(False), reason="no Ipopt")
@@ -308,7 +311,7 @@ def test_get_solver_ipopt_v2_w_options():
     solver = get_solver(
         "ipopt_v2",
         options={"tol": 1e-5, "foo": "bar"},
-        writer_config={"linear_presolve": False},
+        writer_config={"linear_presolve": False, "scale_model": False},
     )
 
     assert isinstance(solver, LegacySolverWrapper)

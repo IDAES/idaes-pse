@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -15,6 +15,7 @@ Methods for cubic equations of state.
 
 Currently only supports liquid and vapor phases
 """
+
 # TODO: Pylint complains about variables with _x names as they are built by other classes
 # pylint: disable=protected-access
 # pylint: disable=missing-function-docstring
@@ -1039,6 +1040,7 @@ class Cubic(EoSBase):
         elif pobj.is_liquid_phase():
             Z_crit = expr_write.z_liq(eos=pobj._cubic_type, A=Acrit, B=Bcrit)
 
+        # pylint: disable-next=possibly-used-before-assignment
         m.compress_fact_crit_eq = Constraint(rule=m.compress_fact_crit == Z_crit)
 
         m.dens_mol_crit_eq = Constraint(
@@ -1129,7 +1131,9 @@ def _N_dZ_dNj(blk, p, j):
     EoS_u = EoS_param[pobj._cubic_type]["u"]
     EoS_w = EoS_param[pobj._cubic_type]["w"]
 
+    # pylint: disable-next=possibly-used-before-assignment
     N_dA_dNj = P / (R * T) ** 2 * N_dam_dNj
+    # pylint: disable-next=possibly-used-before-assignment
     N_dB_dNj = P / (R * T) * N_dbm_dNj
 
     K2 = (EoS_u - 1) * B - 1
@@ -1384,6 +1388,7 @@ def _bubble_dew_log_fug_coeff_method(blk, p, j, pp, pt_var):
         Z = expr_write.z_liq(eos=pobj._cubic_type, A=A, B=B)
 
     return (
+        # pylint: disable-next=possibly-used-before-assignment
         _log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype)
         + log_mole_frac[xidx, j]
         + log(P / blk.params.pressure_ref)

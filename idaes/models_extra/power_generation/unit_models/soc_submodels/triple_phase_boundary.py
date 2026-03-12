@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -43,6 +43,7 @@ and related approximations for calculating activation losses in solid oxide
 fuel cell models. Journal of Power Sources, 152(1–2), 175–181.
 https://doi.org/10.1016/j.jpowsour.2005.03.174
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
@@ -132,6 +133,14 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
             domain=Bool,
             default=False,
             description="If True, add voltage_drop_custom Var to be connected to degradation models",
+        ),
+    )
+    CONFIG.declare(
+        "log_exchange_current_modifier",
+        ConfigValue(
+            domain=Bool,
+            default=False,
+            description="If True, add log_exchange_current_modifier Var to be connected to degradation models",
         ),
     )
 
@@ -275,6 +284,13 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
                 units=pyo.units.volts,
                 doc="Custom voltage drop term for degradation modeling",
             )
+        if self.config.log_exchange_current_modifier:
+            self.log_exchange_current_modifier = pyo.Var(
+                tset,
+                iznodes,
+                units=pyo.units.dimensionless,
+                doc="Custom modifier to exchange current for degradation modeling",
+            )
 
         @self.Expression(tset, iznodes, comps)
         def conc_mol_comp(b, t, iz, j):
@@ -360,6 +376,8 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
             out = log_k - E_A / (Constants.gas_constant * T)
             for j in b.reacting_gas_list:
                 out += expo[j] * b.log_mole_frac_comp[t, iz, j]
+            if b.config.log_exchange_current_modifier:
+                out += b.log_exchange_current_modifier[t, iz]
             return out
 
         # Butler Volmer equation
@@ -496,6 +514,7 @@ class SocTriplePhaseBoundaryData(UnitModelBlockData):
                     sqx1 = gsf(self.heat_flux_x1[t, iz].referent, 1e-2)
                 else:
                     sqx1 = sgsf(self.heat_flux_x1[t, iz], 1e-2)
+                # pylint: disable-next=possibly-used-before-assignment
                 sqx = min(sqx0, sqx1)
                 cst(self.heat_flux_x_eqn[t, iz], sqx)
 

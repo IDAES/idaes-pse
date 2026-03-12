@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -15,6 +15,7 @@
 
 This model derives from the HeatExchanger1D unit model.
 """
+
 # Import Pyomo libraries
 from pyomo.environ import (
     Block,
@@ -39,7 +40,6 @@ from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.solvers import get_solver
 from idaes.core.initialization import SingleControlVolumeUnitInitializer
 import idaes.logger as idaeslog
-
 
 __author__ = "Jaffer Ghouse"
 

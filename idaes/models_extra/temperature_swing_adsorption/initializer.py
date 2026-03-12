@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -838,6 +838,7 @@ class FixedBedTSA0DInitializer(ModularInitializerBase):
         while condition:
 
             # compute new approximated root as x2
+            # pylint: disable-next=used-before-assignment,possibly-used-before-assignment
             x2 = x0 - (x1 - x0) * f_x0 / (f_x1 - f_x0)
 
             # fix time to x_2 guess

@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -11,6 +11,7 @@
 # for full copyright and license information.
 #################################################################################
 """Transformation to replace variables with other variables."""
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
@@ -26,7 +27,6 @@ from pyomo.core.base.var import VarData, Var
 from pyomo.core.base.constraint import Constraint
 from pyomo.core.base.expression import Expression
 from pyomo.core.base.objective import Objective
-
 
 __author__ = "John Eslick"
 

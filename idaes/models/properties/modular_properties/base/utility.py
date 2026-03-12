@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -15,6 +15,7 @@ Common methods used by generic framework
 
 Author: A Lee
 """
+
 # TODO: Missing doc strings
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
@@ -29,6 +30,7 @@ from idaes.core.util.exceptions import (
     PropertyPackageError,
 )
 import idaes.logger as idaeslog
+from idaes.core.scaling import CustomScalerBase
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -630,3 +632,33 @@ def estimate_Pdew(blk, raoult_comps, henry_comps, liquid_phase):
             )
         )
     )
+
+
+class ModularPropertiesScalerBase(CustomScalerBase):
+    """
+    Base class for ModularPropertiesScaler and ModularReactionsScaler.
+    Handles the logic for calling scaling methods for each individual module.
+    """
+
+    def call_module_scaling_method(
+        self, model, module, index, method, overwrite: bool = False
+    ):
+        try:
+            scaler_class = module.default_scaler
+        # TODO create interface where the user can provide custom scalers for individual modules
+        except AttributeError:
+            _log.debug(
+                f"No default Scaler set for module {module}. Cannot call {method}."
+            )
+            return
+        scaler_obj = scaler_class(**self.CONFIG)
+        try:
+            method_func = getattr(scaler_obj, method)
+        except AttributeError as err:
+            raise AttributeError(
+                f"Could not find {method} method on scaler for module {module}."
+            ) from err
+        if index is None:
+            method_func(model, overwrite=overwrite)
+        else:
+            method_func(model, index, overwrite=overwrite)

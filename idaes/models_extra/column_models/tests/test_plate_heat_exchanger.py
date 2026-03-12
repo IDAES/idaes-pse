@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -14,6 +14,7 @@
 Tests for Plate Heat Exchnager  unit model.
 Author: Akula Paul
 """
+
 import pytest
 
 from pyomo.environ import (
@@ -39,7 +40,6 @@ from idaes.models_extra.column_models.properties.MEA_solvent import (
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from idaes.core.solvers import get_solver
-
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing

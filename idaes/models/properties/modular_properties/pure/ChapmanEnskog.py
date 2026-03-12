@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -17,6 +17,7 @@ The Indeterminacy of the Values of Potential Parameters as Derived from Transpor
 Virial Coefficient by Reichenberg D., 1973 for more information) so it's important to
 use LJ parameters from the same source.
 """
+
 from pyomo.environ import Var, units as pyunits
 import pyomo.environ as pyo
 

@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -13,6 +13,7 @@
 """
 Standard IDAES Feed block.
 """
+
 # Import Pyomo libraries
 from pyomo.environ import Block, Reference
 from pyomo.common.config import ConfigBlock, ConfigValue, In
@@ -23,13 +24,39 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.logger as idaeslog
 from idaes.core.initialization import ModularInitializerBase
+from idaes.core.scaling import CustomScalerBase
 
-
-__author__ = "Andrew Lee"
+__author__ = "Andrew Lee, Douglas Allan"
 
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
+
+
+class FeedScaler(CustomScalerBase):
+    """
+    Scaler for blocks with a single state (Feed, Product, StateJunction)
+    """
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        self.call_submodel_scaler_method(
+            submodel=model.properties,
+            submodel_scalers=submodel_scalers,
+            method="variable_scaling_routine",
+            overwrite=overwrite,
+        )
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        self.call_submodel_scaler_method(
+            submodel=model.properties,
+            submodel_scalers=submodel_scalers,
+            method="constraint_scaling_routine",
+            overwrite=overwrite,
+        )
 
 
 class FeedInitializer(ModularInitializerBase):
@@ -72,6 +99,7 @@ class FeedData(UnitModelBlockData):
 
     # Set default initializer
     default_initializer = FeedInitializer
+    default_scaler = FeedScaler
 
     CONFIG = ConfigBlock()
     CONFIG.declare(
@@ -141,7 +169,7 @@ see property package for documentation.}""",
             doc="Material properties in feed",
             defined_state=True,
             has_phase_equilibrium=False,
-            **self.config.property_package_args
+            **self.config.property_package_args,
         )
 
         # Add references to all state vars

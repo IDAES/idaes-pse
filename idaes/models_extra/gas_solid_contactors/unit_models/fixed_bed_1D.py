@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -334,11 +334,12 @@ should be constructed,
         units_meta_solid = solid_phase.property_package.get_metadata().get_derived_units
 
         # Set flow direction for the gas control volume
+        set_direction_gas = None
         # Gas flows from 0 to 1
         if self.config.flow_type == "forward_flow":
             set_direction_gas = FlowDirection.forward
         # Gas flows from 1 to 0
-        if self.config.flow_type == "reverse_flow":
+        elif self.config.flow_type == "reverse_flow":
             set_direction_gas = FlowDirection.backward
 
         # Consistency check for flow direction, transformation method and
@@ -857,7 +858,7 @@ should be constructed,
                             to_units=units_meta_solid("length"),
                         )
                         ** 2
-                        * b.solid_properties[t, x].params.voidage ** 3
+                        * b.solid_properties[t, x].params.voidage**3
                     )
                 ) + (
                     (1.75 * pyunits.dimensionless)
@@ -869,7 +870,7 @@ should be constructed,
                             b.solid_properties[t, x].params.particle_dia,
                             to_units=units_meta_solid("length"),
                         )
-                        * b.solid_properties[t, x].params.voidage ** 3
+                        * b.solid_properties[t, x].params.voidage**3
                     )
                 )
 

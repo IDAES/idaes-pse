@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -133,6 +133,25 @@ def test_enth_mol_ig_comp(frame):
 
     frame.props[1].temperature.value = 400
     assert value(expr) == pytest.approx(-237521.691, abs=1e-3)
+
+    assert_units_equivalent(expr, pyunits.J / pyunits.mol)
+
+
+@pytest.mark.unit
+def test_enth_mol_ig_comp_no_enthalpy_of_formation(frame):
+    frame.params.config.include_enthalpy_of_formation = False
+    frame.config.include_enthalpy_of_formation = False
+    RPP5.enth_mol_ig_comp.build_parameters(frame.params)
+
+    assert not hasattr(frame.params, "enth_mol_form_vap_comp_ref")
+
+    expr = RPP5.enth_mol_ig_comp.return_expression(
+        frame.props[1], frame.params, frame.props[1].temperature
+    )
+    assert value(expr) == pytest.approx(-240973.683 + 241.81e3, abs=1e-3)
+
+    frame.props[1].temperature.value = 400
+    assert value(expr) == pytest.approx(-237521.691 + 241.81e3, abs=1e-3)
 
     assert_units_equivalent(expr, pyunits.J / pyunits.mol)
 

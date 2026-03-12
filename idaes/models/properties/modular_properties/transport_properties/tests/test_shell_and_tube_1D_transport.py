@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -16,6 +16,7 @@ Chiefly tests that the properties are appearing on modular state blocks as expec
 
 Author: Douglas Allan, Jaffer Ghouse
 """
+
 import pyomo.common.unittest as unittest
 
 import pytest
@@ -292,7 +293,6 @@ class Test_transport_properties_ideal(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.integration
     def test_solution(self, hx):
-        hx.fs.unit.temperature_wall.display()
         assert pytest.approx(5, rel=1e-5) == value(
             hx.fs.unit.hot_side_outlet.flow_mol[0]
         )
@@ -366,7 +366,6 @@ class Test_transport_properties_ideal_chung(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.integration
     def test_solution(self, hx):
-        hx.fs.unit.temperature_wall.display()
         assert pytest.approx(5, rel=1e-5) == value(
             hx.fs.unit.hot_side_outlet.flow_mol[0]
         )
@@ -441,7 +440,6 @@ class Test_transport_properties_PR(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.integration
     def test_solution(self, hx):
-        hx.fs.unit.temperature_wall.display()
         assert pytest.approx(5, rel=1e-5) == value(
             hx.fs.unit.hot_side_outlet.flow_mol[0]
         )

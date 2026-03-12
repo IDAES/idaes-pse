@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -11,8 +11,9 @@
 # for full copyright and license information.
 #################################################################################
 """
-Author: Andrew Lee
+Author: Andrew Lee, Douglas Allan
 """
+
 import pytest
 from pyomo.environ import check_optimal_termination, Block, ConcreteModel, Set, value
 from pyomo.util.check_units import assert_units_consistent
@@ -23,12 +24,15 @@ from idaes.core.util.model_statistics import (
     activated_constraints_set,
 )
 from idaes.core.solvers import get_solver
+from idaes.core.scaling import get_scaling_factor
 
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
+    ModularPropertiesScaler,
 )
 from idaes.models.properties.modular_properties.base.generic_reaction import (
     GenericReactionParameterBlock,
+    ModularReactionScaler,
 )
 
 from idaes.models.properties.modular_properties.examples.reactions.reaction_example import (
@@ -36,10 +40,11 @@ from idaes.models.properties.modular_properties.examples.reactions.reaction_exam
     rxn_configuration,
 )
 
-
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver("ipopt_v2")
+solver = get_solver(
+    "ipopt_v2", writer_config={"linear_presolve": True, "scale_model": True}
+)
 
 
 class TestParamBlock(object):
@@ -116,6 +121,65 @@ class TestStateBlock(object):
         model.props[1].pressure.fix(101325)
 
         assert degrees_of_freedom(model) == 0
+
+    @pytest.mark.unit
+    def test_scaler_objects(self, model):
+        assert model.props[1].default_scaler is ModularPropertiesScaler
+        assert model.rxns[1].default_scaler is ModularReactionScaler
+
+        prop_scaler = ModularPropertiesScaler()
+        prop_scaler.default_scaling_factors["flow_mol_phase"] = 0.01
+        prop_scaler.scale_model(model.props[1])
+
+        rxn_scaler = ModularReactionScaler()
+        rxn_scaler.scale_model(model.rxns[1])
+
+        # Property Scaler
+        assert len(model.props[1].scaling_factor) == 26
+        assert len(model.props[1].scaling_hint) == 5
+
+        # Variables
+        assert get_scaling_factor(model.props[1].flow_mol_phase["Liq"]) == 1e-2
+        for vdata in model.props[1].flow_mol_comp.values():
+            assert get_scaling_factor(vdata) == 0.1
+        for vdata in model.props[1].mole_frac_comp.values():
+            assert get_scaling_factor(vdata) == 10
+        for vdata in model.props[1].mole_frac_phase_comp.values():
+            assert get_scaling_factor(vdata) == 10
+        assert get_scaling_factor(model.props[1].phase_frac["Liq"]) == 1
+        assert get_scaling_factor(model.props[1].temperature) == 1 / 300
+        assert get_scaling_factor(model.props[1].pressure) == 1e-5
+
+        # Constraints
+        for cdata in model.props[1].mole_frac_comp_eq.values():
+            assert get_scaling_factor(cdata, 0.1)
+        for cdata in model.props[1].component_flow_balances.values():
+            assert get_scaling_factor(cdata, 10)
+        assert get_scaling_factor(model.props[1].total_flow_balance) == 1e-2
+        assert get_scaling_factor(model.props[1].phase_fraction_constraint["Liq"]) == 1
+
+        # Expressions
+        for edata in model.props[1].flow_mol_phase_comp.values():
+            get_scaling_factor(edata) == 0.1
+        assert get_scaling_factor(model.props[1].flow_mol) == 1e-2
+
+        # Reaction Scaler
+        assert len(model.rxns[1].scaling_factor) == 3
+        assert len(model.rxns[1].scaling_hint) == 3
+
+        # Variable
+        assert get_scaling_factor(model.rxns[1].log_k_eq["R2"]) == 1
+
+        # Constraints
+        assert get_scaling_factor(model.rxns[1].equilibrium_constraint["R2"]) == 1e-2
+        assert get_scaling_factor(model.rxns[1].log_k_eq_constraint["R2"]) == 1
+
+        # Expressions
+        for edata in model.rxns[1].dh_rxn.values():
+            assert get_scaling_factor(edata) == pytest.approx(
+                1 / (300 * 8.3144), rel=1e-4
+            )
+        assert get_scaling_factor(model.rxns[1].k_eq["R2"]) == 1e-2
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
