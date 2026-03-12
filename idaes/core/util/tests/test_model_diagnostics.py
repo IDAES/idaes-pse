@@ -88,6 +88,7 @@ from idaes.core.util.model_diagnostics import (
     DegeneracyHunter2,
     svd_dense,
     svd_sparse,
+    svd_rayleigh_ritz_callback,
     get_valid_range_of_component,
     set_bounds_from_valid_range,
     list_components_with_values_outside_valid_range,
@@ -2343,9 +2344,29 @@ class TestSVDToolbox:
     @pytest.mark.unit
     def test_run_svd_analysis(self, dummy_problem):
         svd = SVDToolbox(dummy_problem)
+        assert svd.config.svd_callback is svd_rayleigh_ritz_callback
+        svd.run_svd_analysis()
 
-        assert svd.config.svd_callback is svd_dense
+        # SVD Rayleigh-Ritz is not consistent with signs - manually iterate and check abs value
+        for i in range(5):
+            for j in range(4):
+                if (i, j) in [(1, 1), (2, 3), (3, 0), (4, 2)]:
+                    assert abs(svd.u[i, j]) == pytest.approx(1, abs=1e-6, rel=1e-6)
+                else:
+                    assert svd.u[i, j] == pytest.approx(0, abs=1e-6)
 
+        np.testing.assert_array_almost_equal(svd.s, np.array([0.1, 1, 5, 10]))
+
+        for i in range(5):
+            for j in range(4):
+                if (i, j) in [(1, 1), (2, 3), (3, 0), (4, 2)]:
+                    assert abs(svd.v[i, j]) == pytest.approx(1, abs=1e-6, rel=1e-6)
+                else:
+                    assert svd.v[i, j] == pytest.approx(0, abs=1e-6)
+
+    @pytest.mark.unit
+    def test_run_svd_analysis_dense(self, dummy_problem):
+        svd = SVDToolbox(dummy_problem, svd_callback=svd_dense)
         svd.run_svd_analysis()
 
         np.testing.assert_array_almost_equal(
@@ -2426,14 +2447,14 @@ Number of Singular Values less than 1.0E-6 is 0
 
     @pytest.mark.unit
     def test_display_rank_of_equality_constraints(self, dummy_problem):
-        svd = SVDToolbox(dummy_problem, singular_value_tolerance=1)
+        svd = SVDToolbox(dummy_problem, singular_value_tolerance=0.9)
 
         stream = StringIO()
         svd.display_rank_of_equality_constraints(stream=stream)
 
         expected = """====================================================================================
 
-Number of Singular Values less than 1.0E+00 is 1
+Number of Singular Values less than 9.0E-01 is 1
 
 ====================================================================================
 """
@@ -2526,7 +2547,7 @@ Constraints and Variables associated with smallest singular values
 
     @pytest.mark.unit
     def test_display_underdetermined_variables_and_constraints(self, dummy_problem):
-        svd = SVDToolbox(dummy_problem, size_cutoff_in_singular_vector=1)
+        svd = SVDToolbox(dummy_problem, size_cutoff_in_singular_vector=1.1)
 
         stream = StringIO()
         svd.display_underdetermined_variables_and_constraints(stream=stream)
