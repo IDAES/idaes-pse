@@ -49,10 +49,14 @@ autodoc2_packages = [
 ]
 autodoc2_output_dir = "reference_guides/core/util"
 autodoc2_render_plugin = "myst"
+
+# These should be listed from most to least specific,
+# since the first match is used
 autodoc2_docstring_parser_regexes = [
     # render docstrings in matching files as Markdown
     ("../idaes/core/util/structfs/.*", "myst"),
 ]
+
 autodoc2_no_index = True
 autodoc2_index_template = None  # don't write index.rst
 

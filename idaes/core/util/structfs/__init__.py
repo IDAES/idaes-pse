@@ -221,6 +221,9 @@ example notebooks found under the `docs/examples/structfs` directory
 ```{autodoc2-docstring} structfs.runner.Action
 ```
 
+```{autodoc2-docstring} structfs.runner_actions
+```
+
 ## Annotation
 
 You can also 'annotate' variables for special 
