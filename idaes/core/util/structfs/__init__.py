@@ -177,7 +177,7 @@ def set_solver(ctx):
 
 @FS.step("solve_optimization")
 def solve_opt(ctx):
-    ctx["results"] = ctx.solver.solve(ctx.model, tee=ctx["tee"])
+    ctx.solve()
 ```
 
 Details on the changes:
@@ -194,8 +194,8 @@ Details on the changes:
   called `m`) with a context object that has a `.model` attribute.
 * **44-46**: Add a function for the `set_solver` step, to select the solver
   (here, IPOPT).
-* **46**: In the "solve_optimization" step, assign the solver result to
-  `ctx["results"]`.
+* **46**: In the "solve_optimization" step, call the solver, which will assign the result to `ctx.results`,
+  which is also accessible as `FS.results`.
 
 ## Step 2: Execute and inspect
 
