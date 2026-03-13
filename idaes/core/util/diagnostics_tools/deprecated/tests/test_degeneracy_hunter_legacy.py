@@ -66,7 +66,7 @@ def test_deprecate_degeneracy_hunter(caplog):
 
     msg = (
         "DEPRECATED: DegeneracyHunter is being deprecated in favor of the new "
-        "DiagnosticsToolbox.  (deprecated in 2.2.0, will be removed in (or after) 2.11.0)"
+        "DiagnosticsToolbox.  (deprecated in 2.2.0, will be removed in (or after) 2.12.0)"
     )
     assert msg.replace(" ", "") in caplog.records[0].message.replace("\n", "").replace(
         " ", ""

@@ -11,7 +11,7 @@
 # for full copyright and license information.
 #################################################################################
 """
-This module contains test for Degeneracy Hunter.
+This module contains tests for Degeneracy Hunter.
 """
 
 from io import StringIO

@@ -11,7 +11,7 @@
 # for full copyright and license information.
 #################################################################################
 """
-This module contains tests for integrating infeasibility explanation into the DiagnosticsToolbox.
+This module contains tests for the DiagnosticsToolbox interface to Pyomo's infeasibility explanation tool.
 """
 
 from io import StringIO
