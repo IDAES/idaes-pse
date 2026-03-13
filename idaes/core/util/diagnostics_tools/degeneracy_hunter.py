@@ -11,7 +11,9 @@
 # for full copyright and license information.
 #################################################################################
 """
-This module contains test for Degeneracy Hunter.
+This module contains an implementation of the Degeneracy Hunter algorithm in Pyomo and IDAES. See this paper for an explanation of how the algorithm works:
+
+Dowling, A. W., & Biegler, L. T. (2015). Degeneracy hunter: An algorithm for determining irreducible sets of degenerate constraints in mathematical programs. In Computer Aided Chemical Engineering (Vol. 37, pp. 809-814). Elsevier.
 """
 
 __author__ = "Alexander Dowling, Douglas Allan, Andrew Lee, Robby Parker, Ben Knueven"

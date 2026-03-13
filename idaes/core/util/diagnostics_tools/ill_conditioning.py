@@ -11,7 +11,7 @@
 # for full copyright and license information.
 #################################################################################
 """
-This module contains a tool for determining model ill conditioning.
+This module contains a tool for determining whether a model is ill-conditioned.
 """
 
 __author__ = "Alexander Dowling, Douglas Allan, Andrew Lee, Robby Parker, Ben Knueven"
