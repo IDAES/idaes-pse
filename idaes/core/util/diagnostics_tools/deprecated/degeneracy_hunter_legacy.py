@@ -76,7 +76,7 @@ class DegeneracyHunter:
             "DegeneracyHunter is being deprecated in favor of the new "
             "DiagnosticsToolbox."
         )
-        deprecation_warning(msg=msg, logger=_log, version="2.2.0", remove_in="2.11.0")
+        deprecation_warning(msg=msg, logger=_log, version="2.2.0", remove_in="2.12.0")
 
         block_like = False
         try:
