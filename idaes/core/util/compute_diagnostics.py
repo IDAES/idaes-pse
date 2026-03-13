@@ -210,13 +210,14 @@ class DiagnosticsData:
         self._toolbox = toolbox
 
     def variables(
-        self, conditions: list[VariableCondition] | None = None
-    ) -> list[VariableListData]:
+        self, conditions: list[VariableCondition] | None = None, dump=True
+    ) -> list[VariableListData] | list[dict]:
         """Compute the list of variables meeting some condition and return as Pydantic object.
 
         Args:
             conditions: Zero or more conditions. If zero, look for all
                   conditions. If one, just return one. If multiple, return one per condition.
+            dump: If True (the default), return dicts instead of Pydantic objects
 
         Returns:
             Selected variables and associated metadata, as a list of length 1 or greater
@@ -226,19 +227,23 @@ class DiagnosticsData:
             conditions = [v for v in VariableCondition]
         for cond in conditions:
             results.append(self._get_variables_for_condition(cond))
-        return results
+        if dump:
+            return [x.model_dump() for x in results]
+        else:
+            return results
 
     def structural_issues(
-        self, evaluation_errors=True, unit_consistency=True
-    ) -> StructuralIssuesData:
+        self, evaluation_errors=True, unit_consistency=True, dump=True
+    ) -> StructuralIssuesData | dict:
         """Compute structural warnings and cautions.
 
         Args:
             evaluation_errors: Include potential evaluation errors
             unit_consistency: Include unit consistency checks
+            dump: If True (the default), return dicts instead of Pydantic objects
 
         Returns:
-            Pydantic data model representing found issues
+            Found structural issues
         """
         tbx, model = self._toolbox, self._toolbox.model
         uc = [] if unit_consistency else identify_inconsistent_units(model)
@@ -289,7 +294,8 @@ class DiagnosticsData:
             if uv_free:
                 c.unused_vars_free = _block_list_names(uv_free)
 
-        return StructuralIssuesData(warnings=w, cautions=c)
+        result = StructuralIssuesData(warnings=w, cautions=c)
+        return result.model_dump() if dump else result
 
     def _get_variables_for_condition(self, cond: VariableCondition) -> VariableListData:
         tbx = self._toolbox  # alias
