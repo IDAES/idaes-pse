@@ -31,7 +31,7 @@ from idaes.core.util.exceptions import (
 from idaes.core.util.testing import (
     PhysicalParameterTestBlock,
 )
-from idaes.core.util.model_diagnostics import DiagnosticsToolbox
+from idaes.core.util import DiagnosticsToolbox
 
 
 # -----------------------------------------------------------------------------

@@ -10,9 +10,37 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-# TODO: Missing doc strings
-# pylint: disable=missing-module-docstring
+"""
+This module contains tests for the ipopt_solve_halt_on_error function.
+"""
 
-from .model_serializer import to_json, from_json, StoreSpec
-from .tags import svg_tag, ModelTag, ModelTagGroup
-from .diagnostics_tools.diagnostics_toolbox import DiagnosticsToolbox
+import pytest
+
+from pyomo.environ import (
+    ConcreteModel,
+    Constraint,
+    Expression,
+    Var,
+    log,
+)
+
+from idaes.core.util.diagnostics_tools.ipopt_halt_on_error import (
+    ipopt_solve_halt_on_error,
+)
+
+
+@pytest.mark.component
+def test_ipopt_solve_halt_on_error(capsys):
+    m = ConcreteModel()
+
+    m.v = Var(initialize=-5, bounds=(None, -1))
+    m.e = Expression(expr=log(m.v))
+    m.c = Constraint(expr=m.e == 1)
+
+    try:
+        _ = ipopt_solve_halt_on_error(m)
+    except Exception:  # we expect this to fail
+        pass
+
+    captured = capsys.readouterr()
+    assert "c: can't evaluate log(-5)." in captured.out

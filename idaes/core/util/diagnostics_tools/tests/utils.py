@@ -10,9 +10,42 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-# TODO: Missing doc strings
-# pylint: disable=missing-module-docstring
+"""
+This module contains utility functions for diagnostics tool tests.
+"""
 
-from .model_serializer import to_json, from_json, StoreSpec
-from .tags import svg_tag, ModelTag, ModelTagGroup
-from .diagnostics_tools.diagnostics_toolbox import DiagnosticsToolbox
+import pytest
+
+from pyomo.environ import (
+    ConcreteModel,
+    Objective,
+    Set,
+    Var,
+)
+
+__author__ = "Alex Dowling, Douglas Allan, Andrew Lee"
+
+
+@pytest.fixture()
+def dummy_problem():
+    """
+    Create a dummy problem for testing purposes.
+
+    Returns:
+        A dummy Pyomo model.
+    """
+    m = ConcreteModel()
+
+    m.I = Set(initialize=[i for i in range(5)])
+
+    m.x = Var(m.I, initialize=1.0)
+
+    diag = [100, 1, 10, 0.1, 5]
+    out = [1, 1, 1, 1, 1]
+
+    @m.Constraint(m.I)
+    def dummy_eqn(b, i):
+        return out[i] == diag[i] * m.x[i]
+
+    m.obj = Objective(expr=0)
+    return m
