@@ -92,8 +92,122 @@ class VariableListData(BaseModel, Printable):
         return title, lines
 
 
+def block_list_names(blocks):
+    b_items = []
+    for b in blocks:
+        if hasattr(b, "name"):
+            b_items.append(b.name)
+        else:  # indexed
+            for i in b:
+                b_items.append(i.name)
+    return b_items
+
+
+def _plural(n, word):
+    s = "s" if abs(n) > 1 else ""
+    return f"{n} {word}{s}"
+
+
+class VCSet(BaseModel):
+    variables: list[str]
+    constraints: list[str]
+
+    @classmethod
+    def from_blocks(cls, var_blocks, const_blocks) -> "VCSet":
+        v_items = block_list_names(var_blocks)
+        c_items = block_list_names(const_blocks)
+        return VCSet(variables=v_items, constraints=c_items)
+
+
+class EvalErrorData(BaseModel):
+    component_name: str
+    message: str
+
+
+class StructuralWarningsData(BaseModel, Printable):
+    dof: int | None = None
+    inconsistent_units: list[str] | None = None
+    underconstrained_set: VCSet | None = None
+    overconstrained_set: VCSet | None = None
+    evaluation_errors: list[EvalErrorData] | None = None
+
+    def get_lines(self):
+        lines = []
+        if self.dof is not None:
+            lines.append(f"WARNING: {_plural(self.dof, 'Degree')} of Freedom")
+        if self.inconsistent_units is not None:
+            lines.append(
+                f"WARNING: {_plural(len(self.inconsistent_units), 'Component')} with inconsistent units"
+            )
+        if (
+            self.underconstrained_set is not None
+            or self.overconstrained_set is not None
+        ):
+            t = " " * 4
+            ucv, ucc = len(self.underconstrained_set.variables), len(
+                self.underconstrained_set.constraints
+            )
+            ocv, occ = len(self.overconstrained_set.variables), len(
+                self.overconstrained_set.constraints
+            )
+            lines.extend(
+                [
+                    f"WARNING: Structural singularity found",
+                    f"{t}Under-Constrained Set: {ucv} variables, {ucc} constraints",
+                    f"{t}Over-Constrained Set: {ocv} variables, {occ} constraints",
+                ]
+            )
+        if self.evaluation_errors is not None:
+            lines.append(
+                f"WARNING: Found {len(self.evaluation_errors)} potential evaluation errors."
+            )
+
+        return "Structural warnings", lines
+
+
+class StructuralCautionsData(BaseModel, Printable):
+    zero_vars: list[str] | None = None
+    unused_vars_free: list[str] | None = None
+    unused_vars_fixed: list[str] | None = None
+
+    def get_lines(self):
+        lines = []
+        if self.zero_vars is not None:
+            lines.append(
+                f"Caution: {_plural(len(self.zero_vars), 'variable')} fixed to 0"
+            )
+        if self.unused_vars_free is not None or self.unused_vars_fixed is not None:
+            nfree = 0 if self.unused_vars_free is None else len(self.unused_vars_free)
+            nfixed = (
+                0 if self.unused_vars_fixed is None else len(self.unused_vars_fixed)
+            )
+            lines.append(
+                f"Caution: {_plural(nfree + nfixed, 'unused variable')} ({nfixed} fixed)"
+            )
+        return "Structural cautions", lines
+
+
+class StructuralIssuesData(BaseModel, Printable):
+    """Structural issues (warnings, cautions).
+
+    All possibilities are listed, the value will be None if it is not
+    an issue for this model.
+    """
+
+    warnings: StructuralWarningsData
+    cautions: StructuralCautionsData
+
+    def get_lines(self):
+        wt, wlines = self.warnings.get_lines()
+        ct, clines = self.cautions.get_lines()
+        return (
+            "Structural issues",
+            [wt, "-" * len(wt)] + wlines + ["", ct, "-" * len(ct)] + clines,
+        )
+
+
 class ReportSectionData(BaseModel):
-    """Data for a standard diagnostics report section."""
+    """Data for a standard diagnosstructuraltics report section."""
 
     title: str | None = None
     lines_list: list[str] = Field(default_factory=list)
@@ -198,13 +312,13 @@ class DulmageMendelsohnPartitionData(BaseModel):
     footer: str = "="
 
 
-class StructuralIssuesData(BaseModel):
-    """Computed data for the structural issues report."""
+# class StructuralIssuesData(BaseModel):
+#     """Computed data for the structural issues report."""
 
-    statistics: list[str] = Field(default_factory=list)
-    warnings: list[str] = Field(default_factory=list)
-    cautions: list[str] = Field(default_factory=list)
-    next_steps: list[str] = Field(default_factory=list)
+#     statistics: list[str] = Field(default_factory=list)
+#     warnings: list[str] = Field(default_factory=list)
+#     cautions: list[str] = Field(default_factory=list)
+#     next_steps: list[str] = Field(default_factory=list)
 
 
 class NumericalIssuesData(BaseModel):

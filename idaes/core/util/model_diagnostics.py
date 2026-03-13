@@ -134,8 +134,13 @@ from idaes.core.util.model_diagnostics_data import (
     ProblematicConstraintTermsData,
     ReportSectionData,
     StructuralIssuesData,
+    StructuralWarningsData,
+    StructuralCautionsData,
     TextListData,
     VariableListData,
+    EvalErrorData,
+    VCSet,
+    block_list_names,
 )
 import idaes.logger as idaeslog
 
@@ -680,6 +685,59 @@ class DiagnosticsToolbox:
         else:
             for _v in v:
                 _v.print(stream=stream, **kwargs)
+
+    def compute_structural_issues(
+        self, ignore_evaluation_errors=False, ignore_unit_consistency=False
+    ) -> StructuralIssuesData:
+        uc = [] if ignore_unit_consistency else identify_inconsistent_units(self._model)
+        uc_var, uc_con, oc_var, oc_con = self.get_dulmage_mendelsohn_partition()
+        w, c = StructuralWarningsData(), StructuralCautionsData()
+
+        # Warnings
+
+        dof = degrees_of_freedom(self._model)
+        if dof != 0:
+            w.dof = dof
+
+        if len(uc) > 0:
+            w.inconsistent_units = uc
+        if len(uc_var) + len(uc_con) > 0:
+            uc_set = set(uc_var) + set(uc_con)
+            w.underconstrained_set = VCSet.from_blocks(uc_var, uc_con)
+        if len(oc_var) + len(oc_con) > 0:
+            w.overconstrained_set = VCSet.from_blocks(oc_var, oc_con)
+
+        if not ignore_evaluation_errors:
+            eval_warnings = self._collect_potential_eval_errors()
+            if len(eval_warnings) > 0:
+                w.evaluation_errors = []
+                for ew_raw in eval_warnings:
+                    ew_comp, ew_msg = ew_raw.split(":")
+                    ee = EvalErrorData(
+                        component_name=ew_comp.strip(), message=ew_msg.strip()
+                    )
+                    w.evaluation_errors.append(ee)
+
+        # Cautions
+
+        zero_vars = _vars_fixed_to_zero(self._model)
+        if len(zero_vars) > 0:
+            c.zero_vars = block_list_names(zero_vars)
+
+        unused_vars = variables_not_in_activated_constraints_set(self._model)
+        if len(unused_vars) > 0:
+            uv_free, uv_fixed = [], []
+            for v in unused_vars:
+                if v.fixed:
+                    uv_fixed.append(v)
+                else:
+                    uv_free.append(v)
+            if uv_fixed:
+                c.unused_vars_fixed = block_list_names(uv_fixed)
+            if uv_free:
+                c.unused_vars_free = block_list_names(uv_free)
+
+        return StructuralIssuesData(warnings=w, cautions=c)
 
     def _verify_active_variables_initialized(self, stream=None):
         """
@@ -1746,7 +1804,7 @@ class DiagnosticsToolbox:
         if len(warnings) > 0:
             raise AssertionError(f"Numerical issues found ({len(warnings)}).")
 
-    def compute_structural_issues(self) -> StructuralIssuesData:
+    def compute_structural_issues2(self) -> StructuralIssuesData:
         # Potential evaluation errors
         # TODO: High Index?
         if len(greybox_block_set(self._model)) != 0:
@@ -1780,7 +1838,7 @@ class DiagnosticsToolbox:
             None
 
         """
-        data = self.compute_structural_issues()
+        data = self.compute_structural_issues2()
 
         self._display_report_section(
             ReportSectionData(
