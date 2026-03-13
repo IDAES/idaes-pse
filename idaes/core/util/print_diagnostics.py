@@ -14,6 +14,7 @@
 """
 Print diagnostics values in Pydantic data models.
 """
+
 import sys
 
 from idaes.core.util.compute_diagnostics import (
