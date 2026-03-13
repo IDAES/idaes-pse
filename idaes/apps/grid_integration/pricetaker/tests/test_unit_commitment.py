@@ -306,3 +306,264 @@ def test_ramping_limits():
     )
     assert con2_2 == str(rl.ramp_down_con[2].expr)
     assert con2_10 == str(rl.ramp_down_con[10].expr)
+
+
+@pytest.mark.unit
+def test_startup_shutdown_constraints_with_multiple_startup_types():
+    """
+    Tests the startup_shutdown_constraints function with multiple startup types
+    covering lines 184-242 which handle startup transition times and constraints
+    """
+    m = pyo.ConcreteModel()
+    m.set_time = pyo.RangeSet(10)
+    startup_transition_time = {"hot": 2, "warm": 5, "cold": 8}
+
+    @m.Block(m.set_time)
+    def op_blk(b, _):
+        b.op_mode = pyo.Var(within=pyo.Binary)
+        b.startup = pyo.Var(within=pyo.Binary)
+        b.shutdown = pyo.Var(within=pyo.Binary)
+        # Add startup_type_vars for multiple startup types
+        b.startup_type_vars = pyo.Var(
+            list(startup_transition_time.keys()), within=pyo.Binary
+        )
+
+    m.startup_shutdown = pyo.Block()
+
+    # Test with multiple startup types
+    uc.startup_shutdown_constraints(
+        blk=m.startup_shutdown,
+        op_blocks=m.op_blk,
+        install_unit=1,
+        minimum_up_time=3,
+        minimum_down_time=4,
+        set_time=m.set_time,
+        startup_transition_time=startup_transition_time,
+    )
+
+    ss = m.startup_shutdown
+
+    # Test that startup_duration parameter is created with correct values
+    # Line 204: blk.startup_duration = Param(startup_names, initialize=startup_transition_time)
+    assert hasattr(ss, "startup_duration")
+    assert (
+        pyo.value(ss.startup_duration["hot"]) == 4
+    )  # max(minimum_down_time=4, original=2)
+    assert pyo.value(ss.startup_duration["warm"]) == 5  # max(5, 4)
+    assert pyo.value(ss.startup_duration["cold"]) == 8  # max(8, 5)
+
+    # Test monotonic increasing property (lines 196-201)
+    startup_names = list(startup_transition_time.keys())
+    for i in range(1, len(startup_names)):
+        current_duration = pyo.value(ss.startup_duration[startup_names[i]])
+        prev_duration = pyo.value(ss.startup_duration[startup_names[i - 1]])
+        assert current_duration >= prev_duration
+
+    # Test total startup type constraint exists (lines 206-212)
+    # Eq 55 in Ben's paper
+    assert hasattr(ss, "tot_startup_type_rule")
+    assert len(ss.tot_startup_type_rule) == 10
+
+    # Check the constraint expression for tot_startup_type_rule
+    expected_expr = (
+        "op_blk[1].startup_type_vars[hot] + "
+        "op_blk[1].startup_type_vars[warm] + "
+        "op_blk[1].startup_type_vars[cold]  ==  op_blk[1].startup"
+    )
+    # print(str(ss.tot_startup_type_rule[1].expr))
+    assert str(ss.tot_startup_type_rule[1].expr) == expected_expr
+
+    # Test individual startup type constraints exist (lines 215-242)
+    # Eq 54 in Ben's paper - should have constraints for warm and cold (not hot since idx=0)
+    assert hasattr(ss, "Startup_Type_Constraint_warm")
+    assert hasattr(ss, "Startup_Type_Constraint_cold")
+
+    # Check that constraints are created for correct indices
+    # For warm startup (duration=5): constraints should exist for t >= 5
+    warm_constraint = getattr(ss, "Startup_Type_Constraint_warm")
+    assert 1 not in warm_constraint
+    assert 2 not in warm_constraint
+    assert 3 not in warm_constraint
+    assert 4 not in warm_constraint
+    assert 5 in warm_constraint
+    assert 10 in warm_constraint
+
+    # For cold startup (duration=8): constraints should exist for t >= 8
+    cold_constraint = getattr(ss, "Startup_Type_Constraint_cold")
+    assert 1 not in cold_constraint
+    assert 7 not in cold_constraint
+    assert 8 in cold_constraint
+    assert 10 in cold_constraint
+
+
+@pytest.mark.unit
+def test_startup_shutdown_constraints_no_startup_transition_time():
+    """
+    Tests early return when startup_transition_time is None or empty
+    covering lines 184-188
+    """
+    m = pyo.ConcreteModel()
+    m.set_time = pyo.RangeSet(5)
+
+    @m.Block(m.set_time)
+    def op_blk(b, _):
+        b.op_mode = pyo.Var(within=pyo.Binary)
+        b.startup = pyo.Var(within=pyo.Binary)
+        b.shutdown = pyo.Var(within=pyo.Binary)
+
+    m.startup_shutdown = pyo.Block()
+
+    # Test with None startup_transition_time
+    uc.startup_shutdown_constraints(
+        blk=m.startup_shutdown,
+        op_blocks=m.op_blk,
+        install_unit=1,
+        minimum_up_time=2,
+        minimum_down_time=2,
+        set_time=m.set_time,
+        startup_transition_time=None,
+    )
+
+    ss = m.startup_shutdown
+
+    # Should have basic constraints but no startup type specific constraints
+    assert hasattr(ss, "binary_relationship_con")
+    assert hasattr(ss, "minimum_up_time_con")
+    assert hasattr(ss, "minimum_down_time_con")
+
+    # Should NOT have startup type specific attributes
+    assert not hasattr(ss, "startup_duration")
+    assert not hasattr(ss, "tot_startup_type_rule")
+    assert not hasattr(ss, "Startup_Type_Constraint_warm")
+
+    # Test with empty dict startup_transition_time
+    m2 = pyo.ConcreteModel()
+    m2.set_time = pyo.RangeSet(5)
+
+    @m2.Block(m2.set_time)
+    def op_blk2(b, _):
+        b.op_mode = pyo.Var(within=pyo.Binary)
+        b.startup = pyo.Var(within=pyo.Binary)
+        b.shutdown = pyo.Var(within=pyo.Binary)
+
+    m2.startup_shutdown = pyo.Block()
+
+    uc.startup_shutdown_constraints(
+        blk=m2.startup_shutdown,
+        op_blocks=m2.op_blk2,
+        install_unit=1,
+        minimum_up_time=2,
+        minimum_down_time=2,
+        set_time=m2.set_time,
+        startup_transition_time={},
+    )
+
+    ss2 = m2.startup_shutdown
+
+    # Should have basic constraints but no startup type specific constraints
+    assert hasattr(ss2, "binary_relationship_con")
+    assert not hasattr(ss2, "startup_duration")
+    assert not hasattr(ss2, "tot_startup_type_rule")
+
+
+@pytest.mark.unit
+def test_startup_shutdown_constraints_single_startup_type():
+    """
+    Tests the case with single startup type in startup_transition_time dict
+    This should still create startup duration parameter and constraints
+    """
+    m = pyo.ConcreteModel()
+    m.set_time = pyo.RangeSet(8)
+
+    @m.Block(m.set_time)
+    def op_blk(b, _):
+        b.op_mode = pyo.Var(within=pyo.Binary)
+        b.startup = pyo.Var(within=pyo.Binary)
+        b.shutdown = pyo.Var(within=pyo.Binary)
+        # Add startup_type_vars for single startup type
+        b.startup_type_vars = {}
+        b.startup_type_vars["hot"] = pyo.Var(within=pyo.Binary)
+
+    m.startup_shutdown = pyo.Block()
+
+    # Test with single startup type - should respect minimum_down_time
+    startup_transition_time = {"hot": 2}  # Less than minimum_down_time=3
+
+    uc.startup_shutdown_constraints(
+        blk=m.startup_shutdown,
+        op_blocks=m.op_blk,
+        install_unit=1,
+        minimum_up_time=2,
+        minimum_down_time=3,
+        set_time=m.set_time,
+        startup_transition_time=startup_transition_time,
+    )
+
+    ss = m.startup_shutdown
+
+    # Should create startup_duration parameter
+    assert hasattr(ss, "startup_duration")
+    # Hot startup should be adjusted to minimum_down_time (line 195)
+    assert (
+        pyo.value(ss.startup_duration["hot"]) == 3
+    )  # max(minimum_down_time=3, original=2)
+
+    # Should create tot_startup_type_rule constraint
+    assert hasattr(ss, "tot_startup_type_rule")
+    assert len(ss.tot_startup_type_rule) == 8
+
+    # Should NOT create individual startup type constraints since there's only one type (idx=0 case)
+    assert not hasattr(ss, "Startup_Type_Constraint_hot")
+
+
+@pytest.mark.unit
+def test_startup_shutdown_constraints_constraint_expressions():
+    """
+    Tests the specific constraint expressions created for multiple startup types
+    Verifies the mathematical formulation from lines 225-241
+    """
+    m = pyo.ConcreteModel()
+    m.set_time = pyo.RangeSet(10)
+
+    @m.Block(m.set_time)
+    def op_blk(b, _):
+        b.op_mode = pyo.Var(within=pyo.Binary)
+        b.startup = pyo.Var(within=pyo.Binary)
+        b.shutdown = pyo.Var(within=pyo.Binary)
+        b.startup_type_vars = {}
+        b.startup_type_vars["hot"] = pyo.Var(within=pyo.Binary)
+        b.startup_type_vars["warm"] = pyo.Var(within=pyo.Binary)
+
+    m.startup_shutdown = pyo.Block()
+
+    startup_transition_time = {"hot": 3, "warm": 6}
+
+    uc.startup_shutdown_constraints(
+        blk=m.startup_shutdown,
+        op_blocks=m.op_blk,
+        install_unit=1,
+        minimum_up_time=2,
+        minimum_down_time=4,
+        set_time=m.set_time,
+        startup_transition_time=startup_transition_time,
+    )
+
+    ss = m.startup_shutdown
+
+    # Test tot_startup_type_rule constraint expression (Eq 55)
+    # Verify the constraint structure (exact string may vary due to variable representation)
+    tot_expr_str = str(ss.tot_startup_type_rule[5].expr)
+    assert "==" in tot_expr_str
+    assert "op_blk[5].startup" in tot_expr_str
+
+    # Test individual startup type constraint (Eq 54)
+    # For warm startup (duration=6): constraint should exist for t=6 and above
+    warm_constraint = getattr(ss, "Startup_Type_Constraint_warm")
+    assert 6 in warm_constraint
+
+    # The constraint should be: hot_startup <= sum of shutdowns in range [hot_duration, warm_duration)
+    # Range should be [4, 6) = [4, 5] but Pyomo uses t-i indexing, so it's [2, 1]
+    warm_expr_str = str(warm_constraint[6].expr)
+    assert "<=" in warm_expr_str
+    assert "op_blk[2].shutdown" in warm_expr_str
+    assert "op_blk[1].shutdown" in warm_expr_str
