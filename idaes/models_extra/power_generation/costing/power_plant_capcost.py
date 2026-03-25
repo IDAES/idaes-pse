@@ -1637,7 +1637,10 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     "fixed to 100 MM$"
                 )
             else:
-                b.total_TPC.fix(value(fixed_TPC) * CE_index_units)
+                # b.total_TPC.fix(value(fixed_TPC) * CE_index_units)
+                @b.Constraint()
+                def total_TPC_constraint(c):
+                    return c.total_TPC == fixed_TPC
         else:
             if fixed_TPC is not None:
                 _log.warning(
