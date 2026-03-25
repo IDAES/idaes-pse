@@ -1641,6 +1641,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 @b.Constraint()
                 def total_TPC_constraint(c):
                     return c.total_TPC == fixed_TPC
+
         else:
             if fixed_TPC is not None:
                 _log.warning(
