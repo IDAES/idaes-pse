@@ -113,6 +113,7 @@ def svd_sparse(jacobian, number_singular_values):
 
     return u, s, vT.transpose()
 
+
 def svd_rayleigh_ritz_callback(jacobian, number_singular_values, **kwargs):
     """
     Callback for performing SVD analysis using idaes.core.util.linalg.svd_rayleigh_ritz
@@ -130,10 +131,11 @@ def svd_rayleigh_ritz_callback(jacobian, number_singular_values, **kwargs):
     # the model diagnostics at present
     m, n = jacobian.shape
     if m != n:
-        u, s, v, _ = svd_rayleigh_ritz(jacobian, number_singular_values, **kwargs) 
+        u, s, v, _ = svd_rayleigh_ritz(jacobian, number_singular_values, **kwargs)
     else:
         u, s, v = svd_rayleigh_ritz(jacobian, number_singular_values, **kwargs)
     return u, s, v
+
 
 SVDCONFIG = ConfigDict()
 SVDCONFIG.declare(
