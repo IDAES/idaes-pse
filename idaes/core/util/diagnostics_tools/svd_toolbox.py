@@ -36,6 +36,7 @@ from pyomo.common.config import (
 )
 from pyomo.common.errors import PyomoException
 
+from idaes.core.util.linalg import svd_rayleigh_ritz
 from idaes.core.util.model_statistics import (
     greybox_block_set,
 )
@@ -112,6 +113,27 @@ def svd_sparse(jacobian, number_singular_values):
 
     return u, s, vT.transpose()
 
+def svd_rayleigh_ritz_callback(jacobian, number_singular_values, **kwargs):
+    """
+    Callback for performing SVD analysis using idaes.core.util.linalg.svd_rayleigh_ritz
+
+    Args:
+        jacobian: Jacobian to be analysed
+        number_singular_values: number of singular values to compute
+        **kwargs: Dictionary of keyword arguments to pass to svd_rayleigh_ritz
+
+    Returns:
+        u, s and v numpy arrays
+
+    """
+    # This method also returns the null space, which is not used by
+    # the model diagnostics at present
+    m, n = jacobian.shape
+    if m != n:
+        u, s, v, _ = svd_rayleigh_ritz(jacobian, number_singular_values, **kwargs) 
+    else:
+        u, s, v = svd_rayleigh_ritz(jacobian, number_singular_values, **kwargs)
+    return u, s, v
 
 SVDCONFIG = ConfigDict()
 SVDCONFIG.declare(
@@ -124,10 +146,10 @@ SVDCONFIG.declare(
 SVDCONFIG.declare(
     "svd_callback",
     ConfigValue(
-        default=svd_dense,
+        default=svd_rayleigh_ritz,
         domain=svd_callback_validator,
-        description="Callback to SVD method of choice (default = svd_dense)",
-        doc="Callback to SVD method of choice (default = svd_dense). "
+        description="Callback to SVD method of choice (default = svd_rayleigh_ritz)",
+        doc="Callback to SVD method of choice (default = svd_rayleigh_ritz). "
         "Callbacks should take the Jacobian and number of singular values "
         "to compute as options, plus any method specific arguments, and should "
         "return the u, s and v matrices as numpy arrays.",
