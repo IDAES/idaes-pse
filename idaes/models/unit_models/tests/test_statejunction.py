@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -23,6 +23,7 @@ from idaes.core import FlowsheetBlock
 from idaes.models.unit_models.statejunction import (
     StateJunction,
     StateJunctionInitializer,
+    StateJunctionScaler,
 )
 
 from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
@@ -45,7 +46,6 @@ from idaes.core.initialization import (
     InitializationStatus,
 )
 from idaes.core.util import DiagnosticsToolbox
-
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -70,6 +70,12 @@ def test_config():
     assert m.fs.unit.config.property_package is m.fs.properties
 
     assert m.fs.unit.default_initializer is StateJunctionInitializer
+    assert m.fs.unit.default_scaler is StateJunctionScaler
+
+    scaler_obj = m.fs.unit.default_scaler()
+    scaler_obj.scale_model(m.fs.unit)
+    assert m.fs.unit.properties[0].variables_scaled
+    assert m.fs.unit.properties[0].constraints_scaled
 
 
 # -----------------------------------------------------------------------------

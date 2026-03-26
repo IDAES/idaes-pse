@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -385,7 +385,7 @@ def _new_idaes_config_block():
         "scale_model",
         pyomo.common.config.ConfigValue(
             domain=Bool,
-            default=False,  # TODO: Change to true once transition complete
+            default=True,
             description="Whether to apply model scaling in writer",
         ),
     )

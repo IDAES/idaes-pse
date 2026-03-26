@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -13,6 +13,7 @@
 """
 This module contains tests for scaling.
 """
+
 import math
 from io import StringIO
 import pytest
@@ -596,7 +597,7 @@ def test_find_unscaled_vars_and_constraints():
     sc.constraint_scaling_transform(m.c3, 1)
 
     a = [id(v) for v in sc.unscaled_variables_generator(m)]
-    # Make sure we pick up the right variales
+    # Make sure we pick up the right variables
     assert id(m.x) not in a
     assert id(m.y) in a
     assert id(m.z) in a

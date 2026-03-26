@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -13,6 +13,7 @@
 """
 Authors: Anuja Deshpande, Andrew Lee
 """
+
 import pytest
 import numpy as np
 
@@ -50,7 +51,6 @@ from idaes.models.properties.modular_properties.phase_equil import SmoothVLE
 from idaes.models.properties.modular_properties.examples.CO2_H2O_Ideal_VLE import (
     configuration,
 )
-
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -176,7 +176,7 @@ class TestStateBlock(object):
 
     @pytest.mark.unit
     def test_define_port_members(self, model):
-        sv = model.props[1].define_state_vars()
+        sv = model.props[1].define_port_members()
 
         assert len(sv) == 4
         for i in sv:

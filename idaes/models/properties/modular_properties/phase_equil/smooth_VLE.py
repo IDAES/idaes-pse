@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -18,6 +18,7 @@ Miller, D.C., 2018, A Smooth, Square Flash Formulation for Equation-Oriented
 Flowsheet Optimization. Proceedings of the 13th International Symposium on
 Process Systems Engineering – PSE 2018, July 1-5, 2018, San Diego.
 """
+
 # TODO: Pylint complains about variables with _x names as they are built by other classes
 # pylint: disable=protected-access
 
@@ -27,11 +28,42 @@ from idaes.models.properties.modular_properties.base.utility import (
     identify_VL_component_list,
 )
 import idaes.core.util.scaling as iscale
+from idaes.core.scaling import CustomScalerBase
+
+
+class SmoothVLEScaler(CustomScalerBase):
+    """
+    Scaling method for the SmoothVLE method for phase equilibrium
+    """
+
+    def variable_scaling_routine(self, model, phase_pair, overwrite: bool = False):
+        suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
+        sf_T = self.get_scaling_factor(model.temperature)
+
+        if model.is_property_constructed("_t1" + suffix):
+            t1 = getattr(model, "_t1" + suffix)
+            self.set_component_scaling_factor(t1, sf_T, overwrite=overwrite)
+        # _teq is scaled in main method
+
+    def constraint_scaling_routine(self, model, phase_pair, overwrite: bool = False):
+        suffix = "_" + phase_pair[0] + "_" + phase_pair[1]
+
+        if model.is_property_constructed("_t1_constraint" + suffix):
+            t1 = getattr(model, "_t1" + suffix)
+            t1_con = getattr(model, "_t1_constraint" + suffix)
+            self.scale_constraint_by_component(t1_con, t1, overwrite=overwrite)
+
+        _teq_cons = getattr(model, "_teq_constraint" + suffix)
+        self.scale_constraint_by_component(
+            _teq_cons, model._teq[phase_pair], overwrite=overwrite
+        )
 
 
 # -----------------------------------------------------------------------------
 class SmoothVLE(object):
     """Methods for constructing equations associated with Smooth VLE formulation."""
+
+    default_scaler = SmoothVLEScaler
 
     @staticmethod
     def phase_equil(b, phase_pair):
@@ -61,6 +93,7 @@ class SmoothVLE(object):
                     initialize=b.temperature.value,
                     doc="Intermediate temperature for calculating Teq",
                     units=t_units,
+                    bounds=b.temperature.bounds,
                 ),
             )
             _t1 = getattr(b, "_t1" + suffix)

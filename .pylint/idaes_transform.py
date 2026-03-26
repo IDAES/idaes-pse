@@ -16,7 +16,6 @@ import astroid
 import pylint
 from astroid.builder import extract_node, parse
 
-
 _logger = logging.getLogger("pylint.ideas_plugin")
 
 
@@ -51,12 +50,12 @@ def _check_version_compatibility() -> None:
     to_check = [
         VersionCompat(
             distr_name="pylint",
-            expected="3.0.3",
+            expected="3.3.9",
             actual=pylint.__version__,
         ),
         VersionCompat(
             distr_name="astroid",
-            expected="3.0.3",
+            expected="3.3.11",
             actual=astroid.__version__,
         ),
     ]

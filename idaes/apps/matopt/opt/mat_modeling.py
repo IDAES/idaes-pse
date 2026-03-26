@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -454,7 +454,7 @@ class SiteCombination(Expr):
         descj=None,
         offset=0.0,
         symmetric_bonds=False,
-        **kwargs
+        **kwargs,
     ):
         """Standard constructor for site combination expressions.
 
@@ -971,7 +971,7 @@ class SumSitesAndTypes(Expr):
         offset=0.0,
         sites_to_sum=None,
         site_types_to_sum=None,
-        **kwargs
+        **kwargs,
     ):
         """Standard constructor for summation of site contributions.
 
@@ -1050,7 +1050,7 @@ class SumBondsAndTypes(Expr):
         offset=0.0,
         bonds_to_sum=None,
         bond_types_to_sum=None,
-        **kwargs
+        **kwargs,
     ):
         """Standard constructor for summation of contributions by bond-type.
 
@@ -1640,7 +1640,7 @@ class PiecewiseLinear(DescriptorRule):
                 pw_pts=self.breakpoints,
                 f_rule=self.values,
                 pw_constr_type=self.con_type,
-                pw_repn="MC"
+                pw_repn="MC",
             )
         ]
 
@@ -2109,7 +2109,7 @@ class MaterialDescriptor(IndexedElem):
         integer=False,
         binary=False,
         rules=None,
-        **kwargs
+        **kwargs,
     ):
         """Standard constructor for material descriptors.
 
@@ -2947,7 +2947,7 @@ class MatOptModel(object):
                         Binary if desc.binary else (Integers if desc.integer else Reals)
                     ),
                     bounds=desc._pyomo_bounds,
-                    dense=False
+                    dense=False,
                 )
                 setattr(m, desc.name, v)
                 setattr(desc, "_pyomo_var", v)

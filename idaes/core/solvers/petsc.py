@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -42,7 +42,6 @@ from pyomo.common.deprecation import deprecation_warning
 import idaes
 import idaes.logger as idaeslog
 import idaes.config as icfg
-
 
 # Importing a few things here so that they are cached
 # pylint: disable=unused-import
@@ -851,7 +850,7 @@ class PetscTrajectory(object):
         with open(f"{self.stub}.typ") as f:
             typ = list(map(int, f.readlines()))
         _vars = [name for i, name in enumerate(names) if typ[i] in [0, 1]]
-        (t, v, names) = petsc_binary_io().ReadTrajectory("Visualization-data")
+        t, v, names = petsc_binary_io().ReadTrajectory("Visualization-data")
         self.time = t
         self.vecs_by_time = v
         self.vecs = dict.fromkeys(_vars, None)

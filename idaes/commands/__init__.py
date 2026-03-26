@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -14,6 +14,8 @@
 # pylint: disable=missing-module-docstring
 
 import time
+import sys
+import importlib.util
 
 # Need to time imports, so must start timer before importing
 # pylint: disable=wrong-import-position
@@ -34,7 +36,10 @@ for finder, dotted_module_name, is_pkg in pkgutil.walk_packages(__path__):
         pass
     else:
         try:
-            finder.find_spec(module_name).loader.load_module(module_name)
+            spec = finder.find_spec(module_name)
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[module_name] = module
+            spec.loader.exec_module(module)
         except ModuleNotFoundError:
             click.echo(
                 f"Could not import commands from {module_name}. Perhaps a dependency is missing."

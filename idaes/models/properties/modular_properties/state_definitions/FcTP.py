@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -13,7 +13,10 @@
 """
 Methods for setting up FcTP as the state variables in a generic property
 package
+
+Authors: Andrew Lee, Douglas Allan
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
@@ -30,9 +33,13 @@ from pyomo.environ import (
 )
 
 from idaes.core import MaterialFlowBasis, MaterialBalanceType, EnergyBalanceType
+from idaes.core.scaling import (
+    ConstraintScalingScheme,
+)
 
 from idaes.models.properties.modular_properties.state_definitions.FTPx import (
     state_initialization,
+    FTPxScaler,
 )
 from idaes.models.properties.modular_properties.base.utility import (
     get_bounds_from_config,
@@ -490,6 +497,56 @@ def calculate_scaling_factors(b):
 do_not_initialize = []
 
 
+class FcTPScaler(FTPxScaler):
+    """
+    Scaler for constraints associated with FcTP state variables
+    """
+
+    # Inherit variable_scaling_routine from FTPx.
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+
+        for idx, condata in model.mole_frac_comp_eq.items():
+            if len(model.component_list) > 1:
+                self.scale_constraint_by_component(
+                    condata, model.flow_mol_comp[idx], overwrite=overwrite
+                )
+            else:
+                self.scale_constraint_by_component(
+                    condata, model.mole_frac_comp[idx], overwrite=overwrite
+                )
+
+        for idx, condata in model.total_flow_balance.items():
+            self.scale_constraint_by_nominal_value(
+                condata,
+                scheme=ConstraintScalingScheme.inverseMaximum,
+                overwrite=overwrite,
+            )
+
+        for idx, condata in model.component_flow_balances.items():
+            self.scale_constraint_by_nominal_value(
+                condata,
+                scheme=ConstraintScalingScheme.inverseMaximum,
+                overwrite=overwrite,
+            )
+
+        for idx, condata in model.phase_fraction_constraint.items():
+            if len(model.phase_list) == 1:
+                self.scale_constraint_by_component(
+                    condata, model.phase_frac[idx], overwrite=overwrite
+                )
+            else:
+                self.scale_constraint_by_component(
+                    condata, model.flow_mol_phase[idx], overwrite=overwrite
+                )
+
+        if len(model.phase_list) > 1:
+            for idx, condata in model.sum_mole_frac.items():
+                self.set_component_scaling_factor(condata, 1, overwrite=overwrite)
+
+
 class FcTP(object):
     """Component flow, temperature, pressure state."""
 
@@ -499,3 +556,4 @@ class FcTP(object):
     do_not_initialize = do_not_initialize
     define_default_scaling_factors = define_default_scaling_factors
     calculate_scaling_factors = calculate_scaling_factors
+    default_scaler = FcTPScaler

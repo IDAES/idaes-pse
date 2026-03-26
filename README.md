@@ -82,10 +82,11 @@ Most of the functionality is implemented in Python. In accordance with
 the end-of-life for many Python 2 libraries, the IDAES Toolkit is written
 for Python 3. The following sub-versions are supported:
 
-* Python 3.9
 * Python 3.10
 * Python 3.11
 * Python 3.12
+* Python 3.13
+
 
 > [!IMPORTANT]
 > Note that Python 3.8 is no longer officially supported.

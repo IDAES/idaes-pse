@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -17,6 +17,7 @@
 """
 UI exports for 0D Fixed Bed TSA unit model.
 """
+
 from pyomo.environ import ConcreteModel, SolverFactory, units
 from pyomo.common.dependencies import attempt_import
 
@@ -34,6 +35,7 @@ from idaes.models_extra.temperature_swing_adsorption import (
 
 from idaes.models_extra.temperature_swing_adsorption.util import tsa_summary
 
+# pylint: disable=possibly-used-before-assignment
 _, flowsheet_processor_available = attempt_import("idaes_flowsheet_processor")
 if flowsheet_processor_available:
     from idaes_flowsheet_processor import api

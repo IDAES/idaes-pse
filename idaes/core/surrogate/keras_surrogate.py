@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -13,6 +13,7 @@
 """
 Interface for importing Keras models into IDAES
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
@@ -28,6 +29,7 @@ from idaes.core.surrogate.sampling.scaling import OffsetScaler
 
 from idaes.core.surrogate.omlt_base_surrogate_class import OMLTSurrogate
 
+# pylint: disable=possibly-used-before-assignment
 keras, keras_available = attempt_import("tensorflow.keras")
 omlt, omlt_available = attempt_import("omlt")
 
@@ -108,6 +110,7 @@ class KerasSurrogate(OMLTSurrogate):
         )
         omlt_scaling, scaled_input_bounds = self.generate_omlt_scaling_objecets()
 
+        # pylint: disable-next=used-before-assignment
         net = load_keras_sequential(
             self._keras_model,
             scaling_object=omlt_scaling,

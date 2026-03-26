@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -40,7 +40,6 @@ from idaes.models.properties.modular_properties.eos.ceos import Cubic, CubicType
 from idaes.core.solvers import get_solver
 from idaes.models.properties.modular_properties.pure.ConstantProperties import Constant
 
-
 CoolProp = pytest.importorskip("CoolProp.CoolProp", reason="CoolProp not installed")
 
 from idaes.models.properties.modular_properties.coolprop.coolprop_wrapper import (
@@ -50,6 +49,8 @@ from idaes.models.properties.modular_properties.coolprop.coolprop_wrapper import
 )
 
 solver = get_solver("ipopt_v2")
+
+CoolProp.set_config_bool(CoolProp.ENABLE_SUPERANCILLARIES, False)
 
 
 class TestWrapper:
