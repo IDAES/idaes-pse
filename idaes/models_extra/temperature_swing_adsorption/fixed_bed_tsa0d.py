@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -44,6 +44,7 @@ swing adsorption for the recovery of the heavy component: an equilibrium-based
 shortcut model. Industrial & Engineering Chemistry Research, 2015, 54(11),
 3027-3038
 """
+
 from enum import Enum
 from pandas import DataFrame
 

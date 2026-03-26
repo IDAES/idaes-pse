@@ -1,0 +1,57 @@
+{
+    "nl_file": "isobutane_expressions_eos.nl",
+    "expr_map": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        13,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        12,
+        11
+    ],
+    "var_map": [
+        0,
+        1,
+        1000,
+        1000
+    ],
+    "param": {
+        "R": 0.14305157,
+        "MW": 58.1222,
+        "T_star": 407.81,
+        "rho_star": 225.5,
+        "Tc": 407.81,
+        "rhoc": 225.5,
+        "Pc": 3628.9999999998427,
+        "Tt": 113.73,
+        "Pt": 2.19e-05,
+        "rhot_l": 740.339,
+        "rhot_v": 1.41e-06,
+        "P_min": 1e-09,
+        "P_max": 1100000.0,
+        "rho_max": 1250.0,
+        "T_min": 235,
+        "T_max": 1300,
+        "reference_state_offset": [
+            0.0,
+            0.0
+        ]
+    },
+    "have_tcx": false,
+    "nl_file_st": "isobutane_expressions_st.nl",
+    "var_map_st": [
+        1,
+        1000,
+        1000,
+        1000
+    ],
+    "have_st": true,
+    "have_visc": false
+}

@@ -2,19 +2,19 @@
 # for developmental and contributed code
 
 # Overall (non-specific)
-* @lbianchi-lbl @ksbeattie
+* @sufikaur @ksbeattie
 # packaging
-setup.py @lbianchi-lbl @ksbeattie
-requirements*.txt @lbianchi-lbl @ksbeattie 
+setup.py @sufikaur @ksbeattie
+requirements*.txt @sufikaur @ksbeattie 
 
 # CI infra
-.github/ @lbianchi-lbl @ksbeattie 
+.github/ @sufikaur @ksbeattie 
 # spellchecker configuration
-.github/workflows/typos.toml @bpaul4 @lbianchi-lbl
+.github/workflows/typos.toml @bpaul4 @sufikaur
 
 # testing
-pytest*.ini @lbianchi-lbl
-conftest.py @lbianchi-lbl
+pytest*.ini @sufikaur @ksbeattie
+conftest.py @sufikaur @ksbeattie
 
 # Docs
 /docs @dangunter @bpaul4
@@ -23,7 +23,7 @@ conftest.py @lbianchi-lbl
 /idaes/commands/ @dangunter
 
 # Core
-/idaes/core/ @agarciadiego @dallan-keylogic @lbianchi-lbl
+/idaes/core/ @agarciadiego @dallan-keylogic
 /idaes/core/dmf/ @dangunter
 /idaes/core/surrogate/ @bpaul4 @avdudchenko @rundxdi
 /idaes/core/ui/ @dangunter

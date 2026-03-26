@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -20,11 +20,11 @@ Usage, e.g., for the Pitzer(1984) data::
     gibbs_data = pitzer.get_table("Standard G").data
 
 """
+
 __authors__ = ["Dan Gunter (LBNL)"]
 __author__ = __authors__[0]
 
 from pyomo.common.deprecation import deprecation_warning
-
 
 deprecation_warning(
     msg=(

@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -633,7 +633,7 @@ class LatinHypercubeSampling(SamplingMethods):
     def lhs_points_generation(self):
         """
         Generate points within each strata for each variable based on stratification. When invoked, it:
-        1. Determines the mimumum and maximum value for each feature (column),
+        1. Determines the minimum and maximum value for each feature (column),
         2. Calls the variable_sample_creation function on each feature, passing in its mimmum and maximum
         3. Returns an array containing the points selected in each strata of each column
 

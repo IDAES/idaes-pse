@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -13,12 +13,13 @@
 """
 Standard IDAES flash model.
 """
+
 # Import Python libraries
 import logging
 from pandas import DataFrame
 
 # Import Pyomo libraries
-from pyomo.environ import Constraint, Reference
+from pyomo.environ import ComponentMap, Constraint, Reference
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.network import Port
 
@@ -32,6 +33,7 @@ from idaes.core import (
     UnitModelBlockData,
     useDefault,
 )
+from idaes.core.scaling import CustomScalerBase
 from idaes.models.unit_models.separator import (
     Separator,
     SplittingType,
@@ -41,12 +43,54 @@ from idaes.models.unit_models.separator import (
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.units_of_measurement import report_quantity
 
-
-__author__ = "Andrew Lee, Jaffer Ghouse"
+__author__ = "Andrew Lee, Jaffer Ghouse, Douglas Allan"
 
 
 # Set up logger
 logger = logging.getLogger("idaes.unit_model")
+
+
+class FlashScaler(CustomScalerBase):
+    """
+    Scaler object for the flash unit model
+    """
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
+    ):
+        self.call_submodel_scaler_method(
+            model.control_volume,
+            method="variable_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+        self.call_submodel_scaler_method(
+            model.split,
+            method="variable_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
+    ):
+        self.call_submodel_scaler_method(
+            model.control_volume,
+            method="constraint_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+        self.call_submodel_scaler_method(
+            model.split,
+            method="constraint_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+        if hasattr(model, "split_fraction_eq"):
+            # Register fact that this equation is
+            # well-scaled by default
+            for condata in model.split_fraction_eq.values():
+                self.set_component_scaling_factor(condata, 1, overwrite=overwrite)
 
 
 @declare_process_block_class("Flash")
@@ -54,6 +98,8 @@ class FlashData(UnitModelBlockData):
     """
     Standard Flash Unit Model Class
     """
+
+    default_scaler = FlashScaler
 
     CONFIG = ConfigBlock()
     CONFIG.declare(
@@ -314,39 +360,15 @@ see property package for documentation.}""",
         stream_attributes = {}
         stream_attributes["Units"] = {}
 
-        sblocks = {
-            "Inlet": self.control_volume.properties_in,
-        }
-        if not self.config.ideal_separation:
-            # If not using ideal separation, we can get outlet state directly
-            # from the state blocks
-            sblocks["Vapor Outlet"] = self.split.Vap_state
-            sblocks["Liquid Outlet"] = self.split.Liq_state
-
-        for n, v in sblocks.items():
-            dvars = v[time_point].define_display_vars()
-
-            stream_attributes[n] = {}
-
-            for k in dvars:
-                for i in dvars[k].keys():
-                    stream_key = k if i is None else f"{k} {i}"
-
-                    quant = report_quantity(dvars[k][i])
-
-                    stream_attributes[n][stream_key] = quant.m
-                    stream_attributes["Units"][stream_key] = quant.u
-
         if self.config.ideal_separation:
-            # If using ideal separation, get values from Ports and hope they map
-            # to names in Inlet
-            # TODO: Add a better way to map these if necessary
-            for n, v in {
-                "Vapor Outlet": "vap_outlet",
-                "Liquid Outlet": "liq_outlet",
+            # If using ideal separation, build the stream table from Ports so that
+            # all streams use the same naming convention (avoids mismatches with
+            # define_display_vars() across property packages).
+            for n, port_obj in {
+                "Inlet": self.inlet,
+                "Vapor Outlet": self.vap_outlet,
+                "Liquid Outlet": self.liq_outlet,
             }.items():
-                port_obj = getattr(self, v)
-
                 stream_attributes[n] = {}
 
                 for k in port_obj.vars:
@@ -363,5 +385,27 @@ see property package for documentation.}""",
                             quant = report_quantity(port_obj.vars[k][time_point, i[1:]])
                             stream_attributes[n][k + " " + kname] = quant.m
                             stream_attributes["Units"][k + " " + kname] = quant.u
+        else:
+            # If not using ideal separation, we can get outlet state directly
+            # from the state blocks
+            sblocks = {
+                "Inlet": self.control_volume.properties_in,
+                "Vapor Outlet": self.split.Vap_state,
+                "Liquid Outlet": self.split.Liq_state,
+            }
+
+            for n, v in sblocks.items():
+                dvars = v[time_point].define_display_vars()
+
+                stream_attributes[n] = {}
+
+                for k in dvars:
+                    for i in dvars[k].keys():
+                        stream_key = k if i is None else f"{k} {i}"
+
+                        quant = report_quantity(dvars[k][i])
+
+                        stream_attributes[n][stream_key] = quant.m
+                        stream_attributes["Units"][stream_key] = quant.u
 
         return DataFrame.from_dict(stream_attributes, orient="columns")

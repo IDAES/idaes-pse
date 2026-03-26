@@ -4,7 +4,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2024 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -90,7 +90,7 @@ def initialize_by_element_in_range(
     time_linking_vars=[],
     dae_vars=[],
     max_linking_range=0,
-    **kwargs
+    **kwargs,
 ):
     """Function for solving a square model, time element-by-time element,
     between specified start and end times.
