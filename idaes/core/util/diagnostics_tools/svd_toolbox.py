@@ -129,12 +129,13 @@ def svd_rayleigh_ritz_callback(jacobian, number_singular_values, **kwargs):
     """
     # This method also returns the null space, which is not used by
     # the model diagnostics at present
-    m, n = jacobian.shape
-    if m != n:
-        u, s, v, _ = svd_rayleigh_ritz(jacobian, number_singular_values, **kwargs)
-    else:
-        u, s, v = svd_rayleigh_ritz(jacobian, number_singular_values, **kwargs)
-    return u, s, v
+    out_dict = svd_rayleigh_ritz(jacobian, number_singular_values, **kwargs)
+    # import pdb; pdb.set_trace()
+    return (
+        out_dict["left_singular_vectors"],
+        out_dict["singular_values"],
+        out_dict["right_singular_vectors"],
+    )
 
 
 SVDCONFIG = ConfigDict()
@@ -148,10 +149,10 @@ SVDCONFIG.declare(
 SVDCONFIG.declare(
     "svd_callback",
     ConfigValue(
-        default=svd_rayleigh_ritz,
+        default=svd_rayleigh_ritz_callback,
         domain=svd_callback_validator,
-        description="Callback to SVD method of choice (default = svd_rayleigh_ritz)",
-        doc="Callback to SVD method of choice (default = svd_rayleigh_ritz). "
+        description="Callback to SVD method of choice (default = svd_rayleigh_ritz_callback)",
+        doc="Callback to SVD method of choice (default = svd_rayleigh_ritz_callback). "
         "Callbacks should take the Jacobian and number of singular values "
         "to compute as options, plus any method specific arguments, and should "
         "return the u, s and v matrices as numpy arrays.",

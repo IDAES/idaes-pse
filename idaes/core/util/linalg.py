@@ -215,11 +215,17 @@ def _aug_eig_processing(
         zero_tol: Tolerance to drop vectors for basis of singular spaces U and V
 
     Returns:
-        U: Dense array of left singular vectors of A
-        svals: 1D dense array ofsingular values of A
-        V: Dense array of left singular vectors of A
-        null_space: If m < n (m > n) then a basis for the (left) null space
-            is returned. If m == n, then no null space is returned.
+        A dictionary with the following fields:
+            "left_singular_vectors": The m by number_singular_values dense array
+                U of left singular vectors
+            "right_singular_vectors": The n by number_singular_values dense array
+                V of right singular vectors.
+            "singular_values": The 1D dense array of the number_singular_values
+                smallest singular values
+        If m < n, the following field exists:
+            "null_vectors": The n by n - m dense array of null vectors of A
+        If n > m, the following field exists:
+            "left_null_vectors" The m by m - n dense array of left null vectors of A
 
     """
     assert len(A.shape) == 2
@@ -286,10 +292,17 @@ def _aug_eig_processing(
     V = V[:, ::-1]
     svals = svals[::-1]
 
-    if m == n:
-        return U, svals, V
-    else:
-        return U, svals, V, null_space
+    out_dict = {
+        "left_singular_vectors": U,
+        "singular_values": svals,
+        "right_singular_vectors": V,
+    }
+    if m < n:
+        out_dict["null_vectors"] = null_space
+    elif m > n:
+        out_dict["left_null_vectors"] = null_space
+
+    return out_dict
 
 
 def svd_rayleigh_ritz(
@@ -300,17 +313,44 @@ def svd_rayleigh_ritz(
     seed: int = None,
     suppress_warning=False,
 ):
+    # TODO should I call these "singular vectors" and "singular values" or
+    # "singular vector candidates" and "singular_value candidates"? When we are
+    # computing only a subset of the singular values and singular vectors, we are
+    # at risk of having singular vectors associated with singular values of similar
+    # magnitude being blended together, as well as (left) null vectors with vectors
+    # associated with singular values close to zero.
     """
-    Computes smallest singular vectors of the sparse m by n matrix A via Rayleigh-Ritz
-    iteration on the augmented matrix [[0, A.T], [A, 0]]. Working with this matrix
-    avoids the roundoff error inherent working with the Gram matrices A.T @ A or
-    A @ A.T, but also results in the (left) null space polluting the singular spectrum
-    if m < n (m > n). Therefore, this method is not appropriate for diagnosing
-    optimization problems in which m << n, but is appropriate if the (left) null space
-    is desired for diagnosing degrees of freedom.
+    For an :math:`m \times n` sparse real matrix :math:`A`, computes an :math:`m \times k`
+    dense real matrix :math:`U` of left singular vectors, an :math:`n \times k` dense real 
+    matrix :math:`V` of right singular vectors, and a length :math:`k` vector :math:`\sigma`
+    of the smallest singular values such that :math:`U^T \times U \approx I`,
+    :math:`V^T \times V \approx I`, and :math:`U \times A \times V.T \approx \text{diag}(\sigma)`.
+    If :math:`m < n`, then an `n \times n - m` dense real matrix :math:`N` of null vectors 
+    is returned such that :math:`N^T \times V \approx 0` and :math:`A \times N \approx 0`.
+    If :math:`m > n`, then an `m \times m - n` dense real matrix  :math:`L` of left null
+    vectors is returned such that :math:`U^T \times L \approx 0` and :math:`L^T \times A \approx 0`.  
+     
+    These singular values, singular vectors, and (left) null vectors are computed via 
+    Rayleigh-Ritz iteration on the augmented matrix 
+    
+    .. math::
+    
+    A_aug  := \left[
+        {\begin{array}{cc}
+            0 & A.T \\
+            A & 0
+        \end{array}}
+    \right]
+    
+    Working with this matrix avoids the roundoff error inherent working with the
+    Gram matrices :math:`A^T \times A` or :math:`A \times A^T, but also results 
+    in the (left) null space polluting the singular spectrum if :math:`m < n`
+    (:math:`m > n`). Therefore, this method is not appropriate for diagnosing
+    optimization problems in which :math:`m << n`, but is appropriate if the
+    (left) null space is desired for diagnosing degrees of freedom.
 
     Args:
-        A: Scipy sparse array with real entries
+        A: An m by n Scipy sparse array with real entries
         number_singular_values: number of small singular values and vectors to compute
         max_iter: Maximum number of iterations for Rayleigh-Ritz iteration
         tol: Tolerance used in stopping condition for Rayleigh-Ritz iteration
@@ -318,10 +358,17 @@ def svd_rayleigh_ritz(
         suppress_warning: Suppress the efficiency warning issued when |m - n| > 10
 
     Returns:
-        U: m by number_singular_values dense array of left singular vectors
-        svals: 1D dense array of number_singular_values singular values
-        V: n by number_singular_values dense array of left singular vectors
-        null: Basis for the (left) null space if m < n (m > n)
+        A dictionary with the following fields:
+            "left_singular_vectors": The m by number_singular_values dense array
+                U of left singular vectors
+            "right_singular_vectors": The n by number_singular_values dense array
+                V of right singular vectors.
+            "singular_values": The 1D dense array of the number_singular_values
+                smallest singular values
+        If m < n, the following field exists:
+            "null_vectors": The n by n - m dense array of null vectors of A
+        If n > m, the following field exists:
+            "left_null_vectors" The m by m - n dense array of left null vectors of A
     """
     # Should we try to squeeze extra dimensions first? It doesn't look like np.squeeze
     # works on sparse arrays, so we'd need to reshape it.
@@ -376,10 +423,8 @@ def svd_rayleigh_ritz(
         )
 
     try:
-        if m == n:
-            U, svals, V = _aug_eig_processing(A, B)
-        else:
-            U, svals, V, null = _aug_eig_processing(A, B)
+        out_dict = _aug_eig_processing(A, B)
+
     except AssertionError as exc:
         raise RuntimeError(
             "Processing of singular vectors failed despite Rayleigh-Ritz iteration "
@@ -388,11 +433,12 @@ def svd_rayleigh_ritz(
         ) from exc
 
     # Singular values already in ascending order, so just take the number that we want
-    U = U[:, :number_singular_values]
-    V = V[:, :number_singular_values]
-    svals = svals[:number_singular_values]
+    out_dict["left_singular_vectors"] = out_dict["left_singular_vectors"][
+        :, :number_singular_values
+    ]
+    out_dict["right_singular_vectors"] = out_dict["right_singular_vectors"][
+        :, :number_singular_values
+    ]
+    out_dict["singular_values"] = out_dict["singular_values"][:number_singular_values]
 
-    if m == n:
-        return U, svals, V
-    else:
-        return U, svals, V, null
+    return out_dict

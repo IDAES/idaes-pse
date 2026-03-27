@@ -37,7 +37,7 @@ from idaes.core.util.diagnostics_tools.svd_toolbox import (
     SVDToolbox,
     svd_dense,
     svd_sparse,
-    svd_rayleigh_ritz,
+    svd_rayleigh_ritz_callback,
 )
 from idaes.core.util.diagnostics_tools.tests.utils import (
     dummy_problem,
@@ -137,7 +137,7 @@ class TestSVDToolbox:
     def test_run_svd_analysis(self, dummy_problem):
         svd = SVDToolbox(dummy_problem)
 
-        assert svd.config.svd_callback is svd_rayleigh_ritz
+        assert svd.config.svd_callback is svd_rayleigh_ritz_callback
 
         svd.run_svd_analysis()
 

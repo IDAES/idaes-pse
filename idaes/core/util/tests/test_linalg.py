@@ -170,7 +170,10 @@ class TestSVDRayleighRitz:
             n_rows=30, n_columns=30, n_small=5, seed=7, eps_min=1e-16
         )
         svals_trunc = svals[:10]
-        Uhat, svals_hat, Vhat = svd_rayleigh_ritz(csc_array(A), seed=1)
+        out = svd_rayleigh_ritz(csc_array(A), seed=1)
+        Uhat = out["left_singular_vectors"]
+        svals_hat = out["singular_values"]
+        Vhat = out["right_singular_vectors"]
         _test_svd_quality(A, Uhat, svals_hat, Vhat)
         assert pytest.approx(svals_trunc, rel=1e-4, abs=1e-14) == svals_hat
 
@@ -180,7 +183,11 @@ class TestSVDRayleighRitz:
             n_rows=35, n_columns=30, n_small=5, seed=8, eps_min=1e-16
         )
         svals_trunc = svals[:10]
-        Uhat, svals_hat, Vhat, null_hat = svd_rayleigh_ritz(csc_array(A), seed=2)
+        out = svd_rayleigh_ritz(csc_array(A), seed=2)
+        Uhat = out["left_singular_vectors"]
+        svals_hat = out["singular_values"]
+        Vhat = out["right_singular_vectors"]
+        null_hat = out["left_null_vectors"]
         _test_svd_quality(A, Uhat, svals_hat, Vhat, null_hat)
         assert pytest.approx(svals_trunc, rel=1e-4, abs=1e-14) == svals_hat
 
@@ -190,7 +197,11 @@ class TestSVDRayleighRitz:
             n_rows=30, n_columns=35, n_small=5, seed=9, eps_min=1e-16
         )
         svals_trunc = svals[:10]
-        Uhat, svals_hat, Vhat, null_hat = svd_rayleigh_ritz(csc_array(A), seed=3)
+        out = svd_rayleigh_ritz(csc_array(A), seed=3)
+        Uhat = out["left_singular_vectors"]
+        svals_hat = out["singular_values"]
+        Vhat = out["right_singular_vectors"]
+        null_hat = out["null_vectors"]
         _test_svd_quality(A, Uhat, svals_hat, Vhat, null_hat)
         assert pytest.approx(svals_trunc, rel=1e-4, abs=1e-14) == svals_hat
 
@@ -201,7 +212,11 @@ class TestSVDRayleighRitz:
         )
         svals_trunc = svals[:10]
         with caplog.at_level(idaeslog.WARNING):
-            Uhat, svals_hat, Vhat, null_hat = svd_rayleigh_ritz(csc_array(A), seed=3)
+            out = svd_rayleigh_ritz(csc_array(A), seed=3)
+            Uhat = out["left_singular_vectors"]
+            svals_hat = out["singular_values"]
+            Vhat = out["right_singular_vectors"]
+            null_hat = out["null_vectors"]
         assert (
             "Matrix A has a nullspace of dimension at least 15, which "
             "degrades the efficiency of SVD algorithms based on the augmented "
@@ -218,7 +233,11 @@ class TestSVDRayleighRitz:
         )
         svals_trunc = svals[:10]
         with caplog.at_level(idaeslog.WARNING):
-            Uhat, svals_hat, Vhat, null_hat = svd_rayleigh_ritz(csc_array(A), seed=3)
+            out = svd_rayleigh_ritz(csc_array(A), seed=3)
+            Uhat = out["left_singular_vectors"]
+            svals_hat = out["singular_values"]
+            Vhat = out["right_singular_vectors"]
+            null_hat = out["left_null_vectors"]
         assert (
             "Matrix A has a left nullspace of dimension at least 14, which "
             "degrades the efficiency of SVD algorithms based on the augmented "
@@ -236,7 +255,11 @@ class TestSVDRayleighRitz:
         svals_trunc = svals
         # The default option is 10 singular vectors, but the method is supposed to silently
         # truncate it to 5 singular vectors
-        Uhat, svals_hat, Vhat, null_hat = svd_rayleigh_ritz(csc_array(A), seed=12342314)
+        out = svd_rayleigh_ritz(csc_array(A), seed=12342314)
+        Uhat = out["left_singular_vectors"]
+        svals_hat = out["singular_values"]
+        Vhat = out["right_singular_vectors"]
+        null_hat = out["null_vectors"]
         _test_svd_quality(A, Uhat, svals_hat, Vhat, null_hat, nvec=5)
         assert pytest.approx(svals_trunc, rel=1e-4, abs=1e-14) == svals_hat
 
@@ -248,7 +271,11 @@ class TestSVDRayleighRitz:
         svals_trunc = svals
         # The default option is 10 singular vectors, but the method is supposed to silently
         # truncate it to 5 singular vectors
-        Uhat, svals_hat, Vhat, null_hat = svd_rayleigh_ritz(csc_array(A), seed=3425767)
+        out = svd_rayleigh_ritz(csc_array(A), seed=3425767)
+        Uhat = out["left_singular_vectors"]
+        svals_hat = out["singular_values"]
+        Vhat = out["right_singular_vectors"]
+        null_hat = out["left_null_vectors"]
         _test_svd_quality(A, Uhat, svals_hat, Vhat, null_hat, nvec=5)
         assert pytest.approx(svals_trunc, rel=1e-4, abs=1e-14) == svals_hat
 
@@ -260,7 +287,10 @@ class TestSVDRayleighRitz:
         svals_trunc = svals
         # The default option is 10 singular vectors, but the method is supposed to silently
         # truncate it to 5 singular vectors
-        Uhat, svals_hat, Vhat = svd_rayleigh_ritz(csc_array(A), seed=9876575)
+        out = svd_rayleigh_ritz(csc_array(A), seed=9876575)
+        Uhat = out["left_singular_vectors"]
+        svals_hat = out["singular_values"]
+        Vhat = out["right_singular_vectors"]
         _test_svd_quality(A, Uhat, svals_hat, Vhat, nvec=5)
         assert pytest.approx(svals_trunc, rel=1e-4, abs=1e-14) == svals_hat
 
@@ -270,9 +300,11 @@ class TestSVDRayleighRitz:
             n_rows=30, n_columns=35, n_small=5, seed=12, eps_min=1e-16
         )
         svals_trunc = svals[:12]
-        Uhat, svals_hat, Vhat, null_hat = svd_rayleigh_ritz(
-            csc_array(A), number_singular_values=12, seed=31
-        )
+        out = svd_rayleigh_ritz(csc_array(A), number_singular_values=12, seed=31)
+        Uhat = out["left_singular_vectors"]
+        svals_hat = out["singular_values"]
+        Vhat = out["right_singular_vectors"]
+        null_hat = out["null_vectors"]
         _test_svd_quality(A, Uhat, svals_hat, Vhat, null_hat, nvec=12)
         assert pytest.approx(svals_trunc, rel=1e-4, abs=1e-14) == svals_hat
 
@@ -282,9 +314,11 @@ class TestSVDRayleighRitz:
             n_rows=30, n_columns=35, n_small=5, seed=37, eps_min=1e-16
         )
         svals_trunc = svals[:7]
-        Uhat, svals_hat, Vhat, null_hat = svd_rayleigh_ritz(
-            csc_array(A), number_singular_values=7, seed=31
-        )
+        out = svd_rayleigh_ritz(csc_array(A), number_singular_values=7, seed=31)
+        Uhat = out["left_singular_vectors"]
+        svals_hat = out["singular_values"]
+        Vhat = out["right_singular_vectors"]
+        null_hat = out["null_vectors"]
         _test_svd_quality(A, Uhat, svals_hat, Vhat, null_hat, nvec=7)
         assert pytest.approx(svals_trunc, rel=1e-4, abs=1e-14) == svals_hat
 
@@ -300,7 +334,11 @@ class TestSVDRayleighRitz:
         Vtrue = cached_svd["Vtrue"]
         null_true = cached_svd["null_true"]
 
-        Uhat, svals_hat, Vhat, null_hat = svd_rayleigh_ritz(jac, seed=86)
+        out = svd_rayleigh_ritz(jac, seed=86)
+        Uhat = out["left_singular_vectors"]
+        svals_hat = out["singular_values"]
+        Vhat = out["right_singular_vectors"]
+        null_hat = out["left_null_vectors"]
         _test_svd_quality(jac, Uhat, svals_hat, Vhat, null_hat)
         _assert_subspace_containment(Uhat, Utrue)
         _assert_subspace_containment(Vhat, Vtrue)
@@ -319,7 +357,11 @@ class TestSVDRayleighRitz:
         Vtrue = cached_svd["Vtrue"]
         null_true = cached_svd["null_true"]
 
-        Uhat, svals_hat, Vhat, null_hat = svd_rayleigh_ritz(jac, seed=86, max_iter=200)
+        out = svd_rayleigh_ritz(jac, seed=86, max_iter=200)
+        Uhat = out["left_singular_vectors"]
+        svals_hat = out["singular_values"]
+        Vhat = out["right_singular_vectors"]
+        null_hat = out["null_vectors"]
         _test_svd_quality(jac, Uhat, svals_hat, Vhat, null_hat)
         _assert_subspace_containment(Uhat, Utrue)
         _assert_subspace_containment(Vhat, Vtrue)
@@ -333,7 +375,11 @@ class TestSVDRayleighRitz:
         # However, with this seed, we do not converge to the 10 smallest singular
         # values, but only 9 of them plus the 11th(?) smallest sval
 
-        Uhat, svals_hat, Vhat, null_hat = svd_rayleigh_ritz(jac, seed=42, max_iter=200)
+        out = svd_rayleigh_ritz(jac, seed=42, max_iter=200)
+        Uhat = out["left_singular_vectors"]
+        svals_hat = out["singular_values"]
+        Vhat = out["right_singular_vectors"]
+        null_hat = out["left_null_vectors"]
         _test_svd_quality(jac, Uhat, svals_hat, Vhat, null_hat)
 
     @pytest.mark.integration
@@ -349,7 +395,11 @@ class TestSVDRayleighRitz:
         Vtrue = cached_svd["Vtrue"]
         null_true = cached_svd["null_true"]
 
-        Uhat, svals_hat, Vhat, null_hat = svd_rayleigh_ritz(jac, seed=87, max_iter=200)
+        out = svd_rayleigh_ritz(jac, seed=87, max_iter=200)
+        Uhat = out["left_singular_vectors"]
+        svals_hat = out["singular_values"]
+        Vhat = out["right_singular_vectors"]
+        null_hat = out["null_vectors"]
         _test_svd_quality(jac, Uhat, svals_hat, Vhat, null_hat)
         _assert_subspace_containment(Uhat, Utrue)
         _assert_subspace_containment(Vhat, Vtrue)
@@ -366,7 +416,10 @@ class TestSVDRayleighRitz:
         Utrue = cached_svd["Utrue"]
         Vtrue = cached_svd["Vtrue"]
 
-        Uhat, svals_hat, Vhat = svd_rayleigh_ritz(jac, seed=87, max_iter=200)
+        out = svd_rayleigh_ritz(jac, seed=87, max_iter=200)
+        Uhat = out["left_singular_vectors"]
+        svals_hat = out["singular_values"]
+        Vhat = out["right_singular_vectors"]
         _test_svd_quality(jac, Uhat, svals_hat, Vhat)
         _assert_subspace_containment(Uhat, Utrue, tol=1e-6)
         _assert_subspace_containment(Vhat, Vtrue, tol=1e-6)
@@ -374,5 +427,9 @@ class TestSVDRayleighRitz:
     @pytest.mark.integration
     def test_degenerate_soc_scheduling_jac(self):
         jac = load_npz(os.sep.join([svd_cache, "degenerate_soc_scheduling_jac.npz"]))
-        Uhat, svals_hat, Vhat, null_hat = svd_rayleigh_ritz(jac, seed=87, max_iter=200)
+        out = svd_rayleigh_ritz(jac, seed=87, max_iter=200)
+        Uhat = out["left_singular_vectors"]
+        svals_hat = out["singular_values"]
+        Vhat = out["right_singular_vectors"]
+        null_hat = out["null_vectors"]
         _test_svd_quality(jac, Uhat, svals_hat, Vhat, null_hat)
