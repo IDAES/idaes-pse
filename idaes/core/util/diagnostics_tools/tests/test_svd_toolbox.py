@@ -135,7 +135,7 @@ class TestSVDToolbox:
 
     @pytest.mark.unit
     def test_run_svd_analysis(self, dummy_problem):
-        svd = SVDToolbox(dummy_problem)
+        svd = SVDToolbox(dummy_problem, svd_callback_arguments={"seed": 3508})
 
         assert svd.config.svd_callback is svd_rayleigh_ritz_callback
 
@@ -228,7 +228,7 @@ class TestSVDToolbox:
 
     @pytest.mark.unit
     def test_display_rank_of_equality_constraints(self, dummy_problem):
-        svd = SVDToolbox(dummy_problem)
+        svd = SVDToolbox(dummy_problem, svd_callback_arguments={"seed": 3508})
 
         stream = StringIO()
         svd.display_rank_of_equality_constraints(stream=stream)
@@ -244,7 +244,11 @@ Number of Singular Values less than 1.0E-6 is 0
 
     @pytest.mark.unit
     def test_display_rank_of_equality_constraints(self, dummy_problem):
-        svd = SVDToolbox(dummy_problem, singular_value_tolerance=0.9)
+        svd = SVDToolbox(
+            dummy_problem,
+            singular_value_tolerance=0.9,
+            svd_callback_arguments={"seed": 3508},
+        )
 
         stream = StringIO()
         svd.display_rank_of_equality_constraints(stream=stream)
@@ -260,7 +264,11 @@ Number of Singular Values less than 9.0E-01 is 1
 
     @pytest.mark.unit
     def test_display_underdetermined_variables_and_constraints(self, dummy_problem):
-        svd = SVDToolbox(dummy_problem, size_cutoff_in_singular_vector=1.1)
+        svd = SVDToolbox(
+            dummy_problem,
+            size_cutoff_in_singular_vector=1.1,
+            svd_callback_arguments={"seed": 3508},
+        )
 
         stream = StringIO()
         svd.display_underdetermined_variables_and_constraints(stream=stream)
@@ -317,7 +325,7 @@ Constraints and Variables associated with smallest singular values
     def test_display_underdetermined_variables_and_constraints_specific(
         self, dummy_problem
     ):
-        svd = SVDToolbox(dummy_problem)
+        svd = SVDToolbox(dummy_problem, svd_callback_arguments={"seed": 3508})
 
         stream = StringIO()
         svd.display_underdetermined_variables_and_constraints(
@@ -344,7 +352,11 @@ Constraints and Variables associated with smallest singular values
 
     @pytest.mark.unit
     def test_display_underdetermined_variables_and_constraints(self, dummy_problem):
-        svd = SVDToolbox(dummy_problem, size_cutoff_in_singular_vector=1.1)
+        svd = SVDToolbox(
+            dummy_problem,
+            size_cutoff_in_singular_vector=1.1,
+            svd_callback_arguments={"seed": 3508},
+        )
 
         stream = StringIO()
         svd.display_underdetermined_variables_and_constraints(stream=stream)

@@ -79,15 +79,15 @@ def _symmetric_rayleigh_ritz_iteration(H, n_vec, tol, max_iter, seed=None):
 
     Sleijpen, G.L.G., Van Der Vorst, H.A., 2000. A Jacobi--Davidson
     Iteration Method for Linear Eigenvalue Problems. SIAM Rev. 42,
-    267–293. https://doi.org/10.1137/S0036144599363084
+    267-293. https://doi.org/10.1137/S0036144599363084
 
     Hochstenbach, M.E., 2001. A Jacobi--Davidson Type SVD Method.
-    SIAM J. Sci. Comput. 23, 606–628.
+    SIAM J. Sci. Comput. 23, 606-628.
     https://doi.org/10.1137/S1064827500372973
 
     Kokiopoulou, E., Bekas, C., Gallopoulos, E., 2004. Computing
     smallest singular triplets with implicitly restarted Lanczos
-    bidiagonalization. Applied Numerical Mathematics 49, 39–61.
+    bidiagonalization. Applied Numerical Mathematics 49, 39-61.
     https://doi.org/10.1016/j.apnum.2003.11.011
 
 
