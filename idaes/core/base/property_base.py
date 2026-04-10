@@ -110,6 +110,7 @@ class PhysicalParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
 
         # By default, property packages do not include inherent reactions
         self._has_inherent_reactions = False
+        self._default_state_scaler = None
 
     @property
     def state_block_class(self):
@@ -125,6 +126,39 @@ class PhysicalParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
     @property
     def has_inherent_reactions(self):
         return self._has_inherent_reactions
+    
+    @property
+    def has_default_state_scaler(self):
+        if self._default_state_scaler is None:
+            return False
+        else:
+            return True
+
+    @property
+    def default_state_scaler(self):
+        if self._default_state_scaler is not None:
+            return self._default_state_scaler
+        else:
+            raise AttributeError(
+                f"{self.name} has not been provided with a default scaler object "
+                "to use on state blocks."
+            )
+
+    @default_state_scaler.setter
+    def default_state_scaler(self, scaler_obj):
+        # Defer import to avoid circular import
+        from idaes.core.scaling.scaling_base import ScalerBase
+        
+        if isinstance(scaler_obj, ScalerBase):
+            self._default_state_scaler = scaler_obj
+        else:
+            raise TypeError(
+                f"Expected a subclass of ScalerBase, but instead got {type(scaler_obj)}."
+            )
+
+    @default_state_scaler.deleter
+    def default_state_scaler(self):
+        self._default_state_scaler = None
 
     def build_state_block(self, *args, **kwargs):
         """

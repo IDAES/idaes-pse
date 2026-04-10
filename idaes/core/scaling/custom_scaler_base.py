@@ -994,6 +994,8 @@ class CustomScalerBase(ScalerBase):
         Returns:
             None
         """
+        from idaes.core.base.property_base import StateBlock, StateBlockData
+
         if submodel_scalers is None:
             submodel_scalers = {}
 
@@ -1005,22 +1007,25 @@ class CustomScalerBase(ScalerBase):
                     # Check to see if Scaler is callable - this implies it is a class and not an instance
                     # Call the class to create an instance
                     scaler = scaler(**self.config)
-                _log.debug(f"Using user-defined Scaler for {submodel}.")
+                _log.debug(f"Using user-defined Scaler for {submodel}.")                
             else:
-                try:
-                    scaler = smdata.default_scaler
-                    _log.debug(f"Using default Scaler for {submodel}.")
-                except AttributeError:
-                    _log.debug(
-                        f"No default Scaler set for {submodel}. Cannot call {method}."
-                    )
-                    # TODO Is it possible for one index to have a scaler and another
-                    # not without user insanity?
-                    return
+                if (
+                    (isinstance(smdata, StateBlockData) or isinstance(smdata, StateBlock))
+                    and smdata.params.has_default_state_scaler
+                ):
+                    scaler = smdata.params.default_state_scaler
+                else:
+                    try:
+                        scaler = smdata.default_scaler
+                        _log.debug(f"Using default Scaler for {submodel}.")
+                    except AttributeError:
+                        _log.debug(
+                            f"No default Scaler set for {submodel}. Cannot call {method}."
+                        )
+                        return
                 if scaler is not None:
                     scaler = scaler(**self.config)
                 else:
-                    # TODO Why not return here but return above?
                     _log.debug(f"No Scaler found for {submodel}. Cannot call {method}.")
 
             # If a Scaler is found, call desired method

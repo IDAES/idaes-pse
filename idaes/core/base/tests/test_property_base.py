@@ -15,7 +15,7 @@ Tests for flowsheet_model.
 
 Author: Andrew Lee
 """
-
+import re
 import pytest
 import types
 
@@ -33,6 +33,7 @@ from idaes.core import (
 )
 from idaes.core.util.exceptions import PropertyPackageError, PropertyNotSupportedError
 from idaes.core.base.property_meta import PropertyClassMetadata
+from idaes.core.scaling.scaling_base import ScalerBase
 
 
 # -----------------------------------------------------------------------------
@@ -228,6 +229,35 @@ def test_has_inherent_reactions():
 
     assert m.p.has_inherent_reactions
 
+@pytest.mark.unit
+def test_default_state_scaler():
+    m = ConcreteModel()
+    m.p = ParameterBlock()
+    
+    assert m.p._default_state_scaler is None
+    assert m.p.has_default_state_scaler == False
+    with pytest.raises(
+        AttributeError,
+        match=re.escape(
+            "_ScalarParameterBlock' object has no attribute 'default_state_scaler"
+        )
+    ):
+        _ = m.p.default_state_scaler
+    
+    not_a_scaler_obj = "foo"
+    with pytest.raises(
+        TypeError,
+        match=re.escape(
+            "Expected a subclass of ScalerBase, but instead got <class 'str'>."
+        )
+    ):
+        m.p.default_state_scaler = not_a_scaler_obj
+    
+    scaler_obj = ScalerBase()
+    m.p.default_state_scaler = scaler_obj
+    assert m.p._default_state_scaler is scaler_obj
+    assert m.p.default_state_scaler is scaler_obj
+    
 
 # -----------------------------------------------------------------------------
 # Test StateBlock
