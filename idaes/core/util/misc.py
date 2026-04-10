@@ -246,14 +246,15 @@ def print_compact_form(expr, stream=None):
 
     stream.write(compact_expression_to_string(expr))
 
+
 def get_relative_path(comp: ComponentBase, blk: pyo.Block):
     """
     Finds the path of a component relative to a block.
 
-    For example if blk = m.fs.unit and 
+    For example if blk = m.fs.unit and
     comp = m.fs.unit.control_volume.properties_in[0].temperature,
     get_relative_path(comp, blk) would return
-    "control_volume.properties_in[0].temperature". 
+    "control_volume.properties_in[0].temperature".
 
     Converse operation to the Block.find_component method.
 
@@ -285,6 +286,4 @@ def get_relative_path(comp: ComponentBase, blk: pyo.Block):
         path_str = parent_blk.local_name + "." + path_str
         parent_blk = parent_blk.parent_block()
 
-    raise ValueError(
-        f"Block {blk.name} is not a ancestor of component {comp.name}."
-    )
+    raise ValueError(f"Block {blk.name} is not a ancestor of component {comp.name}.")

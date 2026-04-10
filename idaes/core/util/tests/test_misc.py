@@ -417,6 +417,7 @@ class TestToExprStringVisitor:
 
         assert stream.getvalue() == expected
 
+
 class TestGetRelativePath:
     @pytest.fixture
     def model(self):
@@ -436,7 +437,7 @@ class TestGetRelativePath:
         def rule_indexed_block(blk, j):
             def e2_rule(b, k):
                 return k * b.v2
-            
+
             blk.v2 = Var()
             blk.e2 = Expression(m.s, rule=e2_rule)
             blk.sb = Block()
@@ -475,9 +476,9 @@ class TestGetRelativePath:
                     rel_path = get_relative_path(subcomp, parent_block)
                     converse_comp = parent_block.find_component(rel_path)
                     assert subcomp is converse_comp
-                    
+
                     parent_block = parent_block.parent_block()
-        
+
         # Perform a check-sum so that we know that these loops
         # are hitting all the components (and not just terminating
         # after zero iterations).
@@ -508,7 +509,7 @@ class TestGetRelativePath:
             match=re.escape(
                 "Cannot find a path relative to the indexed block b. Call this function "
                 "with either its parent block or its BlockData children instead."
-            )
+            ),
         ):
             _ = get_relative_path(model.b[1].v2, model.b)
 
@@ -519,9 +520,7 @@ class TestGetRelativePath:
         with pytest.raises(
             ValueError,
             match=re.escape(
-            f"Component x and block b are not "
-            "on the same Pyomo model."
-            )
+                f"Component x and block b are not " "on the same Pyomo model."
+            ),
         ):
             _ = get_relative_path(m2.x, model.b)
-        
