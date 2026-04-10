@@ -519,8 +519,14 @@ class TestGetRelativePath:
         m2.x = Var()
         with pytest.raises(
             ValueError,
-            match=re.escape(
-                f"Component x and block b are not " "on the same Pyomo model."
-            ),
+            match=re.escape("Component x and block b are not on the same Pyomo model."),
         ):
             _ = get_relative_path(m2.x, model.b)
+
+    @pytest.mark.unit
+    def test_no_relative_path(self, model):
+        with pytest.raises(
+            ValueError,
+            match=re.escape(f"Block b[1] is not a ancestor of component b2.z."),
+        ):
+            _ = get_relative_path(model.b2.z, model.b[1])
