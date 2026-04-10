@@ -24,9 +24,10 @@ from pyomo.core.base.units_container import UnitsError
 
 from idaes.core.util.misc import (
     add_object_reference,
-    set_param_from_config,
     compact_expression_to_string,
+    get_relative_path,
     print_compact_form,
+    set_param_from_config,
 )
 import idaes.logger as idaeslog
 
@@ -415,3 +416,112 @@ class TestToExprStringVisitor:
         print_compact_form(m.c1, stream=stream)
 
         assert stream.getvalue() == expected
+
+class TestGetRelativePath:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.s = Set(initialize=[1, 2, 3, 4])
+
+        m.v = Var(m.s)
+
+        @m.Constraint(m.s)
+        def c(b, i):
+            return b.v[i] == i
+
+        @m.Expression()
+        def e1(b):
+            return sum(b.v[k] for k in b.s)
+
+        def rule_indexed_block(blk, j):
+            def e2_rule(b, k):
+                return k * b.v2
+            
+            blk.v2 = Var()
+            blk.e2 = Expression(m.s, rule=e2_rule)
+            blk.sb = Block()
+            blk.sb.x = Var()
+
+        m.b = Block(m.s, rule=rule_indexed_block)
+
+        m.b2 = Block()
+        m.b2.z = Var()
+        m.b2.sb = Block(m.s, rule=rule_indexed_block)
+
+        return m
+
+    @pytest.mark.unit
+    def test_idempotence(self, model):
+        # get_relative_path should be the converse operation
+        # to find_component---the latter finds a Pyomo component
+        # on a block from a relative path, while the former finds
+        # a relative path from a Pyomo component and Block
+
+        # Therefore blk.find_component(get_relative_path(comp, blk))
+        # should be comp.
+        counter = 0
+        for comp in model.component_data_objects():
+            loop_components = [comp]
+            # for indexed components, we want to test both the
+            # parent component and its component data children
+            if comp.is_indexed():
+                for compdata in comp.values():
+                    loop_components.append(compdata)
+
+            for subcomp in loop_components:
+                parent_block = subcomp.parent_block()
+                while parent_block is not None:
+                    counter += 1
+                    rel_path = get_relative_path(subcomp, parent_block)
+                    converse_comp = parent_block.find_component(rel_path)
+                    assert subcomp is converse_comp
+                    
+                    parent_block = parent_block.parent_block()
+        
+        # Perform a check-sum so that we know that these loops
+        # are hitting all the components (and not just terminating
+        # after zero iterations).
+        assert counter == 173
+
+    @pytest.mark.unit
+    def test_get_relative_path(self, model):
+        m = model
+
+        assert get_relative_path(m.v, m) == "v"
+
+        assert get_relative_path(m.b, m) == "b"
+        assert get_relative_path(m.b[1].v2, m) == "b[1].v2"
+        assert get_relative_path(m.b[1].v2, m.b[1]) == "v2"
+        assert get_relative_path(m.b[3].sb.x, m) == "b[3].sb.x"
+        assert get_relative_path(m.b[3].sb.x, m.b[3]) == "sb.x"
+        assert get_relative_path(m.b[3].sb.x, m.b[3].sb) == "x"
+
+        assert get_relative_path(m.b2.z, m) == "b2.z"
+        assert get_relative_path(m.b2.z, m.b2) == "z"
+        assert get_relative_path(m.b2.sb[1].e2, m.b2) == "sb[1].e2"
+        assert get_relative_path(m.b2.sb[1].e2[2], m.b2) == "sb[1].e2[2]"
+
+    @pytest.mark.unit
+    def test_indexed_block(self, model):
+        with pytest.raises(
+            TypeError,
+            match=re.escape(
+                "Cannot find a path relative to the indexed block b. Call this function "
+                "with either its parent block or its BlockData children instead."
+            )
+        ):
+            _ = get_relative_path(model.b[1].v2, model.b)
+
+    @pytest.mark.unit
+    def test_two_models(self, model):
+        m2 = ConcreteModel()
+        m2.x = Var()
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+            f"Component x and block b are not "
+            "on the same Pyomo model."
+            )
+        ):
+            _ = get_relative_path(m2.x, model.b)
+        

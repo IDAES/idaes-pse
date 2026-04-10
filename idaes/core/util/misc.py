@@ -21,6 +21,7 @@ import sys
 import pyomo.environ as pyo
 from pyomo.common.config import ConfigBlock
 from pyomo.core.expr.visitor import _ToStringVisitor
+from pyomo.core.base.component import ComponentBase
 from pyomo.core.base.expression import ExpressionData
 
 import idaes.logger as idaeslog
@@ -244,3 +245,46 @@ def print_compact_form(expr, stream=None):
         expr = expr.expr
 
     stream.write(compact_expression_to_string(expr))
+
+def get_relative_path(comp: ComponentBase, blk: pyo.Block):
+    """
+    Finds the path of a component relative to a block.
+
+    For example if blk = m.fs.unit and 
+    comp = m.fs.unit.control_volume.properties_in[0].temperature,
+    get_relative_path(comp, blk) would return
+    "control_volume.properties_in[0].temperature". 
+
+    Converse operation to the Block.find_component method.
+
+    Args:
+        comp: Pyomo component to get relative path of
+        blk: Pyomo block to define base of relative path
+
+    Returns:
+        rel_path: str giving relative path of comp on blk
+    """
+    if not comp.model() is blk.model():
+        # Should this be an attribute error?
+        raise ValueError(
+            f"Component {comp.name} and block {blk.name} are not "
+            "on the same Pyomo model."
+        )
+    if blk.is_indexed():
+        raise TypeError(
+            f"Cannot find a path relative to the indexed block {blk.name}. Call this function "
+            "with either its parent block or its BlockData children instead."
+        )
+
+    parent_blk = comp.parent_block()
+    path_str = comp.local_name
+    # blk.parent_block() returns None if blk is the parent ConcreteModel
+    while parent_blk is not None:
+        if blk is parent_blk:
+            return path_str
+        path_str = parent_blk.local_name + "." + path_str
+        parent_blk = parent_blk.parent_block()
+
+    raise ValueError(
+        f"Block {blk.name} is not a ancestor of component {comp.name}."
+    )
