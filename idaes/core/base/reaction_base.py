@@ -140,7 +140,8 @@ class ReactionParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
 
     @default_reaction_scaler_object.setter
     def default_reaction_scaler_object(self, scaler_obj):
-        # Defer import to avoid circular import
+        # Top-level import creates circular import
+        # pylint: disable=import-outside-toplevel
         from idaes.core.scaling.scaling_base import ScalerBase
 
         if isinstance(scaler_obj, ScalerBase):

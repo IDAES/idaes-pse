@@ -994,8 +994,11 @@ class CustomScalerBase(ScalerBase):
         Returns:
             None
         """
-        # Avoid a circular import
+        # Top-level import creates circular import
+        # pylint: disable=import-outside-toplevel
         from idaes.core.base.property_base import StateBlock, StateBlockData
+
+        # pylint: disable=import-outside-toplevel
         from idaes.core.base.reaction_base import (
             ReactionBlockBase,
             ReactionBlockDataBase,
