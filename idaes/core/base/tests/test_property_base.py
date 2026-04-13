@@ -262,6 +262,16 @@ def test_default_state_scaler():
     ):
         m.p.default_state_scaler_object = not_a_scaler_obj
 
+    with pytest.raises(
+        TypeError,
+        match=re.escape(
+            "Expected an instance of a subclass of ScalerBase, but instead got <class 'type'>."
+        ),
+    ):
+        # Do not let the user set a scaler class. Instead force them to set
+        # an instance of a scaler class.
+        _ = m.p.default_state_scaler_object = ScalerBase
+
     scaler_obj = ScalerBase()
     m.p.default_state_scaler_object = scaler_obj
     assert m.p._default_state_scaler_object is scaler_obj
