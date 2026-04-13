@@ -16,6 +16,7 @@ Tests for flowsheet_model.
 Author: Andrew Lee
 """
 
+import re
 import pytest
 import inspect
 from pyomo.environ import ConcreteModel, Constraint, Set, Var, units as pyunits
@@ -30,6 +31,7 @@ from idaes.core import (
     StateBlockData,
 )
 from idaes.core.util.exceptions import PropertyPackageError, PropertyNotSupportedError
+from idaes.core.scaling.scaling_base import ScalerBase
 
 
 # -----------------------------------------------------------------------------
@@ -338,6 +340,60 @@ def test_build():
 
     assert hasattr(m.rb, "state_ref")
     assert m.rb.params == m.rb.config.parameters
+
+
+@pytest.mark.unit
+def test_default_reaction_scaler():
+    m = ConcreteModel()
+    m.p = PropertyParameterBlock()
+
+    m.pb = DummyStateBlock(parameters=m.p)
+
+    m.r = ReactionParameterBlock6(property_package=m.p)
+    super(_ReactionParameterBlock6, m.r).build()
+
+    m.rb = ReactionBlock2(parameters=m.r, state_block=m.pb)
+
+    with pytest.raises(
+        AttributeError,
+        match=re.escape(
+            "_ScalarReactionParameterBlock6' object has no attribute 'default_reaction_scaler_class"
+        ),
+    ):
+        _ = m.r.default_reaction_scaler_class
+
+    assert m.r._default_reaction_scaler_object is None
+    with pytest.raises(
+        AttributeError,
+        match=re.escape(
+            "_ScalarReactionParameterBlock6' object has no attribute 'default_reaction_scaler_object"
+        ),
+    ):
+        _ = m.r.default_reaction_scaler_object
+
+    not_a_scaler_obj = "foo"
+    with pytest.raises(
+        TypeError,
+        match=re.escape(
+            "Expected an instance of a subclass of ScalerBase, but instead got <class 'str'>."
+        ),
+    ):
+        m.r.default_reaction_scaler_object = not_a_scaler_obj
+
+    with pytest.raises(
+        TypeError,
+        match=re.escape(
+            "Expected an instance of a subclass of ScalerBase, but instead got <class 'type'>."
+        ),
+    ):
+        # Do not let the user set a scaler class. Instead force them to set
+        # an instance of a scaler class.
+        _ = m.r.default_reaction_scaler_object = ScalerBase
+
+    scaler_obj = ScalerBase()
+    m.r.default_reaction_scaler_object = scaler_obj
+    assert m.r._default_reaction_scaler_object is scaler_obj
+    assert m.r.default_reaction_scaler_object is scaler_obj
 
 
 # -----------------------------------------------------------------------------

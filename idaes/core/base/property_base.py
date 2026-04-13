@@ -636,7 +636,10 @@ should be constructed in this state block,
 
     @property
     def default_scaler(self):
-        return self.parent_component().default_scaler
+        if self is self.parent_component():
+            return self.params._state_block_class.default_scaler
+        else:
+            return self.parent_component().default_scaler
 
     def build(self):
         """
