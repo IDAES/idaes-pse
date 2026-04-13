@@ -48,6 +48,7 @@ from idaes.core import (
 )
 from idaes.core.util.constants import Constants
 from idaes.core.util.testing import PhysicalParameterTestBlock
+from idaes.core.util.misc import add_object_reference
 
 # Dummy parameter block to test create-on-demand properties
 import idaes.logger as idaeslog
@@ -81,6 +82,66 @@ class DummyScaler(CustomScalerBase):
 
     def dummy_method(self, model, overwrite, submodel_scalers):
         model._dummy_scaler_test = overwrite
+
+
+class DummyScaler2(CustomScalerBase):
+    """
+    Create some dummy methods that will record that they ran in lists
+    """
+
+    def variable_scaling_routine(self, model, overwrite, submodel_scalers):
+        # Create some lists to show that each method was run
+        model._verification = []
+        model._subscalers = {}
+        model.overwrite = []
+
+        model._verification.append("variables2")
+        model._subscalers["variables2"] = submodel_scalers
+        model.overwrite.append(overwrite)
+
+    def constraint_scaling_routine(self, model, overwrite, submodel_scalers):
+        model._verification.append("constraints2")
+        model._subscalers["constraints2"] = submodel_scalers
+        model.overwrite.append(overwrite)
+
+    def fill_in_1(self, model):
+        model._verification.append("fill_in_1_2")
+
+    def fill_in_2(self, model):
+        model._verification.append("fill_in_2_2")
+
+    def dummy_method(self, model, overwrite, submodel_scalers):
+        model._dummy_scaler_test_2 = "foo"
+
+
+class DummyScaler3(CustomScalerBase):
+    """
+    Create some dummy methods that will record that they ran in lists
+    """
+
+    def variable_scaling_routine(self, model, overwrite, submodel_scalers):
+        # Create some lists to show that each method was run
+        model._verification = []
+        model._subscalers = {}
+        model.overwrite = []
+
+        model._verification.append("variables3")
+        model._subscalers["variables3"] = submodel_scalers
+        model.overwrite.append(overwrite)
+
+    def constraint_scaling_routine(self, model, overwrite, submodel_scalers):
+        model._verification.append("constraints3")
+        model._subscalers["constraints3"] = submodel_scalers
+        model.overwrite.append(overwrite)
+
+    def fill_in_1(self, model):
+        model._verification.append("fill_in_1_3")
+
+    def fill_in_2(self, model):
+        model._verification.append("fill_in_2_3")
+
+    def dummy_method(self, model, overwrite, submodel_scalers):
+        model._dummy_scaler_test_2 = "bar"
 
 
 # --------------------------------------------------------------------
@@ -235,7 +296,7 @@ class TestCustomScalerBase:
         ]
 
         # Check that overwrite was passed on
-        model.overwrite == [False, False]
+        assert model.overwrite == [False, False]
 
         # Check that submodel scalers were passed on to methods
         assert model._subscalers == {
@@ -321,6 +382,70 @@ class TestCustomScalerBase:
         m.state.b
         assert sb.get_default_scaling_factor(m.state.b) == 11
         assert m.state._lock_attribute_creation == False
+
+    @pytest.mark.unit
+    def test_default_scaler_object(self):
+        m = ConcreteModel()
+        m.params = Parameters()
+        m.params._state_block_class = State
+        m.state = State(parameters=m.params)
+        add_object_reference(m.state, "_params", m.params)
+        m.state._block_data_config_default["parameters"] = m.params
+
+        with pytest.raises(AttributeError):
+            _ = m.params.default_state_scaler_class
+
+        State.default_scaler = DummyScaler
+
+        assert m.params.default_state_scaler_class is DummyScaler
+        with pytest.raises(AttributeError):
+            _ = m.params.default_state_scaler_object
+        scaler_obj2 = DummyScaler2()
+        m.params.default_state_scaler_object = scaler_obj2
+        scaler_obj = DummyScaler()
+
+        scaler_obj.call_submodel_scaler_method(
+            m.state,
+            method="dummy_method",
+        )
+        assert m.state._dummy_scaler_test_2 == "foo"
+
+        # Undo global side effect
+        del State.default_scaler
+
+    @pytest.mark.unit
+    def test_provided_scaler_supercedes_default_scaler_object(self):
+        m = ConcreteModel()
+        m.params = Parameters()
+        m.params._state_block_class = State
+        m.state = State(parameters=m.params)
+        add_object_reference(m.state, "_params", m.params)
+        m.state._block_data_config_default["parameters"] = m.params
+
+        with pytest.raises(AttributeError):
+            _ = m.params.default_state_scaler_class
+
+        State.default_scaler = DummyScaler
+
+        assert m.params.default_state_scaler_class is DummyScaler
+        with pytest.raises(AttributeError):
+            _ = m.params.default_state_scaler_object
+        scaler_obj2 = DummyScaler2()
+        m.params.default_state_scaler_object = scaler_obj2
+        scaler_obj = DummyScaler()
+
+        scaler_obj3 = DummyScaler3()
+
+        cm = ComponentMap()
+        cm[m.state] = scaler_obj3
+
+        scaler_obj.call_submodel_scaler_method(
+            m.state, method="dummy_method", submodel_scalers=cm
+        )
+        assert m.state._dummy_scaler_test_2 == "bar"
+
+        # Undo global side effect
+        del State.default_scaler
 
     @pytest.mark.unit
     def test_scale_variable_by_component(self, model, caplog):
