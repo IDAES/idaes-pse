@@ -1019,11 +1019,17 @@ class CustomScalerBase(ScalerBase):
                     (
                         StateBlockData,
                         StateBlock,
-                        ReactionBlockDataBase,
-                        ReactionBlockBase,
                     ),
                 ) and hasattr(smdata.params, "default_state_scaler_object"):
                     scaler = smdata.params.default_state_scaler_object
+                elif isinstance(
+                    smdata,
+                    (
+                        ReactionBlockDataBase,
+                        ReactionBlockBase,
+                    ),
+                ) and hasattr(smdata.params, "default_reaction_scaler_object"):
+                    scaler = smdata.params.default_reaction_scaler_object
                 else:
                     try:
                         scaler = smdata.default_scaler

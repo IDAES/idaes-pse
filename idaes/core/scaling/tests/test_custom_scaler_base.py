@@ -45,6 +45,9 @@ from idaes.core import (
     Component,
     StateBlock,
     StateBlockData,
+    ReactionParameterBlock,
+    ReactionBlockBase,
+    ReactionBlockDataBase,
 )
 from idaes.core.util.constants import Constants
 from idaes.core.util.testing import PhysicalParameterTestBlock
@@ -195,6 +198,51 @@ class _State(StateBlockData):
 
     def b_method(self):
         self.b = Var(initialize=1)
+
+    def _recursion1(self):
+        self.recursive_cons1 = Constraint(expr=self.recursion2 == 1)
+
+    def _recursion2(self):
+        self.recursive_cons2 = Constraint(expr=self.recursion1 == 1)
+
+    def _raise_exception(self):
+        # PYLINT-TODO
+        # pylint: disable-next=broad-exception-raised
+        raise Exception()
+
+    def _does_not_create_component(self):
+        pass
+
+
+@declare_process_block_class("ReactionParameters")
+class _ReactionParameters(ReactionParameterBlock):
+    def build(self):
+        super(ReactionParameterBlock, self).build()
+
+    @classmethod
+    def define_metadata(cls, obj):
+        obj.define_custom_properties(
+            {
+                "a": {"method": "a_method"},
+                "recursion1": {"method": "_recursion1"},
+                "recursion2": {"method": "_recursion2"},
+                "not_callable": {"method": "test_obj"},
+                "raise_exception": {"method": "_raise_exception"},
+                "not_supported": {"supported": False},
+                "does_not_create_component": {"method": "_does_not_create_component"},
+            }
+        )
+
+
+@declare_process_block_class("Reaction", block_class=ReactionBlockBase)
+class _Reaction(ReactionBlockDataBase):
+    def build(self):
+        super(ReactionBlockDataBase, self).build()
+
+        self.test_obj = 1
+
+    def a_method(self):
+        self.a = Var(initialize=1)
 
     def _recursion1(self):
         self.recursive_cons1 = Constraint(expr=self.recursion2 == 1)
@@ -384,7 +432,7 @@ class TestCustomScalerBase:
         assert m.state._lock_attribute_creation == False
 
     @pytest.mark.unit
-    def test_default_scaler_object(self):
+    def test_default_scaler_object_properties(self):
         m = ConcreteModel()
         m.params = Parameters()
         m.params._state_block_class = State
@@ -414,7 +462,7 @@ class TestCustomScalerBase:
         del State.default_scaler
 
     @pytest.mark.unit
-    def test_provided_scaler_supercedes_default_scaler_object(self):
+    def test_provided_scaler_supercedes_default_scaler_object_properties(self):
         m = ConcreteModel()
         m.params = Parameters()
         m.params._state_block_class = State
@@ -446,6 +494,81 @@ class TestCustomScalerBase:
 
         # Undo global side effect
         del State.default_scaler
+
+    @pytest.mark.unit
+    def test_default_scaler_object_reactions(self):
+        m = ConcreteModel()
+        m.params = Parameters()
+        m.params._state_block_class = State
+        m.state = State(parameters=m.params)
+        add_object_reference(m.state, "_params", m.params)
+        m.state._block_data_config_default["parameters"] = m.params
+
+        m.rxn_params = ReactionParameters(property_package=m.params)
+        m.rxn_params._reaction_block_class = Reaction
+        m.rxn = Reaction(parameters=m.rxn_params)
+        add_object_reference(m.rxn, "_params", m.rxn_params)
+
+        with pytest.raises(AttributeError):
+            _ = m.rxn_params.default_reaction_scaler_class
+
+        Reaction.default_scaler = DummyScaler
+
+        assert m.rxn_params.default_reaction_scaler_class is DummyScaler
+        with pytest.raises(AttributeError):
+            _ = m.rxn_params.default_reaction_scaler_object
+        scaler_obj2 = DummyScaler2()
+        m.rxn_params.default_reaction_scaler_object = scaler_obj2
+
+        scaler_obj = DummyScaler()
+
+        scaler_obj.call_submodel_scaler_method(
+            m.rxn,
+            method="dummy_method",
+        )
+        assert m.rxn._dummy_scaler_test_2 == "foo"
+
+        # Undo global side effect
+        del Reaction.default_scaler
+
+    @pytest.mark.unit
+    def test_provided_scaler_supercedes_default_scaler_object_reactions(self):
+        m = ConcreteModel()
+        m.params = Parameters()
+        m.params._state_block_class = State
+        m.state = State(parameters=m.params)
+        add_object_reference(m.state, "_params", m.params)
+        m.state._block_data_config_default["parameters"] = m.params
+
+        m.rxn_params = ReactionParameters(property_package=m.params)
+        m.rxn_params._reaction_block_class = Reaction
+        m.rxn = Reaction(parameters=m.rxn_params)
+        add_object_reference(m.rxn, "_params", m.rxn_params)
+
+        with pytest.raises(AttributeError):
+            _ = m.rxn_params.default_reaction_scaler_class
+
+        Reaction.default_scaler = DummyScaler
+
+        assert m.rxn_params.default_reaction_scaler_class is DummyScaler
+        with pytest.raises(AttributeError):
+            _ = m.rxn_params.default_reaction_scaler_object
+        scaler_obj2 = DummyScaler2()
+        m.rxn_params.default_reaction_scaler_object = scaler_obj2
+        scaler_obj = DummyScaler()
+
+        scaler_obj3 = DummyScaler3()
+
+        cm = ComponentMap()
+        cm[m.rxn] = scaler_obj3
+
+        scaler_obj.call_submodel_scaler_method(
+            m.rxn, method="dummy_method", submodel_scalers=cm
+        )
+        assert m.rxn._dummy_scaler_test_2 == "bar"
+
+        # Undo global side effect
+        del Reaction.default_scaler
 
     @pytest.mark.unit
     def test_scale_variable_by_component(self, model, caplog):
