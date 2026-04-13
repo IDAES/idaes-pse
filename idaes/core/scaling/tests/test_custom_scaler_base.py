@@ -462,7 +462,7 @@ class TestCustomScalerBase:
         del State.default_scaler
 
     @pytest.mark.unit
-    def test_provided_scaler_supercedes_default_scaler_object_properties(self):
+    def test_provided_scaler_supersedes_default_scaler_object_properties(self):
         m = ConcreteModel()
         m.params = Parameters()
         m.params._state_block_class = State
@@ -532,7 +532,7 @@ class TestCustomScalerBase:
         del Reaction.default_scaler
 
     @pytest.mark.unit
-    def test_provided_scaler_supercedes_default_scaler_object_reactions(self):
+    def test_provided_scaler_supersedes_default_scaler_object_reactions(self):
         m = ConcreteModel()
         m.params = Parameters()
         m.params._state_block_class = State
