@@ -153,6 +153,8 @@ class PhysicalParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
         # pylint: disable=import-outside-toplevel
         from idaes.core.scaling.scaling_base import ScalerBase
 
+        # pylint: enable=import-outside-toplevel
+
         if isinstance(scaler_obj, ScalerBase):
             self._default_state_scaler_object = scaler_obj
         else:
@@ -638,7 +640,9 @@ should be constructed in this state block,
     @property
     def default_scaler(self):
         if self is self.parent_component():
+            # pylint: disable=protected-access
             return self.params._state_block_class.default_scaler
+            # pylint: enable=protected-access
         else:
             return self.parent_component().default_scaler
 

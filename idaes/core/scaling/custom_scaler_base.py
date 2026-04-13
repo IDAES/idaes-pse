@@ -997,12 +997,12 @@ class CustomScalerBase(ScalerBase):
         # Top-level import creates circular import
         # pylint: disable=import-outside-toplevel
         from idaes.core.base.property_base import StateBlock, StateBlockData
-
-        # pylint: disable=import-outside-toplevel
         from idaes.core.base.reaction_base import (
             ReactionBlockBase,
             ReactionBlockDataBase,
         )
+
+        # pylint: enable=import-outside-toplevel
 
         if submodel_scalers is None:
             submodel_scalers = {}

@@ -144,6 +144,8 @@ class ReactionParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
         # pylint: disable=import-outside-toplevel
         from idaes.core.scaling.scaling_base import ScalerBase
 
+        # pylint: enable=import-outside-toplevel
+
         if isinstance(scaler_obj, ScalerBase):
             self._default_reaction_scaler_object = scaler_obj
         else:
@@ -311,7 +313,9 @@ should be constructed in this reaction block,
     def default_scaler(self):
         if self.parent_component() is self:
             # Scaler block
+            # pylint: disable=protected-access
             return self.params.reaction_block_class.default_scaler
+            # pylint: enable=protected-access
         else:
             return self.parent_component().default_scaler
 
