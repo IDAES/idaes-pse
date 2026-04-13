@@ -110,13 +110,16 @@ class PhysicalParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
 
         # By default, property packages do not include inherent reactions
         self._has_inherent_reactions = False
-        self._default_state_scaler = None
+        self._default_state_scaler_object = None
 
     @property
     def state_block_class(self):
         if self._state_block_class is not None:
             return self._state_block_class
         else:
+            # Python catches the error and raises its own AttributeError
+            # with its own message. Leave the error, though, in case
+            # the user looks through the code and ends up here.
             raise AttributeError(
                 "{} has not assigned a StateBlock class to be associated "
                 "with this property package. Please contact the developer of "
@@ -126,38 +129,38 @@ class PhysicalParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
     @property
     def has_inherent_reactions(self):
         return self._has_inherent_reactions
-    
-    @property
-    def has_default_state_scaler(self):
-        if self._default_state_scaler is None:
-            return False
-        else:
-            return True
 
     @property
-    def default_state_scaler(self):
-        if self._default_state_scaler is not None:
-            return self._default_state_scaler
+    def default_state_scaler_class(self):
+        return self._state_block_class.default_scaler
+
+    @property
+    def default_state_scaler_object(self):
+        if self._default_state_scaler_object is not None:
+            return self._default_state_scaler_object
         else:
+            # Python catches the error and raises its own AttributeError
+            # with its own message. Leave the error, though, in case
+            # the user looks through the code and ends up here.
             raise AttributeError(
                 f"{self.name} has not been provided with a default scaler object "
                 "to use on state blocks."
             )
 
-    @default_state_scaler.setter
-    def default_state_scaler(self, scaler_obj):
+    @default_state_scaler_object.setter
+    def default_state_scaler_object(self, scaler_obj):
         # Defer import to avoid circular import
         from idaes.core.scaling.scaling_base import ScalerBase
-        
+
         if isinstance(scaler_obj, ScalerBase):
-            self._default_state_scaler = scaler_obj
+            self._default_state_scaler_object = scaler_obj
         else:
             raise TypeError(
-                f"Expected a subclass of ScalerBase, but instead got {type(scaler_obj)}."
+                f"Expected an instance of a subclass of ScalerBase, but instead got {type(scaler_obj)}."
             )
 
-    @default_state_scaler.deleter
-    def default_state_scaler(self):
+    @default_state_scaler_object.deleter
+    def default_state_scaler_object(self):
         self._default_state_scaler = None
 
     def build_state_block(self, *args, **kwargs):

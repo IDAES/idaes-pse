@@ -15,6 +15,7 @@ Tests for flowsheet_model.
 
 Author: Andrew Lee
 """
+
 import re
 import pytest
 import types
@@ -229,35 +230,43 @@ def test_has_inherent_reactions():
 
     assert m.p.has_inherent_reactions
 
+
 @pytest.mark.unit
 def test_default_state_scaler():
     m = ConcreteModel()
     m.p = ParameterBlock()
-    
-    assert m.p._default_state_scaler is None
-    assert m.p.has_default_state_scaler == False
+
     with pytest.raises(
         AttributeError,
         match=re.escape(
-            "_ScalarParameterBlock' object has no attribute 'default_state_scaler"
-        )
+            "_ScalarParameterBlock' object has no attribute 'default_state_scaler_class"
+        ),
     ):
-        _ = m.p.default_state_scaler
-    
+        _ = m.p.default_state_scaler_class
+
+    assert m.p._default_state_scaler_object is None
+    with pytest.raises(
+        AttributeError,
+        match=re.escape(
+            "_ScalarParameterBlock' object has no attribute 'default_state_scaler_object"
+        ),
+    ):
+        _ = m.p.default_state_scaler_object
+
     not_a_scaler_obj = "foo"
     with pytest.raises(
         TypeError,
         match=re.escape(
-            "Expected a subclass of ScalerBase, but instead got <class 'str'>."
-        )
+            "Expected an instance of a subclass of ScalerBase, but instead got <class 'str'>."
+        ),
     ):
-        m.p.default_state_scaler = not_a_scaler_obj
-    
+        m.p.default_state_scaler_object = not_a_scaler_obj
+
     scaler_obj = ScalerBase()
-    m.p.default_state_scaler = scaler_obj
-    assert m.p._default_state_scaler is scaler_obj
-    assert m.p.default_state_scaler is scaler_obj
-    
+    m.p.default_state_scaler_object = scaler_obj
+    assert m.p._default_state_scaler_object is scaler_obj
+    assert m.p.default_state_scaler_object is scaler_obj
+
 
 # -----------------------------------------------------------------------------
 # Test StateBlock
