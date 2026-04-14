@@ -311,13 +311,12 @@ should be constructed in this reaction block,
 
     @property
     def default_scaler(self):
-        if self.parent_component() is self:
-            # Scaler block
-            # pylint: disable=protected-access
-            return self.params.reaction_block_class.default_scaler
-            # pylint: enable=protected-access
-        else:
-            return self.parent_component().default_scaler
+        for parent_class in type(self).__bases__:
+            if issubclass(parent_class, ReactionBlockBase):
+                # Scalar reaction block
+                return super(parent_class, self).default_scaler
+        # Child of indexed block
+        return self.parent_component().default_scaler
 
     def lock_attribute_creation_context(self):
         """Returns a context manager that does not allow attributes to be created

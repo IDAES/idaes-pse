@@ -432,8 +432,12 @@ class _Parameters(ReactionParameterBlock):
         )
 
 
-@declare_process_block_class("Reaction", block_class=ReactionBlockBase)
-class _Reaction(ReactionBlockDataBase):
+class _Reaction(ReactionBlockBase):
+    default_scaler = ScalerBase
+
+
+@declare_process_block_class("Reaction", block_class=_Reaction)
+class _ReactionBase(ReactionBlockDataBase):
     def build(self):
         super(ReactionBlockDataBase, self).build()
 
@@ -525,6 +529,23 @@ def test_getattr_not_supported(m):
 def test_getattr_raise_exception(m):
     with pytest.raises(Exception):
         m.p.cons = Constraint(expr=m.p.raise_exception == 1)
+
+
+@pytest.mark.unit
+def test_default_scaler_scalar():
+    m = ConcreteModel()
+    m.pb = Parameters()
+    m.p = Reaction(parameters=m.pb)
+    assert m.p.default_scaler is ScalerBase
+
+
+@pytest.mark.unit
+def test_default_scaler_indexed():
+    m = ConcreteModel()
+    m.pb = Parameters()
+    m.p = Reaction([1, 2, 3], parameters=m.pb)
+    assert m.p.default_scaler is ScalerBase
+    assert m.p[1].default_scaler is ScalerBase
 
 
 # TODO : Need a test for cases where method does not create property

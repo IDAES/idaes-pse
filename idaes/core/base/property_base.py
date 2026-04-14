@@ -639,12 +639,12 @@ should be constructed in this state block,
 
     @property
     def default_scaler(self):
-        if self is self.parent_component():
-            # pylint: disable=protected-access
-            return self.params._state_block_class.default_scaler
-            # pylint: enable=protected-access
-        else:
-            return self.parent_component().default_scaler
+        for parent_class in type(self).__bases__:
+            if issubclass(parent_class, StateBlock):
+                # Scalar state block
+                return super(parent_class, self).default_scaler
+        # Child of indexed block
+        return self.parent_component().default_scaler
 
     def build(self):
         """

@@ -599,7 +599,11 @@ class _Parameters(PhysicalParameterBlock):
         )
 
 
-@declare_process_block_class("StateTest", block_class=StateBlock)
+class _StateBlockTest(StateBlock):
+    default_scaler = ScalerBase
+
+
+@declare_process_block_class("StateTest", block_class=_StateBlockTest)
 class _StateTest(StateBlockData):
     def build(self):
         super(_StateTest, self).build()
@@ -637,6 +641,23 @@ def test_has_inherent_reactions_state_block():
     m.pb._has_inherent_reactions = True
 
     assert m.p.has_inherent_reactions
+
+
+@pytest.mark.unit
+def test_default_scaler_scalar():
+    m = ConcreteModel()
+    m.pb = Parameters()
+    m.p = StateTest(parameters=m.pb)
+    assert m.p.default_scaler is ScalerBase
+
+
+@pytest.mark.unit
+def test_default_scaler_indexed():
+    m = ConcreteModel()
+    m.pb = Parameters()
+    m.p = StateTest([1, 2, 3], parameters=m.pb)
+    assert m.p.default_scaler is ScalerBase
+    assert m.p[1].default_scaler is ScalerBase
 
 
 # -----------------------------------------------------------------------------
