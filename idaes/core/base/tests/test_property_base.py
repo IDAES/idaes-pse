@@ -277,6 +277,18 @@ def test_default_state_scaler():
     assert m.p._default_state_scaler_object is scaler_obj
     assert m.p.default_state_scaler_object is scaler_obj
 
+    # Test deleter
+    del m.p.default_state_scaler_object
+
+    assert m.p._default_state_scaler_object is None
+    with pytest.raises(
+        AttributeError,
+        match=re.escape(
+            "_ScalarParameterBlock' object has no attribute 'default_state_scaler_object"
+        ),
+    ):
+        _ = m.p.default_state_scaler_object
+
 
 # -----------------------------------------------------------------------------
 # Test StateBlock

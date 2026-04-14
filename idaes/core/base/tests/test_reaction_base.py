@@ -395,6 +395,18 @@ def test_default_reaction_scaler():
     assert m.r._default_reaction_scaler_object is scaler_obj
     assert m.r.default_reaction_scaler_object is scaler_obj
 
+    # Test deleter
+    del m.r.default_reaction_scaler_object
+
+    assert m.r._default_reaction_scaler_object is None
+    with pytest.raises(
+        AttributeError,
+        match=re.escape(
+            "_ScalarReactionParameterBlock6' object has no attribute 'default_reaction_scaler_object"
+        ),
+    ):
+        _ = m.r.default_reaction_scaler_object
+
 
 # -----------------------------------------------------------------------------
 # Test reaction __getattr__ method

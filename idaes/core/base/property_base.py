@@ -164,7 +164,7 @@ class PhysicalParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
 
     @default_state_scaler_object.deleter
     def default_state_scaler_object(self):
-        self._default_state_scaler = None
+        self._default_state_scaler_object = None
 
     def build_state_block(self, *args, **kwargs):
         """

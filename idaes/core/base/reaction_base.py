@@ -155,7 +155,7 @@ class ReactionParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
 
     @default_reaction_scaler_object.deleter
     def default_reaction_scaler_object(self):
-        self._default_reaction_scaler = None
+        self._default_reaction_scaler_object = None
 
     def build_reaction_block(self, *args, **kwargs):
         """
