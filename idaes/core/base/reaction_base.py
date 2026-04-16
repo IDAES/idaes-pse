@@ -130,7 +130,7 @@ class ReactionParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
         if self._default_reaction_scaler_object is not None:
             return self._default_reaction_scaler_object
         else:
-            # Python catches the error and raises its own AttributeError
+            # Pyomo catches the error and raises its own AttributeError
             # with its own message. Leave the error, though, in case
             # the user looks through the code and ends up here.
             raise AttributeError(
