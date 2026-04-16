@@ -2041,7 +2041,7 @@ class ModularPropertiesInitializer(InitializerBase):
             self.config.constraint_tolerance = float("inf")
 
         if (
-            "flow_mol_phase_comp"
+            "flow_mol_phase_comp" in scaler_block.define_state_vars()
             or "mole_frac_phase_comp" in scaler_block.define_state_vars()
         ):
             init_log.debug(
