@@ -57,13 +57,14 @@ from idaes.core.util.exceptions import ConfigurationError, InitializationError
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-
 _log = idaeslog.getIdaesLogger(__name__)
+
 
 class SolventReboilerInitializer(SingleControlVolumeUnitInitializer):
     """
     Initializer object for the SolventReboiler
     """
+
     CONFIG = SingleControlVolumeUnitInitializer.CONFIG()
 
     def _generate_boilup_guess(
@@ -116,8 +117,7 @@ class SolventReboilerInitializer(SingleControlVolumeUnitInitializer):
                     for p, j in vap_state_vars[sv].keys():
                         if j in liq_state.component_list:
                             vapor_state_args[sv][p, j] = value(
-                                liq_state.fug_phase_comp["Liq", j]
-                                / liq_state.pressure
+                                liq_state.fug_phase_comp["Liq", j] / liq_state.pressure
                             )
                         else:
                             vapor_state_args[sv][p, j] = 1e-8
@@ -125,21 +125,16 @@ class SolventReboilerInitializer(SingleControlVolumeUnitInitializer):
                     for j in vap_state_vars[sv].keys():
                         if j in liq_state.component_list:
                             vapor_state_args[sv][j] = value(
-                                liq_state.fug_phase_comp["Liq", j]
-                                / liq_state.pressure
+                                liq_state.fug_phase_comp["Liq", j] / liq_state.pressure
                             )
                         else:
                             vapor_state_args[sv][j] = 1e-8
             else:
                 vapor_state_args[sv] = value(getattr(liq_state, sv))
-        
+
         return vapor_state_args
 
-    def initialization_routine(
-        self,
-        model: Block,
-        boilup_guess: dict=None
-    ):
+    def initialization_routine(self, model: Block, boilup_guess: dict = None):
         """
         Initialization routine for MSContactor Blocks.
 
@@ -194,7 +189,6 @@ class SolventReboilerInitializer(SingleControlVolumeUnitInitializer):
         return results
 
 
-
 @declare_process_block_class("SolventReboiler")
 class SolventReboilerData(UnitModelBlockData):
     """
@@ -203,6 +197,7 @@ class SolventReboilerData(UnitModelBlockData):
 
     Unit model to reboil the liquid from the bottom of a solvent column.
     """
+
     default_initializer = SolventReboilerInitializer
 
     CONFIG = ConfigBlock()
