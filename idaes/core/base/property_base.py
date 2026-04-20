@@ -117,7 +117,7 @@ class PhysicalParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
         if self._state_block_class is not None:
             return self._state_block_class
         else:
-            # Python catches the error and raises its own AttributeError
+            # Pyomo catches the error and raises its own AttributeError
             # with its own message. Leave the error, though, in case
             # the user looks through the code and ends up here.
             raise AttributeError(
@@ -139,7 +139,7 @@ class PhysicalParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
         if self._default_state_scaler_object is not None:
             return self._default_state_scaler_object
         else:
-            # Python catches the error and raises its own AttributeError
+            # Pyomo catches the error and raises its own AttributeError
             # with its own message. Leave the error, though, in case
             # the user looks through the code and ends up here.
             raise AttributeError(

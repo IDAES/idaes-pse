@@ -224,12 +224,6 @@ class _ReactionParameters(ReactionParameterBlock):
         obj.define_custom_properties(
             {
                 "a": {"method": "a_method"},
-                "recursion1": {"method": "_recursion1"},
-                "recursion2": {"method": "_recursion2"},
-                "not_callable": {"method": "test_obj"},
-                "raise_exception": {"method": "_raise_exception"},
-                "not_supported": {"supported": False},
-                "does_not_create_component": {"method": "_does_not_create_component"},
             }
         )
 
@@ -243,20 +237,6 @@ class _Reaction(ReactionBlockDataBase):
 
     def a_method(self):
         self.a = Var(initialize=1)
-
-    def _recursion1(self):
-        self.recursive_cons1 = Constraint(expr=self.recursion2 == 1)
-
-    def _recursion2(self):
-        self.recursive_cons2 = Constraint(expr=self.recursion1 == 1)
-
-    def _raise_exception(self):
-        # PYLINT-TODO
-        # pylint: disable-next=broad-exception-raised
-        raise Exception()
-
-    def _does_not_create_component(self):
-        pass
 
 
 @pytest.fixture
