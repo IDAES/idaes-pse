@@ -2038,6 +2038,8 @@ class ModularPropertiesInitializer(InitializerBase):
                 "initialization method may be needed."
                 "Ignoring constraints with large residuals."
             )
+            # TODO can we figure out how skip these constraints without
+            # mutating the initializer object?
             self.config.constraint_tolerance = float("inf")
 
         if (
@@ -2055,6 +2057,8 @@ class ModularPropertiesInitializer(InitializerBase):
                 "initialization method may be needed. "
                 "Ignoring constraints with large residuals."
             )
+            # TODO can we figure out how skip these constraints without
+            # mutating the initializer object?
             self.config.constraint_tolerance = float("inf")
 
         init_log.info("Starting initialization routine")
