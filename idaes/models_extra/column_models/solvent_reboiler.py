@@ -35,7 +35,7 @@ from pyomo.environ import (
     units as pyunits,
     value,
 )
-from pyomo.common.config import ConfigBlock, ConfigValue, ConfigDict, In, Bool
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 
 # Import IDAES cores
 import idaes.logger as idaeslog

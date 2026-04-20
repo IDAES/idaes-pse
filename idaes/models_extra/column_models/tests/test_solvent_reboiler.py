@@ -45,7 +45,6 @@ from idaes.models_extra.column_models.properties.MEA_solvent import (
     configuration as aqueous_mea,
 )
 from idaes.models_extra.column_models.properties.MEA_vapor import flue_gas
-from idaes.core.util.exceptions import InitializationError
 from idaes.core.util.testing import assert_solution_equivalent
 
 # -----------------------------------------------------------------------------
