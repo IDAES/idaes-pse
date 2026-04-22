@@ -75,9 +75,7 @@ def call_initialization_new_API(model):
     for j, val in mole_frac_guesses.items():
         liquid_guess[prefix + f"mole_frac_comp[{j}]"] = val
 
-    import idaes.logger as idaeslog
-
-    initializer_object = model.fs.unit.default_initializer(output_level=idaeslog.DEBUG)
+    initializer_object = model.fs.unit.default_initializer()
     initializer_object.initialize(model.fs.unit, initial_guesses=liquid_guess)
 
 
