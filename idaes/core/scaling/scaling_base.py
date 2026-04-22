@@ -135,6 +135,19 @@ class ScalerBase:
             width=66,
         )
 
+    def _filter_scaling_factor(self, sf):
+        # Cast sf to float to catch obvious garbage
+        sf = float(sf)
+        # This comparison filters out negative numbers and infinity.
+        # It also filters out NaN values because comparisons involving
+        # NaN return False by default (including float("NaN") == float("NaN")).
+        if not 0 < sf < float("inf"):
+            raise ValueError(
+                "Scaling factors must be strictly positive and finite. Received "
+                f"value of {sf} instead."
+            )
+        return sf
+
     def get_scaling_factor(
         self, component, default: float = None, warning: Bool = False
     ):
@@ -318,18 +331,7 @@ class ScalerBase:
         else:
             raise ValueError("Invalid value for component_type.")
 
-        # Cast to float to filter out garbage input
-        scaling_factor = float(scaling_factor)
-        if math.isnan(scaling_factor):
-            raise ValueError("Value for scaling factor was NaN")
-        if scaling_factor < 0:
-            raise ValueError(
-                "Scaling factors must be strictly positive numbers, but "
-                f"a value of {scaling_factor} was given."
-            )
-
-        if math.isinf(scaling_factor):
-            raise ValueError("Value for scaling factor was infinity.")
+        scaling_factor = self._filter_scaling_factor(scaling_factor)
 
         if scaling_factor > maxsf:
             _log.debug(

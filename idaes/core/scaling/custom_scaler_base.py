@@ -43,21 +43,6 @@ from idaes.core.util.misc import StrEnum
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
-
-def _filter_scaling_factor(sf):
-    # Cast sf to float to catch obvious garbage
-    sf = float(sf)
-    # This comparison filters out negative numbers and infinity.
-    # It also filters out NaN values because comparisons involving
-    # NaN return False by default (including float("NaN") == float("NaN")).
-    if not 0 < sf < float("inf"):
-        raise ValueError(
-            f"Scaling factors must be strictly positive and finite. Received "
-            f"value of {sf} instead."
-        )
-    return sf
-
-
 CSCONFIG = CONFIG()
 
 DEFAULT_UNIT_SCALING = {
@@ -523,7 +508,7 @@ class CustomScalerBase(ScalerBase):
                     # to replace it.
                     continue
 
-            sf = _filter_scaling_factor(sf)
+            sf = self._filter_scaling_factor(sf)
             replacement_map[id(data)] = 1 / sf
 
         return (replacement_map, variable_in_constraint)
