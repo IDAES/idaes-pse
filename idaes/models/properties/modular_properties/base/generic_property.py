@@ -594,7 +594,7 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
                 except AttributeError:
                     log_con_obj = getattr(model, "log_" + varname + "_eqn")
                 for idx, vardata in var_obj.items():
-                    sf = 1 / self.get_expression_nominal_value(vardata)
+                    sf = 1 / abs(self.get_expression_nominal_value(vardata))
                     self.set_component_scaling_factor(
                         log_con_obj[idx], sf, overwrite=overwrite
                     )
