@@ -269,10 +269,11 @@ class TestScalerBase:
             assert scaler_obj.get_scaling_factor(obj) == sf
             # NaN scaling factor
             with pytest.raises(
-                ValueError, match=re.escape(
+                ValueError,
+                match=re.escape(
                     "Scaling factors must be strictly positive and finite. Received "
                     "value of nan instead."
-                )
+                ),
             ):
                 scaler_obj._set_scaling_factor(obj, ctype, float("NaN"))
 
@@ -304,10 +305,11 @@ class TestScalerBase:
 
             # Infinity scaling factor
             with pytest.raises(
-                ValueError, match=re.escape(
+                ValueError,
+                match=re.escape(
                     "Scaling factors must be strictly positive and finite. Received "
                     "value of inf instead."
-                )
+                ),
             ):
                 scaler_obj._set_scaling_factor(obj, ctype, float("inf"))
 

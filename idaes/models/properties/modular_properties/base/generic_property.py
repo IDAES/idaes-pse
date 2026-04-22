@@ -2038,12 +2038,10 @@ class ModularPropertiesInitializer(InitializerBase):
                 "initialization method may be needed."
                 "Ignoring constraints with large residuals."
             )
-            # TODO can we figure out how skip these constraints without
-            # mutating the initializer object?
             self.config.constraint_tolerance = float("inf")
 
         if (
-            "flow_mol_phase_comp" in scaler_block.define_state_vars()
+            "flow_mol_phase_comp"
             or "mole_frac_phase_comp" in scaler_block.define_state_vars()
         ):
             init_log.debug(
@@ -2057,8 +2055,6 @@ class ModularPropertiesInitializer(InitializerBase):
                 "initialization method may be needed. "
                 "Ignoring constraints with large residuals."
             )
-            # TODO can we figure out how skip these constraints without
-            # mutating the initializer object?
             self.config.constraint_tolerance = float("inf")
 
         init_log.info("Starting initialization routine")
