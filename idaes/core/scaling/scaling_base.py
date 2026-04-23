@@ -16,8 +16,6 @@ Base class for Scalers
 Author: Andrew Lee
 """
 
-import math
-
 from pyomo.common.config import (
     Bool,
     ConfigDict,
