@@ -177,6 +177,13 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
         # option StateIndex.true is used. If StateIndex.apparent is used,
         # these values will be ignored (set them using mole_frac_phase_comp instead).
         "mole_frac_phase_comp_apparent": 10,
+        # Use phase-specific scaling hints for density.
+        # For solid and liquid phases, assume that density is around 1 g/mL
+        # We will estimate the molar weight the same way we do for enthalpy.
+        # For vapor phases, density is an strong function of temperature and pressure.
+        # We will use a molar density of about 400 mol/m**3, which corresponds to
+        # air at 25 C and 1 MPa. The user can specify a different value if appropriate.
+        "dens_mol_phase": DefaultScalingRecommendation.userInputRecommended
     }
 
     def variable_scaling_routine(
@@ -266,6 +273,54 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
                     sf_mw_phase[p] = self.get_scaling_factor(model.mw_phase[p])
                 else:
                     sf_mw_phase[p] = 1 / mw_phase
+
+        if model.is_property_constructed("dens_mol_phase"):
+            for p in model.phase_list:
+                sf = self.get_scaling_factor(model.dens_mol_phase[p])
+                if sf is not None:
+                    # User scaled variable directly
+                    continue
+                self.scale_variable_by_default(model.dens_mol_phase[p], overwrite=overwrite)
+                sf = self.get_scaling_factor(model.dens_mol_phase[p])
+                if sf is not None:
+                    # User set a default scaling factor for this phase
+                    continue
+                if not mw_missing:
+                    pobj = model.params.get_phase(p)
+                    if pobj.is_vapor_phase():
+                        dens_mol_phase_estimate = value(
+                            pyunits.convert(400 *pyunits.mol / pyunits.m**3, to_units=units["DENSITY_MOLE"])
+                        )
+                    elif pobj.is_liquid_phase() or pobj.is_solid_phase():
+                        dens_mol_phase_estimate = value(
+                            sf_mw_phase[p] # Multiplying by scaling factor is equivalent to dividing by MW
+                            * pyunits.convert(1000 *pyunits.kg / pyunits.m**3, to_units=units["DENSITY_MASS"])
+                        )
+                    else:
+                        _log.warning(
+                            f"Default scaling factor for molar density of phase {p} not set."
+                            f"Phase {p} is not a solid, liquid, or gas. Please check the implementation"
+                            "of your configuration dictionary. If this is correct, then the molar "
+                            "density cannot be approximated. Please provide default scaling factors "
+                            "for dens_mol_phase so that it can be scaled. Falling back "
+                            "on using a scaling factor of 1."
+                        )
+                        dens_mol_phase_estimate = 1
+                    sf_dens_mol_phase = abs(1 / dens_mol_phase_estimate)
+                else:
+                    _log.warning(
+                        f"Default scaling factor for molar density of phase {p} not set. Because "
+                        "molecular weight isn't provided for each component, the molar "
+                        "density cannot be approximated. Please provide default scaling factors "
+                        "for dens_mol_phase so that it can be scaled. Falling back "
+                        "on using a scaling factor of 1."
+                    )
+                    sf_dens_mol_phase = 1
+                self.set_component_scaling_factor(
+                    model.dens_mol_phase[p],
+                    sf_dens_mol_phase,
+                    overwrite=overwrite
+                )
 
         if model.is_property_constructed("enth_mol_phase"):
             for p in model.phase_list:
