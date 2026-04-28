@@ -660,7 +660,7 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
                 sf_vol = self.default_scaling_factors[f"vol_mol_phase[{p}]"]
             else:
                 # Use default for all phases
-                sf_vol = self.default_scaling_factors[f"vol_mol_phase"]
+                sf_vol = self.default_scaling_factors["vol_mol_phase"]
 
             if (
                 sf_dens is not DefaultScalingRecommendation.userInputRecommended
