@@ -235,15 +235,16 @@ def print_compact_form(expr, stream=None):
     Returns:
         None
     """
-    if stream is None:
-        stream = sys.stdout
 
     if hasattr(expr, "expr"):
         # We have a Constraint or Expression
         # We want to print the expression, not the object name
         expr = expr.expr
 
-    stream.write(compact_expression_to_string(expr))
+    if stream is None:
+        print(compact_expression_to_string(expr))
+    else:
+        stream.write(compact_expression_to_string(expr))
 
 
 # Credit to Florian Brucker on Stack Overflow for this implementation

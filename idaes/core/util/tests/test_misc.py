@@ -368,8 +368,8 @@ class TestSetParamFromConfig:
 
 
 class TestToExprStringVisitor:
-    @pytest.mark.unit
-    def test_compact_expression_to_string(self):
+    @pytest.fixture
+    def model(self):
         m = ConcreteModel()
         m.v1 = Var()
         m.v2 = Var()
@@ -378,44 +378,35 @@ class TestToExprStringVisitor:
         m.e1 = Expression(expr=m.v1 + m.v2)
         m.c1 = Constraint(expr=0 == m.v3 * m.e1)
 
-        str = compact_expression_to_string(m.c1.expr)
-        expected = "v3*e1  ==  0"
-
-        assert str == expected
+        return m
 
     @pytest.mark.unit
-    def test_print_compact_form_expr(self):
-        m = ConcreteModel()
-        m.v1 = Var()
-        m.v2 = Var()
-        m.v3 = Var()
+    def test_compact_expression_to_string(self, model):
+        assert compact_expression_to_string(model.c1.expr) == "v3*e1  ==  0"
 
-        m.e1 = Expression(expr=m.v1 + m.v2)
-        m.c1 = Constraint(expr=0 == m.v3 * m.e1)
-
-        expected = "v3*e1  ==  0"
-
-        stream = StringIO()
-        print_compact_form(m.c1.expr, stream=stream)
-
-        assert stream.getvalue() == expected
-
+    @pytest.mark.parametrize("use_stream", [False, True])
+    @pytest.mark.parametrize("print_component", [False, True])
     @pytest.mark.unit
-    def test_print_compact_form_component(self):
-        m = ConcreteModel()
-        m.v1 = Var()
-        m.v2 = Var()
-        m.v3 = Var()
-
-        m.e1 = Expression(expr=m.v1 + m.v2)
-        m.c1 = Constraint(expr=0 == m.v3 * m.e1)
-
+    def test_print_compact_form_expr(self, use_stream, print_component, model, capsys):
         expected = "v3*e1  ==  0"
+        if use_stream:
+            stream = StringIO()
+        else:
+            stream = None
 
-        stream = StringIO()
-        print_compact_form(m.c1, stream=stream)
+        if print_component:
+            print_compact_form(model.c1, stream=stream)
+        else:
+            print_compact_form(model.c1.expr, stream=stream)
 
-        assert stream.getvalue() == expected
+        captured = capsys.readouterr()
+        if use_stream:
+            assert stream.getvalue() == expected
+            assert len(captured.out) == 0
+            assert len(captured.err) == 0
+        else:
+            assert captured.out == expected + "\n"
+            assert len(captured.err) == 0
 
 
 @pytest.mark.unit
