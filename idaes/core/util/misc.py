@@ -16,7 +16,6 @@ This module contains miscellaneous utility functions for use in IDAES models.
 """
 
 from enum import Enum
-import sys
 
 import pyomo.environ as pyo
 from pyomo.common.config import ConfigBlock
