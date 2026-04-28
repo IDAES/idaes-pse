@@ -1194,11 +1194,13 @@ class TestCommon(object):
         scaler = blk.default_scaler()
         scaler.default_scaling_factors["flow_mol_phase"] = 1 / 100
         scaler.default_scaling_factors["enth_mol_phase"] = 1e-4
+        scaler.default_scaling_factors["dens_mol_phase"] = 137
+
         with caplog.at_level(idaeslog.WARNING):
             scaler.scale_model(blk)
         assert len(caplog.text) == 0
 
-        assert len(blk.scaling_factor) == 28
+        assert len(blk.scaling_factor) == 30
         assert len(blk.scaling_hint) == 9
 
         # Variables
@@ -1224,6 +1226,9 @@ class TestCommon(object):
 
         assert blk.scaling_factor[blk.pressure] == 1e-5
         assert blk.scaling_factor[blk.temperature] == 1 / 300
+
+        assert blk.scaling_factor[blk.dens_mol_phase["a"]] == 137
+        assert blk.scaling_factor[blk.dens_mol_phase["b"]] == 137
 
         # Constraints
         assert (
