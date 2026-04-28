@@ -1,8 +1,8 @@
 import pytest
 
-from pyomo.environ import ConcreteModel, Expression, units as pyunits, Var
+from pyomo.environ import ConcreteModel, units as pyunits
+import idaes.logger as idaeslog
 from idaes.core import (
-    Component,
     declare_process_block_class,
     Phase,
     LiquidPhase,
@@ -27,7 +27,6 @@ class _DensityParameters(PhysicalParameterBlock):
         self.p2 = SolidPhase()
         self.p3 = LiquidPhase()
         self.p4 = VaporPhase()
-        # self.c1 = Component()
         self.phase_list = ["p1", "p2", "p3", "p4"]
 
     @classmethod
@@ -53,6 +52,22 @@ class _DensityStateBlock(StateBlock):
     pass
 
 
+@declare_process_block_class("DensityState", block_class=_DensityStateBlock)
+class _DensityState(StateBlockData):
+    def build(self):
+        super(_DensityState, self).build()
+
+    def _vol_mol_phase_method(self):
+        @self.Expression(self.phase_list)
+        def vol_mol_phase(b, p):
+            return 137 * pyunits.m**3 / pyunits.mol
+
+    def _dens_mol_phase_method(self):
+        @self.Expression(self.phase_list)
+        def dens_mol_phase(b, p):
+            return 314159 * pyunits.mol / pyunits.m**3
+
+
 class DummyVDScaler(ModularPropertiesScaler):
     def variable_scaling_routine(self):
         raise AssertionError()
@@ -71,23 +86,12 @@ class DummyVDScaler(ModularPropertiesScaler):
         return (4999, 2063)
 
 
-@declare_process_block_class("DensityState", block_class=_DensityStateBlock)
-class _DensityState(StateBlockData):
-    def build(self):
-        super(_DensityState, self).build()
+class TestVolumeDensityScaling(object):
+    """
+    Test ModularPropertiesScaler._volume_density_scaling with a dummied-out
+    version of _estimate_volume_density_scaling_factors.
+    """
 
-    def _vol_mol_phase_method(self):
-        @self.Expression(self.phase_list)
-        def vol_mol_phase(b, p):
-            return 137 * pyunits.m**3 / pyunits.mol
-
-    def _dens_mol_phase_method(self):
-        @self.Expression(self.phase_list)
-        def dens_mol_phase(b, p):
-            return 314159 * pyunits.mol / pyunits.m**3
-
-
-class TestDensityVolumeScaling(object):
     _sf_mw_phase = {"p1": 1 / 2, "p2": 1 / 5, "p3": 1 / 10, "p4": 1 / 17}
 
     @pytest.fixture(scope="function")
@@ -431,3 +435,99 @@ class TestDensityVolumeScaling(object):
                     assert not model.state.is_property_constructed("dens_mol_phase")
                 if not construct_volume:
                     assert not model.state.is_property_constructed("vol_mol_phase")
+
+
+class DummyVDEstimator(ModularPropertiesScaler):
+    def variable_scaling_routine(self):
+        raise AssertionError()
+
+    def constraint_scaling_routine(self):
+        raise AssertionError()
+
+    def _volume_density_scaling(self, model, overwrite, sf_mw_phase):
+        raise AssertionError()
+
+    def _estimate_volume_density_scaling_factors(self, model, phase, sf_mw_phase):
+        return super()._estimate_volume_density_scaling_factors(
+            model, phase, sf_mw_phase
+        )
+
+
+class TestVolumeDensityEstimation(object):
+    """
+    Test ModularPropertiesScaler._estimate_volume_density_scaling_factors
+    """
+
+    _sf_mw_phase = {"p1": 1 / 2, "p2": 1 / 5, "p3": 1 / 10, "p4": 1 / 17}
+
+    @pytest.fixture(scope="function")
+    def model(self):
+        m = ConcreteModel()
+        m.props = DensityParameters()
+        m.state = DensityState(parameters=m.props)
+        return m
+
+    @pytest.mark.parametrize("sf_mw_phase", [None, _sf_mw_phase])
+    @pytest.mark.unit
+    def test_unknown_phase(self, sf_mw_phase, model, caplog):
+        scaler_obj = DummyVDEstimator()
+        with caplog.at_level(idaeslog.WARNING):
+            sf_dens, sf_vol = scaler_obj._estimate_volume_density_scaling_factors(
+                model.state, "p1", sf_mw_phase=sf_mw_phase
+            )
+        assert sf_dens == 1
+        assert sf_vol == 1
+        assert (
+            "Default scaling factor for molar density of phase p1 not set."
+            "Phase p1 is not a solid, liquid, or gas. Please check the implementation"
+            "of your configuration dictionary. If this is correct, then the molar "
+            "density cannot be approximated. Please provide default scaling factors "
+            "for dens_mol_phase so that it can be scaled. Falling back "
+            "on using a scaling factor of 1."
+        ) in caplog.text
+        assert len(caplog.records) == 1
+
+    @pytest.mark.parametrize("phase", ["p2", "p3"])
+    @pytest.mark.unit
+    def test_condensed_phase_no_mw(self, phase, model, caplog):
+        scaler_obj = DummyVDEstimator()
+        with caplog.at_level(idaeslog.WARNING):
+            sf_dens, sf_vol = scaler_obj._estimate_volume_density_scaling_factors(
+                model.state, phase, sf_mw_phase=None
+            )
+        assert sf_dens == 1
+        assert sf_vol == 1
+        assert (
+            f"Default scaling factor for molar density of phase {phase} not set. Because "
+            "molecular weight isn't provided for each component, the molar density "
+            "cannot be approximated. Please provide either default scaling factors "
+            "for dens_mol_phase so that it can be scaled or component molecular weight in "
+            "the configuration dictionary. Falling back to using a scaling factor of 1."
+        ) in caplog.text
+        assert len(caplog.records) == 1
+
+    @pytest.mark.parametrize("phase", ["p2", "p3"])
+    @pytest.mark.unit
+    def test_solid_yes_mw(self, phase, model, caplog):
+        scaler_obj = DummyVDEstimator()
+        sf_vol_ref = self._sf_mw_phase[phase] * 1000
+        sf_dens, sf_vol = scaler_obj._estimate_volume_density_scaling_factors(
+            model.state, phase, sf_mw_phase=self._sf_mw_phase
+        )
+        assert sf_dens == pytest.approx(1 / sf_vol_ref, rel=1e-8)
+        assert sf_vol == pytest.approx(sf_vol_ref, rel=1e-8)
+        assert len(caplog.records) == 0
+
+    # Vapor phase does not use mw because molar
+    # density is given by ideal gas law
+    @pytest.mark.parametrize("sf_mw_phase", [None, _sf_mw_phase])
+    @pytest.mark.unit
+    def test_vapor_phase(self, sf_mw_phase, model, caplog):
+        scaler_obj = DummyVDEstimator()
+        sf_vol_ref = 40
+        sf_dens, sf_vol = scaler_obj._estimate_volume_density_scaling_factors(
+            model.state, "p4", sf_mw_phase=sf_mw_phase
+        )
+        assert sf_dens == pytest.approx(1 / sf_vol_ref, rel=1e-8)
+        assert sf_vol == pytest.approx(sf_vol_ref, rel=1e-8)
+        assert len(caplog.records) == 0
