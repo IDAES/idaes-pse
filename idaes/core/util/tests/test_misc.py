@@ -27,6 +27,7 @@ from idaes.core.util.misc import (
     set_param_from_config,
     compact_expression_to_string,
     print_compact_form,
+    make_ordinal,
 )
 import idaes.logger as idaeslog
 
@@ -415,3 +416,40 @@ class TestToExprStringVisitor:
         print_compact_form(m.c1, stream=stream)
 
         assert stream.getvalue() == expected
+
+
+@pytest.mark.unit
+def test_make_ordinal():
+    assert make_ordinal(0) == "0th"
+    assert make_ordinal(1) == "1st"
+    assert make_ordinal(2) == "2nd"
+    assert make_ordinal(3) == "3rd"
+    assert make_ordinal(4) == "4th"
+    assert make_ordinal(5) == "5th"
+    assert make_ordinal(6) == "6th"
+    assert make_ordinal(7) == "7th"
+    assert make_ordinal(8) == "8th"
+    assert make_ordinal(9) == "9th"
+    assert make_ordinal(10) == "10th"
+
+    assert make_ordinal(11) == "11th"
+    assert make_ordinal(12) == "12th"
+    assert make_ordinal(13) == "13th"
+    assert make_ordinal(14) == "14th"
+    assert make_ordinal(16) == "16th"
+    assert make_ordinal(19) == "19th"
+
+    assert make_ordinal(20) == "20th"
+    assert make_ordinal(21) == "21st"
+    assert make_ordinal(22) == "22nd"
+    assert make_ordinal(23) == "23rd"
+    assert make_ordinal(24) == "24th"
+    assert make_ordinal(29) == "29th"
+
+    assert make_ordinal(44) == "44th"
+    assert make_ordinal(52) == "52nd"
+    assert make_ordinal(63) == "63rd"
+    assert make_ordinal(91) == "91st"
+    assert make_ordinal(102) == "102nd"
+    assert make_ordinal(111) == "111th"
+    assert make_ordinal(121) == "121st"

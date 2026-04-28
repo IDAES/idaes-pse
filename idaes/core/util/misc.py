@@ -244,3 +244,24 @@ def print_compact_form(expr, stream=None):
         expr = expr.expr
 
     stream.write(compact_expression_to_string(expr))
+
+
+# Credit to Florian Brucker on Stack Overflow for this implementation
+# https://stackoverflow.com/a/50992575
+def make_ordinal(n: int):
+    """
+    Convert an integer into its ordinal representation.
+    For example, it turns "1" into "1st, "3" into "3rd",
+    and "62" into "62nd".
+
+    Args:
+        n: integer from which to form an ordinal
+
+    Returns:
+        ord: string representation of ordinal
+    """
+    if 11 <= (n % 100) <= 13:
+        suffix = "th"
+    else:
+        suffix = ["th", "st", "nd", "rd", "th"][min(n % 10, 4)]
+    return str(n) + suffix
