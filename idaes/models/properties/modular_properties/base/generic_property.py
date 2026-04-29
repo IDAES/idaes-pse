@@ -177,6 +177,14 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
         # option StateIndex.true is used. If StateIndex.apparent is used,
         # these values will be ignored (set them using mole_frac_phase_comp instead).
         "mole_frac_phase_comp_apparent": 10,
+        # Use phase-specific scaling hints for density and/or molar volume.
+        # For solid and liquid phases, assume that density is around 1 g/mL
+        # We will estimate the molar weight the same way we do for enthalpy.
+        # For vapor phases, density is an strong function of temperature and pressure.
+        # We will use a molar density of about 400 mol/m**3, which corresponds to
+        # air at 25 C and 1 MPa. The user can specify a different value if appropriate.
+        "dens_mol_phase": DefaultScalingRecommendation.userInputRecommended,
+        "vol_mol_phase": DefaultScalingRecommendation.userInputRecommended,
     }
 
     def variable_scaling_routine(
@@ -244,7 +252,9 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
                 pyunits.convert(mw, to_units=units["MOLECULAR_WEIGHT"])
             )
 
-        if not mw_missing:
+        if mw_missing:
+            sf_mw_phase = None
+        else:
             # We want to collect molecular weight scaling factors
             # in a separate dictionary because model.mw_phase
             # may not have been constructed
@@ -266,6 +276,13 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
                     sf_mw_phase[p] = self.get_scaling_factor(model.mw_phase[p])
                 else:
                     sf_mw_phase[p] = 1 / mw_phase
+
+        if model.is_property_constructed(
+            "dens_mol_phase"
+        ) or model.is_property_constructed("vol_mol_phase"):
+            self._volume_density_scaling(
+                model, overwrite=overwrite, sf_mw_phase=sf_mw_phase
+            )
 
         if model.is_property_constructed("enth_mol_phase"):
             for p in model.phase_list:
@@ -598,6 +615,124 @@ class ModularPropertiesScaler(ModularPropertiesScalerBase):
                     self.set_component_scaling_factor(
                         log_con_obj[idx], sf, overwrite=overwrite
                     )
+
+    def _volume_density_scaling(self, model: Block, overwrite: Bool, sf_mw_phase: dict):
+        for p in model.phase_list:
+            if not overwrite:
+                # First see if either the user set their own scaling factor
+                # or specified a default.
+                if model.is_property_constructed("dens_mol_phase"):
+                    sf_dens = self.get_scaling_factor(model.dens_mol_phase[p])
+                else:
+                    sf_dens = None
+                if model.is_property_constructed("vol_mol_phase"):
+                    sf_vol = self.get_scaling_factor(model.vol_mol_phase[p])
+                else:
+                    sf_vol = None
+
+                if sf_dens is not None and sf_vol is not None:
+                    # Both scaling factors set manually
+                    continue
+                elif sf_dens is not None:
+                    if model.is_property_constructed("vol_mol_phase"):
+                        self.set_component_scaling_factor(
+                            model.vol_mol_phase[p], 1 / sf_dens, overwrite=overwrite
+                        )
+                    continue
+                elif sf_vol is not None:
+                    if model.is_property_constructed("dens_mol_phase"):
+                        self.set_component_scaling_factor(
+                            model.dens_mol_phase[p], 1 / sf_vol, overwrite=overwrite
+                        )
+                    continue
+            # Either neither scaling factor has been set or we are overwriting
+            # existing scaling factors
+
+            # Avoid using get_default_scaling_factor to avoid triggering create-on-demand properties
+            if f"dens_mol_phase[{p}]" in self.default_scaling_factors:
+                # A default for phase p has been specified
+                sf_dens = self.default_scaling_factors[f"dens_mol_phase[{p}]"]
+            else:
+                # Use default for all phases
+                sf_dens = self.default_scaling_factors["dens_mol_phase"]
+            if f"vol_mol_phase[{p}]" in self.default_scaling_factors:
+                # A default for phase p has been specified
+                sf_vol = self.default_scaling_factors[f"vol_mol_phase[{p}]"]
+            else:
+                # Use default for all phases
+                sf_vol = self.default_scaling_factors["vol_mol_phase"]
+
+            if (
+                sf_dens is not DefaultScalingRecommendation.userInputRecommended
+                and sf_vol is not DefaultScalingRecommendation.userInputRecommended
+            ):
+                # Already have estimates of both scaling factors
+                pass
+            elif sf_dens is not DefaultScalingRecommendation.userInputRecommended:
+                sf_vol = 1 / sf_dens
+            elif sf_vol is not DefaultScalingRecommendation.userInputRecommended:
+                sf_dens = 1 / sf_vol
+            else:
+                sf_dens, sf_vol = self._estimate_volume_density_scaling_factors(
+                    model, phase=p, sf_mw_phase=sf_mw_phase
+                )
+            if model.is_property_constructed("dens_mol_phase"):
+                self.set_component_scaling_factor(
+                    model.dens_mol_phase[p], sf_dens, overwrite=overwrite
+                )
+            if model.is_property_constructed("vol_mol_phase"):
+                self.set_component_scaling_factor(
+                    model.vol_mol_phase[p], sf_vol, overwrite=overwrite
+                )
+
+    def _estimate_volume_density_scaling_factors(
+        self, model: Block, phase: str, sf_mw_phase: dict
+    ):
+        units = model.params.get_metadata().derived_units
+        pobj = model.params.get_phase(phase)
+        if pobj.is_vapor_phase():
+            dens_mol_phase_estimate = value(
+                # Approximate ideal gas molar density at 25 C and 1 bar.
+                pyunits.convert(
+                    40 * pyunits.mol / pyunits.m**3,
+                    to_units=units["DENSITY_MOLE"],
+                )
+            )
+        elif pobj.is_liquid_phase() or pobj.is_solid_phase():
+            if sf_mw_phase is not None:
+                dens_mol_phase_estimate = value(
+                    sf_mw_phase[
+                        phase
+                    ]  # Multiplying by scaling factor is equivalent to dividing by MW
+                    * pyunits.convert(
+                        1000 * pyunits.kg / pyunits.m**3,
+                        to_units=units["DENSITY_MASS"],
+                    )
+                )
+            else:
+                _log.warning(
+                    f"Default scaling factor for molar density of phase {phase} not set. Because "
+                    "molecular weight isn't provided for each component, the molar density "
+                    "cannot be approximated. Please provide either default scaling factors "
+                    "for dens_mol_phase so that it can be scaled or component molecular weight in "
+                    "the configuration dictionary. Falling back to using a scaling factor of 1."
+                )
+                dens_mol_phase_estimate = 1
+        else:
+            _log.warning(
+                f"Default scaling factor for molar density of phase {phase} not set."
+                f"Phase {phase} is not a solid, liquid, or gas. Please check the implementation"
+                "of your configuration dictionary. If this is correct, then the molar "
+                "density cannot be approximated. Please provide default scaling factors "
+                "for dens_mol_phase so that it can be scaled. Falling back "
+                "on using a scaling factor of 1."
+            )
+            dens_mol_phase_estimate = 1
+
+        sf_dens_mol_phase = 1 / dens_mol_phase_estimate
+        sf_vol_mol_phase = dens_mol_phase_estimate
+
+        return sf_dens_mol_phase, sf_vol_mol_phase
 
     def _bubble_dew_scaling(
         self, model, pt_var, scale_variables: bool, overwrite: bool = False
