@@ -16,6 +16,7 @@ Tests for flowsheet_model.
 Author: Andrew Lee
 """
 
+import re
 import pytest
 import types
 
@@ -33,6 +34,7 @@ from idaes.core import (
 )
 from idaes.core.util.exceptions import PropertyPackageError, PropertyNotSupportedError
 from idaes.core.base.property_meta import PropertyClassMetadata
+from idaes.core.scaling.scaling_base import ScalerBase
 
 
 # -----------------------------------------------------------------------------
@@ -227,6 +229,65 @@ def test_has_inherent_reactions():
     m.p._has_inherent_reactions = True
 
     assert m.p.has_inherent_reactions
+
+
+@pytest.mark.unit
+def test_default_state_scaler():
+    m = ConcreteModel()
+    m.p = ParameterBlock()
+
+    with pytest.raises(
+        AttributeError,
+        match=re.escape(
+            "_ScalarParameterBlock' object has no attribute 'default_state_scaler_class"
+        ),
+    ):
+        _ = m.p.default_state_scaler_class
+
+    assert m.p._default_state_scaler_object is None
+    with pytest.raises(
+        AttributeError,
+        match=re.escape(
+            "_ScalarParameterBlock' object has no attribute 'default_state_scaler_object"
+        ),
+    ):
+        _ = m.p.default_state_scaler_object
+
+    not_a_scaler_obj = "foo"
+    with pytest.raises(
+        TypeError,
+        match=re.escape(
+            "Expected an instance of a subclass of ScalerBase, but instead got <class 'str'>."
+        ),
+    ):
+        m.p.default_state_scaler_object = not_a_scaler_obj
+
+    with pytest.raises(
+        TypeError,
+        match=re.escape(
+            "Expected an instance of a subclass of ScalerBase, but instead got <class 'type'>."
+        ),
+    ):
+        # Do not let the user set a scaler class. Instead force them to set
+        # an instance of a scaler class.
+        _ = m.p.default_state_scaler_object = ScalerBase
+
+    scaler_obj = ScalerBase()
+    m.p.default_state_scaler_object = scaler_obj
+    assert m.p._default_state_scaler_object is scaler_obj
+    assert m.p.default_state_scaler_object is scaler_obj
+
+    # Test deleter
+    del m.p.default_state_scaler_object
+
+    assert m.p._default_state_scaler_object is None
+    with pytest.raises(
+        AttributeError,
+        match=re.escape(
+            "_ScalarParameterBlock' object has no attribute 'default_state_scaler_object"
+        ),
+    ):
+        _ = m.p.default_state_scaler_object
 
 
 # -----------------------------------------------------------------------------
@@ -538,7 +599,11 @@ class _Parameters(PhysicalParameterBlock):
         )
 
 
-@declare_process_block_class("StateTest", block_class=StateBlock)
+class _StateBlockTest(StateBlock):
+    default_scaler = ScalerBase
+
+
+@declare_process_block_class("StateTest", block_class=_StateBlockTest)
 class _StateTest(StateBlockData):
     def build(self):
         super(_StateTest, self).build()
@@ -576,6 +641,23 @@ def test_has_inherent_reactions_state_block():
     m.pb._has_inherent_reactions = True
 
     assert m.p.has_inherent_reactions
+
+
+@pytest.mark.unit
+def test_default_scaler_scalar():
+    m = ConcreteModel()
+    m.pb = Parameters()
+    m.p = StateTest(parameters=m.pb)
+    assert m.p.default_scaler is ScalerBase
+
+
+@pytest.mark.unit
+def test_default_scaler_indexed():
+    m = ConcreteModel()
+    m.pb = Parameters()
+    m.p = StateTest([1, 2, 3], parameters=m.pb)
+    assert m.p.default_scaler is ScalerBase
+    assert m.p[1].default_scaler is ScalerBase
 
 
 # -----------------------------------------------------------------------------

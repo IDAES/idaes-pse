@@ -276,7 +276,7 @@ Number of Singular Values less than 9.0E-01 is 1
         expected = """====================================================================================
 Constraints and Variables associated with smallest singular values
 
-    Smallest Singular Value 1:
+    1st Smallest Singular Value: 1.000e-01
 
         Variables:
 
@@ -286,7 +286,7 @@ Constraints and Variables associated with smallest singular values
 
             dummy_eqn[3]
 
-    Smallest Singular Value 2:
+    2nd Smallest Singular Value: 1.000e+00
 
         Variables:
 
@@ -296,7 +296,7 @@ Constraints and Variables associated with smallest singular values
 
             dummy_eqn[1]
 
-    Smallest Singular Value 3:
+    3rd Smallest Singular Value: 5.000e+00
 
         Variables:
 
@@ -306,7 +306,7 @@ Constraints and Variables associated with smallest singular values
 
             dummy_eqn[4]
 
-    Smallest Singular Value 4:
+    4th Smallest Singular Value: 1.000e+01
 
         Variables:
 
@@ -335,7 +335,7 @@ Constraints and Variables associated with smallest singular values
         expected = """====================================================================================
 Constraints and Variables associated with smallest singular values
 
-    Smallest Singular Value 1:
+    1st Smallest Singular Value: 1.000e-01
 
         Variables:
 
@@ -364,7 +364,7 @@ Constraints and Variables associated with smallest singular values
         expected = """====================================================================================
 Constraints and Variables associated with smallest singular values
 
-    Smallest Singular Value 1:
+    1st Smallest Singular Value: 1.000e-01
 
         Variables:
 
@@ -372,7 +372,7 @@ Constraints and Variables associated with smallest singular values
         Constraints:
 
 
-    Smallest Singular Value 2:
+    2nd Smallest Singular Value: 1.000e+00
 
         Variables:
 
@@ -380,7 +380,7 @@ Constraints and Variables associated with smallest singular values
         Constraints:
 
 
-    Smallest Singular Value 3:
+    3rd Smallest Singular Value: 5.000e+00
 
         Variables:
 
@@ -388,7 +388,7 @@ Constraints and Variables associated with smallest singular values
         Constraints:
 
 
-    Smallest Singular Value 4:
+    4th Smallest Singular Value: 1.000e+01
 
         Variables:
 

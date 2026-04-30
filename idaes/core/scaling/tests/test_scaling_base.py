@@ -19,7 +19,7 @@ Author: Andrew Lee
 import pytest
 import re
 
-from pyomo.environ import ConcreteModel, Constraint, Set, Suffix, Var
+from pyomo.environ import ConcreteModel, Constraint, Expression, Set, Suffix, Var
 from pyomo.common.config import ConfigDict
 
 from idaes.core.scaling.scaling_base import ScalerBase
@@ -39,6 +39,11 @@ def model():
 
     m.c = Constraint(m.s, rule=c_rule)
 
+    def e_rule(b, i):
+        return -b.v[i]
+
+    m.e = Expression(m.s, rule=e_rule)
+
     m.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
     m.scaling_factor[m.v[1]] = 1
@@ -49,6 +54,10 @@ def model():
     m.scaling_factor[m.c[2]] = 21
     m.scaling_factor[m.c[3]] = 31
     m.scaling_factor[m.c[4]] = 41
+
+    m.scaling_hint = Suffix()
+    for i in m.s:
+        m.scaling_hint[m.e[i]] = 1 / (i + 1)
 
     return m
 
@@ -188,7 +197,7 @@ class TestScalerBase:
         )
         assert model.scaling_factor[model.v[1]] == 100
         assert (
-            "Scaling factor for v[1] limited by maximum value (max_sf: 100.0 < sf: 150)"
+            "Scaling factor for v[1] limited by maximum value (max_sf: 100.0 < sf: 150.0)"
             in caplog.text
         )
 
@@ -204,7 +213,7 @@ class TestScalerBase:
         )
         assert model.scaling_factor[model.v[1]] == 200
         assert (
-            "Scaling factor for v[1] limited by maximum value (max_sf: 200.0 < sf: 250)"
+            "Scaling factor for v[1] limited by maximum value (max_sf: 200.0 < sf: 250.0)"
             in caplog.text
         )
 
@@ -229,7 +238,7 @@ class TestScalerBase:
         )
         assert model.scaling_factor[model.v[1]] == 200
         assert (
-            "Scaling factor for v[1] limited by minimum value (min_sf: 200.0 > sf: 150)"
+            "Scaling factor for v[1] limited by minimum value (min_sf: 200.0 > sf: 150.0)"
             in caplog.text
         )
 
@@ -245,9 +254,74 @@ class TestScalerBase:
         )
         assert model.scaling_factor[model.v[1]] == 100
         assert (
-            "Scaling factor for v[1] limited by minimum value (min_sf: 100.0 > sf: 50)"
+            "Scaling factor for v[1] limited by minimum value (min_sf: 100.0 > sf: 50.0)"
             in caplog.text
         )
+
+    @pytest.mark.unit
+    def test_set_scaling_factor_exceptions(self, model):
+        scaler_obj = ScalerBase()
+        for obj, ctype, sf in [
+            (model.v[3], "variable", 3),
+            (model.c[2], "constraint", 21),
+            (model.e[4], "expression", 1 / 5),
+        ]:
+            assert scaler_obj.get_scaling_factor(obj) == sf
+            # NaN scaling factor
+            with pytest.raises(
+                ValueError,
+                match=re.escape(
+                    "Scaling factors must be strictly positive and finite. Received "
+                    "value of nan instead."
+                ),
+            ):
+                scaler_obj._set_scaling_factor(obj, ctype, float("NaN"))
+
+            assert scaler_obj.get_scaling_factor(obj) == sf
+
+            # Negative scaling factor
+            with pytest.raises(
+                ValueError,
+                match=re.escape(
+                    "Scaling factors must be strictly positive and finite. Received "
+                    "value of -1.0 instead."
+                ),
+            ):
+                scaler_obj._set_scaling_factor(obj, ctype, -1)
+
+            assert scaler_obj.get_scaling_factor(obj) == sf
+
+            # Negative infinity scaling factor
+            with pytest.raises(
+                ValueError,
+                match=re.escape(
+                    "Scaling factors must be strictly positive and finite. Received "
+                    "value of -inf instead."
+                ),
+            ):
+                scaler_obj._set_scaling_factor(obj, ctype, float("-inf"))
+
+            assert scaler_obj.get_scaling_factor(obj) == sf
+
+            # Infinity scaling factor
+            with pytest.raises(
+                ValueError,
+                match=re.escape(
+                    "Scaling factors must be strictly positive and finite. Received "
+                    "value of inf instead."
+                ),
+            ):
+                scaler_obj._set_scaling_factor(obj, ctype, float("inf"))
+
+            assert scaler_obj.get_scaling_factor(obj) == sf
+
+            # Non-float scaling factor
+            with pytest.raises(
+                ValueError, match=re.escape("could not convert string to float: 'foo'")
+            ):
+                scaler_obj._set_scaling_factor(obj, ctype, "foo")
+
+            assert scaler_obj.get_scaling_factor(obj) == sf
 
     @pytest.mark.unit
     def test_set_variable_scaling_factor(self, model, caplog):
@@ -277,7 +351,7 @@ class TestScalerBase:
         sb.set_variable_scaling_factor(model.v[1], 1)
         assert model.scaling_factor[model.v[1]] == 100
         assert (
-            "Scaling factor for v[1] limited by minimum value (min_sf: 100.0 > sf: 1)"
+            "Scaling factor for v[1] limited by minimum value (min_sf: 100.0 > sf: 1.0)"
             in caplog.text
         )
 
@@ -323,7 +397,7 @@ class TestScalerBase:
         sb.set_constraint_scaling_factor(model.c[1], 1)
         assert model.scaling_factor[model.c[1]] == 200
         assert (
-            "Scaling factor for c[1] limited by minimum value (min_sf: 200.0 > sf: 1)"
+            "Scaling factor for c[1] limited by minimum value (min_sf: 200.0 > sf: 1.0)"
             in caplog.text
         )
 
