@@ -131,7 +131,6 @@ def svd_rayleigh_ritz_callback(jacobian, number_singular_values, **kwargs):
     # This method also returns the null space, which is not used by
     # the model diagnostics at present
     out_dict = svd_rayleigh_ritz(jacobian, number_singular_values, **kwargs)
-    # import pdb; pdb.set_trace()
     return (
         out_dict["left_singular_vectors"],
         out_dict["singular_values"],

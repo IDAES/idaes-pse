@@ -177,7 +177,7 @@ def _aug_eig_processing(
     space is also computed.
 
     For every singular triplet (sigma, u, v), the augmented matrix has two eigentriplets:
-    (sigma, (v, u)) and (-sigma, (-v, u)). If m!=n, there are |m-n| eigenvectors corresponding
+    (sigma, (v, u)) and (-sigma, (-v, u)). If m!=n, there are \|m-n| eigenvectors corresponding
     to the null space. If m > n, then these vectors are of the form (0, (0, w)), and if m < n
     they are of the form (0, (w, 0)). We take eigenvectors of the augmented matrix as an input,
     but there is no telling how many singular vectors they correspond to: sometimes the method
@@ -313,12 +313,6 @@ def svd_rayleigh_ritz(
     seed: int = None,
     suppress_warning=False,
 ):
-    # TODO should I call these "singular vectors" and "singular values" or
-    # "singular vector candidates" and "singular_value candidates"? When we are
-    # computing only a subset of the singular values and singular vectors, we are
-    # at risk of having singular vectors associated with singular values of similar
-    # magnitude being blended together, as well as (left) null vectors with vectors
-    # associated with singular values close to zero.
     """
     For an :math:`m \times n` sparse real matrix :math:`A`, computes an :math:`m \times k`
     dense real matrix :math:`U` of left singular vectors, an :math:`n \times k` dense real 
@@ -355,7 +349,7 @@ def svd_rayleigh_ritz(
         max_iter: Maximum number of iterations for Rayleigh-Ritz iteration
         tol: Tolerance used in stopping condition for Rayleigh-Ritz iteration
         seed: Seed for initializing random number generator in Rayleigh-Ritz iteration
-        suppress_warning: Suppress the efficiency warning issued when |m - n| > 10
+        suppress_warning: Suppress the efficiency warning issued when :math:`|m - n|` > 10
 
     Returns:
         A dictionary with the following fields:
@@ -365,8 +359,10 @@ def svd_rayleigh_ritz(
                 V of right singular vectors.
             "singular_values": The 1D dense array of the number_singular_values
                 smallest singular values
+
         If m < n, the following field exists:
             "null_vectors": The n by n - m dense array of null vectors of A
+
         If n > m, the following field exists:
             "left_null_vectors" The m by m - n dense array of left null vectors of A
     """
