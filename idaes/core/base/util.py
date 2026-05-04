@@ -16,9 +16,6 @@
 # Build on demand needs to play with some private attributes
 # pylint: disable=protected-access
 
-from pyomo.core.base.indexed_component import UnindexedComponent_set
-from pyomo.core.base.global_set import UnindexedComponent_index
-from pyomo.network.port import IndexedPort, Port, PortData, ScalarPort
 from idaes.core.util.exceptions import (
     PropertyPackageError,
     PropertyNotSupportedError,
@@ -26,68 +23,6 @@ from idaes.core.util.exceptions import (
 )
 
 __author__ = "John Eslick, Andrew Lee"
-
-
-# Classes for inlet and outlet ports to assist other functions
-# in classifying port and flowsheet topology
-
-
-class InletPortData(PortData):
-    pass
-
-
-class InletPort(Port):
-    """
-    Class to identify whether a port on a model is an inlet port.
-    """
-
-    def __new__(cls, *args, **kwds):
-        if cls != InletPort:
-            return super(Port, cls).__new__(cls)
-        if not args or (args[0] is UnindexedComponent_set and len(args) == 1):
-            return ScalarInletPort.__new__(ScalarInletPort)
-        else:
-            return IndexedInletPort.__new__(IndexedInletPort)
-
-
-class ScalarInletPort(InletPort, InletPortData):
-    def __init__(self, *args, **kwd):
-        InletPortData.__init__(self, component=self)
-        InletPort.__init__(self, *args, **kwd)
-        self._index = UnindexedComponent_index
-
-
-class IndexedInletPort(InletPort):
-    pass
-
-
-class OutletPortData(PortData):
-    pass
-
-
-class OutletPort(Port):
-    """
-    Class to identify whether a port on a model is an outlet port.
-    """
-
-    def __new__(cls, *args, **kwds):
-        if cls != OutletPort:
-            return super(Port, cls).__new__(cls)
-        if not args or (args[0] is UnindexedComponent_set and len(args) == 1):
-            return ScalarOutletPort.__new__(ScalarOutletPort)
-        else:
-            return IndexedOutletPort.__new__(IndexedOutletPort)
-
-
-class ScalarOutletPort(OutletPort, OutletPortData):
-    def __init__(self, *args, **kwd):
-        OutletPortData.__init__(self, component=self)
-        OutletPort.__init__(self, *args, **kwd)
-        self._index = UnindexedComponent_index
-
-
-class IndexedOutletPort(OutletPort):
-    pass
 
 
 def build_on_demand(self, attr):

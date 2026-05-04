@@ -29,7 +29,7 @@ from idaes.core.base.control_volume_base import (
     FlowDirection,
     MaterialBalanceType,
 )
-from idaes.core.base.util import InletPort, OutletPort
+from idaes.core.base.ports import InletPort, OutletPort
 from idaes.core.util.exceptions import (
     BurntToast,
     ConfigurationError,
