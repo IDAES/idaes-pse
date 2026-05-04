@@ -19,8 +19,10 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf
 
 from idaes.core import (
     declare_process_block_class,
+    InletPort,
     UnitModelBlockData,
     useDefault,
+    OutletPort,
 )
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
@@ -330,8 +332,18 @@ between flow and pressure driven simulations.}""",
             None
         """
         for p in self.inlet_list:
-            self.add_port(name=p, block=self.inlet_blocks[p], doc="Inlet Port")
-        self.add_port(name="outlet", block=self.mixed_state, doc="Outlet Port")
+            self.add_port(
+                name=p,
+                block=self.inlet_blocks[p],
+                doc="Inlet Port",
+                port_class=InletPort,
+            )
+        self.add_port(
+            name="outlet",
+            block=self.mixed_state,
+            doc="Outlet Port",
+            port_class=OutletPort,
+        )
 
     def use_minimum_inlet_pressure_constraint(self):
         """Activate the mixer pressure = minimum inlet pressure constraint and
