@@ -105,5 +105,3 @@ class IndexedOutletPort(OutletPort):
     """
     Indexed OutletPort
     """
-
-    pass
