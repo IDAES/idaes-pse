@@ -390,6 +390,7 @@ def test_StateBlock_NotImplementedErrors():
     with pytest.raises(NotImplementedError):
         m.p.calculate_dew_point_pressure()
 
+
 @pytest.mark.parametrize("port_class", [None, Port, InletPort, OutletPort])
 @pytest.mark.unit
 def test_StateBlock_build_port_1index(port_class):
@@ -418,20 +419,22 @@ def test_StateBlock_build_port_1index(port_class):
     if port_class is None:
         port, ref_name_list = m.state_block.build_port("test_doc")
     else:
-        port, ref_name_list = m.state_block.build_port("test_doc", port_class=port_class)
+        port, ref_name_list = m.state_block.build_port(
+            "test_doc", port_class=port_class
+        )
 
     # Check Port and members
     assert isinstance(port, Port)
     assert port.doc == "test_doc"
     if port_class is None or port_class is Port:
-        assert not isinstance(Port, InletPort)
-        assert not isinstance(Port, OutletPort)
+        assert not isinstance(port, InletPort)
+        assert not isinstance(port, OutletPort)
     elif port_class is InletPort:
-        assert isinstance(Port, InletPort)
-        assert not isinstance(Port, OutletPort)
+        assert isinstance(port, InletPort)
+        assert not isinstance(port, OutletPort)
     elif port_class is OutletPort:
-        assert not isinstance(Port, InletPort)
-        assert isinstance(Port, OutletPort)
+        assert not isinstance(port, InletPort)
+        assert isinstance(port, OutletPort)
     else:
         raise AssertionError()
 
@@ -461,6 +464,7 @@ def test_StateBlock_build_port_1index(port_class):
             # Catch for unexpected name
             raise ValueError
 
+
 @pytest.mark.parametrize("port_class", [None, Port, InletPort, OutletPort])
 @pytest.mark.unit
 def test_StateBlock_build_port_2index(port_class):
@@ -489,16 +493,24 @@ def test_StateBlock_build_port_2index(port_class):
     if port_class is None:
         port, ref_name_list = m.state_block.build_port("test_doc")
     else:
-        port, ref_name_list = m.state_block.build_port("test_doc", port_class=port_class)
-
+        port, ref_name_list = m.state_block.build_port(
+            "test_doc", port_class=port_class
+        )
 
     # Check Port and members
     assert isinstance(port, Port)
     assert port.doc == "test_doc"
-    if port_class is None:
-        assert port.__class__ is Port
+    if port_class is None or port_class is Port:
+        assert not isinstance(port, InletPort)
+        assert not isinstance(port, OutletPort)
+    elif port_class is InletPort:
+        assert isinstance(port, InletPort)
+        assert not isinstance(port, OutletPort)
+    elif port_class is OutletPort:
+        assert not isinstance(port, InletPort)
+        assert isinstance(port, OutletPort)
     else:
-        assert port.__class__ is port_class
+        raise AssertionError()
 
     for i in m.state_block:
         assert port.ScalarVar[i] is m.state_block[i].scalar_var
@@ -528,6 +540,7 @@ def test_StateBlock_build_port_2index(port_class):
             # Catch for unexpected name
             raise ValueError
 
+
 @pytest.mark.parametrize("port_class", [None, Port, InletPort, OutletPort])
 @pytest.mark.unit
 def test_StateBlock_build_port_2index_subset(port_class):
@@ -556,16 +569,24 @@ def test_StateBlock_build_port_2index_subset(port_class):
     if port_class is None:
         port, ref_name_list = m.state_block.build_port("test_doc")
     else:
-        port, ref_name_list = m.state_block.build_port("test_doc", port_class=port_class)
-
+        port, ref_name_list = m.state_block.build_port(
+            "test_doc", port_class=port_class
+        )
 
     # Check Port and members
     assert isinstance(port, Port)
     assert port.doc == "test_doc"
-    if port_class is None:
-        assert port.__class__ is Port
+    if port_class is None or port_class is Port:
+        assert not isinstance(port, InletPort)
+        assert not isinstance(port, OutletPort)
+    elif port_class is InletPort:
+        assert isinstance(port, InletPort)
+        assert not isinstance(port, OutletPort)
+    elif port_class is OutletPort:
+        assert not isinstance(port, InletPort)
+        assert isinstance(port, OutletPort)
     else:
-        assert port.__class__ is port_class
+        raise AssertionError()
 
     for i in m.state_block:
         assert port.ScalarVar[i] is m.state_block[i].scalar_var
