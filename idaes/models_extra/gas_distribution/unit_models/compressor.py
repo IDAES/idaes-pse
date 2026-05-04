@@ -87,7 +87,7 @@ class IsothermalCompressorData(UnitModelBlockData):
             name="outlet_port",
             block=self.outlet_state,
             doc="The outlet from the compressor",
-            port_class=OutletPort
+            port_class=OutletPort,
         )
 
         self.add_state_material_balances(

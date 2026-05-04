@@ -219,13 +219,13 @@ argument).""",
             name="inlet_port",
             block=inlet_state,
             doc="The inlet to the pipeline",
-            port_class=InletPort
+            port_class=InletPort,
         )
         self.add_port(
             name="outlet_port",
             block=outlet_state,
             doc="The outlet from the pipeline",
-            port_class=OutletPort
+            port_class=OutletPort,
         )
 
         self.add_isothermal_constraint()
