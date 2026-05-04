@@ -29,6 +29,7 @@ from idaes.core.base.control_volume_base import (
     FlowDirection,
     MaterialBalanceType,
 )
+from idaes.core.base.util import InletPort, OutletPort
 from idaes.core.util.exceptions import (
     BurntToast,
     ConfigurationError,
@@ -138,7 +139,7 @@ Must be True if dynamic = True,
         except AttributeError:
             pass
 
-    def add_port(self, name, block, doc=None):
+    def add_port(self, name, block, doc=None, port_class=Port):
         """
         This is a method to build Port objects in a unit model and
         connect these to a specified StateBlock.
@@ -148,13 +149,14 @@ Must be True if dynamic = True,
             block : an instance of a StateBlock to use as the source to
                     populate the Port object
             doc : doc string for Port object, default = None.
+            port_class: Subclass of Port to use. default = Port.
 
         Returns:
             A Pyomo Port object and associated components.
         """
         # Create Port
         try:
-            port, ref_name_list = block.build_port(doc)
+            port, ref_name_list = block.build_port(doc, port_class=port_class)
         except AttributeError:
             raise ConfigurationError(
                 f"{self.name} block object provided to add_port method is not an "
@@ -227,7 +229,7 @@ Must be True if dynamic = True,
             try:
                 # Try 0D first
                 sblock = block.properties_in
-                port, ref_name_list = sblock.build_port(doc)
+                port, ref_name_list = sblock.build_port(doc, port_class=InletPort)
             except AttributeError:
                 # Otherwise a 1D control volume
                 try:
@@ -246,6 +248,7 @@ Must be True if dynamic = True,
                         doc,
                         # pylint: disable-next=possibly-used-before-assignment
                         slice_index=(slice(None), _idx),
+                        port_class=InletPort,
                     )
 
                 except AttributeError:
@@ -257,7 +260,7 @@ Must be True if dynamic = True,
         else:
             # Assume a StateBlock indexed only by time
             sblock = block
-            port, ref_name_list = sblock.build_port(doc)
+            port, ref_name_list = sblock.build_port(doc, port_class=InletPort)
 
         # Add Port and References to unit model
         self.add_component(name, port)
@@ -327,7 +330,7 @@ Must be True if dynamic = True,
             try:
                 # Try 0D first
                 sblock = block.properties_out
-                port, ref_name_list = sblock.build_port(doc)
+                port, ref_name_list = sblock.build_port(doc, port_class=OutletPort)
             except AttributeError:
                 # Otherwise a 1D control volume
                 try:
@@ -346,6 +349,7 @@ Must be True if dynamic = True,
                         doc,
                         # pylint: disable-next=possibly-used-before-assignment
                         slice_index=(slice(None), _idx),
+                        port_class=OutletPort,
                     )
 
                 except AttributeError:
@@ -357,7 +361,7 @@ Must be True if dynamic = True,
         else:
             # Assume a StateBlock indexed only by time
             sblock = block
-            port, ref_name_list = sblock.build_port(doc)
+            port, ref_name_list = sblock.build_port(doc, port_class=OutletPort)
 
         # Add Port and References to unit model
         self.add_component(name, port)

@@ -16,6 +16,7 @@
 # Build on demand needs to play with some private attributes
 # pylint: disable=protected-access
 
+from pyomo.network.port import IndexedPort, Port, PortData, SimplePort
 from idaes.core.util.exceptions import (
     PropertyPackageError,
     PropertyNotSupportedError,
@@ -23,6 +24,26 @@ from idaes.core.util.exceptions import (
 )
 
 __author__ = "John Eslick, Andrew Lee"
+
+
+# Classes for inlet and outlet ports to assist other functions
+# in classifying port and flowsheet topology
+
+
+class InletPort(Port):
+    """
+    Class to identify whether a port on a model is an inlet port.
+    """
+
+    pass
+
+
+class OutletPort(Port):
+    """
+    Class to identify whether a port on a model is an outlet port.
+    """
+
+    pass
 
 
 def build_on_demand(self, attr):
