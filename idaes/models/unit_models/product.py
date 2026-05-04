@@ -22,7 +22,6 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In
 from idaes.core import (
     declare_process_block_class,
     InletPort,
-    OutletPort,
     UnitModelBlockData,
     useDefault,
 )

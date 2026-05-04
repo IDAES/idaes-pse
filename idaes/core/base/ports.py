@@ -10,13 +10,17 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+"""
+Classes for inlet and outlet ports to assist other functions
+in classifying port and flowsheet topology
+"""
+
 from pyomo.core.base.indexed_component import UnindexedComponent_set
 from pyomo.core.base.global_set import UnindexedComponent_index
 from pyomo.network.port import Port, PortData
 
 __author__ = "Douglas Allan"
-# Classes for inlet and outlet ports to assist other functions
-# in classifying port and flowsheet topology
+
 
 # This diamond class structure was copied over from Pyomo
 # ____________________________________________________________________________________
@@ -33,8 +37,6 @@ class InletPortData(PortData):
     """
     Element of an InletPort
     """
-
-    pass
 
 
 class InletPort(Port):
@@ -67,15 +69,11 @@ class IndexedInletPort(InletPort):
     Indexed InletPort
     """
 
-    pass
-
 
 class OutletPortData(PortData):
     """
     Element of an OutletPort
     """
-
-    pass
 
 
 class OutletPort(Port):

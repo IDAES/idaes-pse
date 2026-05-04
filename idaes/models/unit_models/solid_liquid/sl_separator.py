@@ -37,7 +37,6 @@ from pandas import DataFrame
 # Import Pyomo libraries
 from pyomo.environ import Reference
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-from pyomo.network import Port
 
 # Import IDAES cores
 from idaes.core import (
