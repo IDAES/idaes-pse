@@ -29,7 +29,7 @@
         "rho_star": 233.25,
         "Tc": 405.56,
         "rhoc": 233.25,
-        "Pc": 11363.391069274156,
+        "Pc": 11735.529682699645,
         "Tt": 195.49,
         "Pt": 6.055813,
         "rhot_l": 733.8486491,
@@ -41,7 +41,14 @@
         "T_max": 725.0,
         "reference_state_offset": []
     },
-    "have_tcx": false,
+    "nl_file_tcx": "nh3_expressions_tcx.nl",
+    "var_map_tcx": [
+        1,
+        0,
+        1000,
+        1000
+    ],
+    "have_tcx": true,
     "nl_file_st": "nh3_expressions_st.nl",
     "var_map_st": [
         1,
@@ -50,5 +57,12 @@
         1000
     ],
     "have_st": true,
-    "have_visc": false
+    "nl_file_visc": "nh3_expressions_visc.nl",
+    "var_map_visc": [
+        1,
+        0,
+        1000,
+        1000
+    ],
+    "have_visc": true
 }

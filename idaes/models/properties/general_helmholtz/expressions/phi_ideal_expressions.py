@@ -61,7 +61,7 @@ def phi_ideal_expressions_planck_einstein1(model, parameters):
     """
     n = parameters["n"]
     t = parameters["t"]
-    Tc = parameters["basic"]["Tc"]
+    Tc = model.Tc
 
     rng = range(0, len(n))
     return {

@@ -20,8 +20,6 @@ import numpy
 import pyomo.environ as pyo
 
 from idaes.models.properties.general_helmholtz.expressions import (
-    phi_residual_types,
-    phi_ideal_types,
     phi_ideal_modular_parts,
     phi_residual_modular_parts,
     delta_sat_types,
