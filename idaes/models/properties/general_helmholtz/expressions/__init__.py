@@ -20,6 +20,7 @@ from .phi_ideal_expressions import (
     phi_ideal_expressions_logtau,
     phi_ideal_expressions_planck_einstein1,
     phi_ideal_expressions_planck_einstein2,
+    phi_ideal_expressions_planck_einstein3,
     phi_ideal_expressions_cp_constant,
     phi_ideal_expressions_power,
     phi_ideal_expressions_enth_entr_offset,
@@ -48,6 +49,7 @@ phi_ideal_modular_parts = {
     7: phi_ideal_expressions_enth_entr_offset,
     8: phi_ideal_expressions_GERG_Cosh,
     9: phi_ideal_expressions_GERG_Sinh,
+    10: phi_ideal_expressions_planck_einstein3,
 }
 
 phi_residual_modular_parts = {

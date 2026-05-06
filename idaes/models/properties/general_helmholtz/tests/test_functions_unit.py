@@ -1328,492 +1328,492 @@ def test_h2o_transport():
     )
 
 
-# @pytest.mark.unit
-# @pytest.mark.skipif(not available(), reason="General Helmholtz not available")
-# def test_co2_transport():
-#     m = pyo.ConcreteModel()
-#     m.hparam = HelmholtzParameterBlock(
-#         pure_component="co2", amount_basis=AmountBasis.MASS
-#     )
-#     te = HelmholtzThermoExpressions(m, m.hparam)
+@pytest.mark.unit
+@pytest.mark.skipif(not available(), reason="General Helmholtz not available")
+def test_co2_transport():
+    m = pyo.ConcreteModel()
+    m.hparam = HelmholtzParameterBlock(
+        pure_component="co2", amount_basis=AmountBasis.MASS
+    )
+    te = HelmholtzThermoExpressions(m, m.hparam)
 
-#     assert pytest.approx(0.00017249, rel=1e-2) == pyo.value(
-#         pyo.units.convert(
-#             te.viscosity_liq(T=240 * pyo.units.K, x=0),
-#             pyo.units.Pa * pyo.units.s,
-#         )
-#     )
+    assert pytest.approx(0.00017249, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.viscosity_liq(T=240 * pyo.units.K, x=0),
+            pyo.units.Pa * pyo.units.s,
+        )
+    )
 
-#     assert pytest.approx(5.3192e-05, rel=1e-2) == pyo.value(
-#         pyo.units.convert(
-#             te.viscosity_liq(T=300 * pyo.units.K, x=0),
-#             pyo.units.Pa * pyo.units.s,
-#         )
-#     )
+    assert pytest.approx(5.3192e-05, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.viscosity_liq(T=300 * pyo.units.K, x=0),
+            pyo.units.Pa * pyo.units.s,
+        )
+    )
 
-#     assert pytest.approx(1.1062e-05, rel=1e-2) == pyo.value(
-#         pyo.units.convert(
-#             te.viscosity_vap(T=220 * pyo.units.K, x=1),
-#             pyo.units.Pa * pyo.units.s,
-#         )
-#     )
+    assert pytest.approx(1.1062e-05, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.viscosity_vap(T=220 * pyo.units.K, x=1),
+            pyo.units.Pa * pyo.units.s,
+        )
+    )
 
-#     assert pytest.approx(2.0811e-05, rel=1e-1) == pyo.value(
-#         pyo.units.convert(
-#             te.viscosity_vap(T=300 * pyo.units.K, x=1),
-#             pyo.units.Pa * pyo.units.s,
-#         )
-#     )
+    assert pytest.approx(2.0811e-05, rel=1e-1) == pyo.value(
+        pyo.units.convert(
+            te.viscosity_vap(T=300 * pyo.units.K, x=1),
+            pyo.units.Pa * pyo.units.s,
+        )
+    )
 
-#     assert pytest.approx(0.011424, rel=1e-1) == pyo.value(
-#         pyo.units.convert(
-#             te.thermal_conductivity_vap(T=220 * pyo.units.K, x=1),
-#             pyo.units.W / pyo.units.m / pyo.units.K,
-#         )
-#     )
-
-
-# @pytest.mark.unit
-# @pytest.mark.skipif(not available(), reason="General Helmholtz not available")
-# def test_r134a_thermo():
-#     m = pyo.ConcreteModel()
-#     m.hparam = HelmholtzParameterBlock(
-#         pure_component="r134a", amount_basis=AmountBasis.MASS
-#     )
-#     te = HelmholtzThermoExpressions(m, m.hparam)
-
-#     assert pytest.approx(209.27, rel=1e-4) == pyo.value(
-#         pyo.units.convert(
-#             te.h_liq_sat(T=280 * pyo.units.K),
-#             pyo.units.kJ / pyo.units.kg,
-#         )
-#     )
-
-#     assert pytest.approx(402.55, rel=1e-4) == pyo.value(
-#         pyo.units.convert(
-#             te.h_vap_sat(T=280 * pyo.units.K),
-#             pyo.units.kJ / pyo.units.kg,
-#         )
-#     )
-
-#     assert pytest.approx(209.27, rel=1e-4) == pyo.value(
-#         pyo.units.convert(
-#             te.h_liq_sat(p=0.37271 * 1e6 * pyo.units.Pa),
-#             pyo.units.kJ / pyo.units.kg,
-#         )
-#     )
-
-#     assert pytest.approx(402.55, rel=1e-4) == pyo.value(
-#         pyo.units.convert(
-#             te.h_vap_sat(p=0.37271 * 1e6 * pyo.units.Pa),
-#             pyo.units.kJ / pyo.units.kg,
-#         )
-#     )
-
-#     assert pytest.approx(1.0333, rel=1e-4) == pyo.value(
-#         pyo.units.convert(
-#             te.s_liq_sat(T=280 * pyo.units.K),
-#             pyo.units.kJ / pyo.units.kg / pyo.units.K,
-#         )
-#     )
-
-#     assert pytest.approx(1.7236, rel=1e-4) == pyo.value(
-#         pyo.units.convert(
-#             te.s_vap_sat(T=280 * pyo.units.K),
-#             pyo.units.kJ / pyo.units.kg / pyo.units.K,
-#         )
-#     )
-
-#     assert pytest.approx(1.0333, rel=1e-4) == pyo.value(
-#         pyo.units.convert(
-#             te.s_liq_sat(p=0.37271 * 1e6 * pyo.units.Pa),
-#             pyo.units.kJ / pyo.units.kg / pyo.units.K,
-#         )
-#     )
-
-#     assert pytest.approx(1.7236, rel=1e-4) == pyo.value(
-#         pyo.units.convert(
-#             te.s_vap_sat(p=0.37271 * 1e6 * pyo.units.Pa),
-#             pyo.units.kJ / pyo.units.kg / pyo.units.K,
-#         )
-#     )
-
-#     assert pytest.approx(208.98, rel=1e-4) == pyo.value(
-#         pyo.units.convert(
-#             te.u_liq_sat(T=280 * pyo.units.K),
-#             pyo.units.kJ / pyo.units.kg,
-#         )
-#     )
-
-#     assert pytest.approx(382.10, rel=1e-4) == pyo.value(
-#         pyo.units.convert(
-#             te.u_vap_sat(T=280 * pyo.units.K),
-#             pyo.units.kJ / pyo.units.kg,
-#         )
-#     )
-
-#     assert pytest.approx(208.98, rel=1e-4) == pyo.value(
-#         pyo.units.convert(
-#             te.u_liq_sat(p=0.37271 * 1e6 * pyo.units.Pa),
-#             pyo.units.kJ / pyo.units.kg,
-#         )
-#     )
-
-#     assert pytest.approx(382.10, rel=1e-4) == pyo.value(
-#         pyo.units.convert(
-#             te.u_vap_sat(p=0.37271 * 1e6 * pyo.units.Pa),
-#             pyo.units.kJ / pyo.units.kg,
-#         )
-#     )
-
-#     assert pytest.approx(0.00078629, rel=1e-4) == pyo.value(
-#         pyo.units.convert(
-#             te.v_liq_sat(T=280 * pyo.units.K),
-#             pyo.units.m**3 / pyo.units.kg,
-#         )
-#     )
-
-#     assert pytest.approx(0.054861, rel=1e-4) == pyo.value(
-#         pyo.units.convert(
-#             te.v_vap_sat(T=280 * pyo.units.K),
-#             pyo.units.m**3 / pyo.units.kg,
-#         )
-#     )
-
-#     assert pytest.approx(0.00078629, rel=1e-4) == pyo.value(
-#         pyo.units.convert(
-#             te.v_liq_sat(p=0.37271 * 1e6 * pyo.units.Pa),
-#             pyo.units.m**3 / pyo.units.kg,
-#         )
-#     )
-
-#     assert pytest.approx(0.054861, rel=1e-4) == pyo.value(
-#         pyo.units.convert(
-#             te.v_vap_sat(p=0.37271 * 1e6 * pyo.units.Pa),
-#             pyo.units.m**3 / pyo.units.kg,
-#         )
-#     )
+    assert pytest.approx(0.011424, rel=1e-1) == pyo.value(
+        pyo.units.convert(
+            te.thermal_conductivity_vap(T=220 * pyo.units.K, x=1),
+            pyo.units.W / pyo.units.m / pyo.units.K,
+        )
+    )
 
 
-# @pytest.mark.unit
-# @pytest.mark.skipif(not available(), reason="General Helmholtz not available")
-# def test_r134a_transport():
-#     m = pyo.ConcreteModel()
-#     m.hparam = HelmholtzParameterBlock(
-#         pure_component="r134a", amount_basis=AmountBasis.MASS
-#     )
-#     te = HelmholtzThermoExpressions(m, m.hparam)
+@pytest.mark.unit
+@pytest.mark.skipif(not available(), reason="General Helmholtz not available")
+def test_r134a_thermo():
+    m = pyo.ConcreteModel()
+    m.hparam = HelmholtzParameterBlock(
+        pure_component="r134a", amount_basis=AmountBasis.MASS
+    )
+    te = HelmholtzThermoExpressions(m, m.hparam)
 
-#     assert pytest.approx(1590.7, rel=1e-3) == pyo.value(
-#         pyo.units.convert(
-#             te.rho_liq(T=170 * pyo.units.K, x=0),
-#             pyo.units.kg / pyo.units.m**3,
-#         )
-#     )
+    assert pytest.approx(209.27, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.h_liq_sat(T=280 * pyo.units.K),
+            pyo.units.kJ / pyo.units.kg,
+        )
+    )
 
-#     assert pytest.approx(0.0021397, rel=1e-2) == pyo.value(
-#         pyo.units.convert(
-#             te.viscosity_liq(T=170 * pyo.units.K, x=0),
-#             pyo.units.Pa * pyo.units.s,
-#         )
-#     )
+    assert pytest.approx(402.55, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.h_vap_sat(T=280 * pyo.units.K),
+            pyo.units.kJ / pyo.units.kg,
+        )
+    )
 
-#     assert pytest.approx(5.7956e-05, rel=1e-2) == pyo.value(
-#         pyo.units.convert(
-#             te.viscosity_liq(T=370 * pyo.units.K, x=0),
-#             pyo.units.Pa * pyo.units.s,
-#         )
-#     )
+    assert pytest.approx(209.27, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.h_liq_sat(p=0.37271 * 1e6 * pyo.units.Pa),
+            pyo.units.kJ / pyo.units.kg,
+        )
+    )
 
-#     assert pytest.approx(0.14516, rel=1e-3) == pyo.value(
-#         pyo.units.convert(
-#             te.thermal_conductivity_liq(T=170 * pyo.units.K, x=0),
-#             pyo.units.W / pyo.units.m / pyo.units.K,
-#         )
-#     )
+    assert pytest.approx(402.55, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.h_vap_sat(p=0.37271 * 1e6 * pyo.units.Pa),
+            pyo.units.kJ / pyo.units.kg,
+        )
+    )
 
-#     assert pytest.approx(0.093414, rel=1e-2) == pyo.value(
-#         pyo.units.convert(
-#             te.thermal_conductivity_liq(T=270 * pyo.units.K, x=0),
-#             pyo.units.W / pyo.units.m / pyo.units.K,
-#         )
-#     )
+    assert pytest.approx(1.0333, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.s_liq_sat(T=280 * pyo.units.K),
+            pyo.units.kJ / pyo.units.kg / pyo.units.K,
+        )
+    )
 
-#     assert pytest.approx(0.011871, rel=1e-2) == pyo.value(
-#         pyo.units.convert(
-#             te.surface_tension(T=270 * pyo.units.K, x=0),
-#             pyo.units.N / pyo.units.m,
-#         )
-#     )
+    assert pytest.approx(1.7236, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.s_vap_sat(T=280 * pyo.units.K),
+            pyo.units.kJ / pyo.units.kg / pyo.units.K,
+        )
+    )
 
-#     assert pytest.approx(6.8353e-06, rel=1e-2) == pyo.value(
-#         pyo.units.convert(
-#             te.viscosity_vap(T=170 * pyo.units.K, x=1),
-#             pyo.units.Pa * pyo.units.s,
-#         )
-#     )
+    assert pytest.approx(1.0333, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.s_liq_sat(p=0.37271 * 1e6 * pyo.units.Pa),
+            pyo.units.kJ / pyo.units.kg / pyo.units.K,
+        )
+    )
 
-#     assert pytest.approx(2.1336e-05, rel=1e-2) == pyo.value(
-#         pyo.units.convert(
-#             te.viscosity_vap(T=370 * pyo.units.K, x=1),
-#             pyo.units.Pa * pyo.units.s,
-#         )
-#     )
+    assert pytest.approx(1.7236, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.s_vap_sat(p=0.37271 * 1e6 * pyo.units.Pa),
+            pyo.units.kJ / pyo.units.kg / pyo.units.K,
+        )
+    )
 
-#     assert pytest.approx(0.0030921, rel=1e-2) == pyo.value(
-#         pyo.units.convert(
-#             te.thermal_conductivity_vap(T=170 * pyo.units.K, x=0),
-#             pyo.units.W / pyo.units.m / pyo.units.K,
-#         )
-#     )
+    assert pytest.approx(208.98, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.u_liq_sat(T=280 * pyo.units.K),
+            pyo.units.kJ / pyo.units.kg,
+        )
+    )
 
-#     assert pytest.approx(0.011241, rel=1e-2) == pyo.value(
-#         pyo.units.convert(
-#             te.thermal_conductivity_vap(T=270 * pyo.units.K, x=0),
-#             pyo.units.W / pyo.units.m / pyo.units.K,
-#         )
-#     )
+    assert pytest.approx(382.10, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.u_vap_sat(T=280 * pyo.units.K),
+            pyo.units.kJ / pyo.units.kg,
+        )
+    )
 
+    assert pytest.approx(208.98, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.u_liq_sat(p=0.37271 * 1e6 * pyo.units.Pa),
+            pyo.units.kJ / pyo.units.kg,
+        )
+    )
 
-# @pytest.mark.unit
-# @pytest.mark.skipif(not available(), reason="General Helmholtz not available")
-# def test_r1234ze_transport():
-#     m = pyo.ConcreteModel()
-#     m.hparam = HelmholtzParameterBlock(
-#         pure_component="r1234ze", amount_basis=AmountBasis.MASS
-#     )
-#     te = HelmholtzThermoExpressions(m, m.hparam)
+    assert pytest.approx(382.10, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.u_vap_sat(p=0.37271 * 1e6 * pyo.units.Pa),
+            pyo.units.kJ / pyo.units.kg,
+        )
+    )
 
-#     assert pytest.approx(0.0098503, rel=1e-3) == pyo.value(
-#         pyo.units.convert(
-#             te.thermal_conductivity_vap(
-#                 T=250 * pyo.units.K, p=0.05e6 * pyo.units.Pa, x=1
-#             ),
-#             pyo.units.W / pyo.units.m / pyo.units.K,
-#         )
-#     )
+    assert pytest.approx(0.00078629, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.v_liq_sat(T=280 * pyo.units.K),
+            pyo.units.m**3 / pyo.units.kg,
+        )
+    )
 
-#     assert pytest.approx(0.013933, rel=1e-3) == pyo.value(
-#         pyo.units.convert(
-#             te.thermal_conductivity_vap(
-#                 T=300 * pyo.units.K, p=0.1e6 * pyo.units.Pa, x=1
-#             ),
-#             pyo.units.W / pyo.units.m / pyo.units.K,
-#         )
-#     )
+    assert pytest.approx(0.054861, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.v_vap_sat(T=280 * pyo.units.K),
+            pyo.units.m**3 / pyo.units.kg,
+        )
+    )
 
-#     assert pytest.approx(0.10066, rel=1e-3) == pyo.value(
-#         pyo.units.convert(
-#             te.thermal_conductivity_liq(
-#                 T=250 * pyo.units.K, p=20e6 * pyo.units.Pa, x=0
-#             ),
-#             pyo.units.W / pyo.units.m / pyo.units.K,
-#         )
-#     )
+    assert pytest.approx(0.00078629, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.v_liq_sat(p=0.37271 * 1e6 * pyo.units.Pa),
+            pyo.units.m**3 / pyo.units.kg,
+        )
+    )
 
-#     assert pytest.approx(0.085389, rel=1e-2) == pyo.value(
-#         pyo.units.convert(
-#             te.thermal_conductivity_liq(
-#                 T=300 * pyo.units.K, p=20e6 * pyo.units.Pa, x=0
-#             ),
-#             pyo.units.W / pyo.units.m / pyo.units.K,
-#         )
-#     )
-
-#     # roughly 0 pressure
-#     assert pytest.approx(11.777, rel=1e-3) == pyo.value(
-#         pyo.units.convert(
-#             te.viscosity_vap(T=300 * pyo.units.K, p=1e-3 * pyo.units.Pa, x=1),
-#             pyo.units.microPa * pyo.units.s,
-#         )
-#     )
-
-#     assert pytest.approx(12.041, rel=1e-3) == pyo.value(
-#         pyo.units.convert(
-#             te.viscosity_vap(T=300 * pyo.units.K, p=1e5 * pyo.units.Pa, x=1),
-#             pyo.units.microPa * pyo.units.s,
-#         )
-#     )
-
-#     assert pytest.approx(10.522, rel=1e-3) == pyo.value(
-#         pyo.units.convert(
-#             te.rho_liq(
-#                 T=300 * pyo.units.K,
-#                 p=10e6 * pyo.units.Pa,
-#                 x=0,
-#                 result_basis=AmountBasis.MOLE,
-#             ),
-#             pyo.units.mol / pyo.units.l,
-#         )
-#     )
-
-#     assert pytest.approx(217.89, rel=1e-3) == pyo.value(
-#         pyo.units.convert(
-#             te.viscosity_liq(T=300 * pyo.units.K, p=10e6 * pyo.units.Pa, x=0),
-#             pyo.units.microPa * pyo.units.s,
-#         )
-#     )
+    assert pytest.approx(0.054861, rel=1e-4) == pyo.value(
+        pyo.units.convert(
+            te.v_vap_sat(p=0.37271 * 1e6 * pyo.units.Pa),
+            pyo.units.m**3 / pyo.units.kg,
+        )
+    )
 
 
-# @pytest.mark.unit
-# @pytest.mark.skipif(not available(), reason="General Helmholtz not available")
-# def test_propane_transport():
-#     m = pyo.ConcreteModel()
-#     m.hparam = HelmholtzParameterBlock(
-#         pure_component="propane", amount_basis=AmountBasis.MASS
-#     )
-#     te = HelmholtzThermoExpressions(m, m.hparam)
+@pytest.mark.unit
+@pytest.mark.skipif(not available(), reason="General Helmholtz not available")
+def test_r134a_transport():
+    m = pyo.ConcreteModel()
+    m.hparam = HelmholtzParameterBlock(
+        pure_component="r134a", amount_basis=AmountBasis.MASS
+    )
+    te = HelmholtzThermoExpressions(m, m.hparam)
 
-#     # Test viscosity with data from
-#     #
-#     # Vogel E, C Küchenmeister, E Bich, A Laesecke, Reference Correlation of the
-#     #     Viscosity of Propane. Journal of Physical and Chemical Reference Data
-#     #     27, 947–970 (1998)
-#     assert pytest.approx(8.731, rel=1e-3) == pyo.value(
-#         pyo.units.convert(
-#             te.viscosity(
-#                 T=320.0 * pyo.units.K,
-#                 p=1e5 * pyo.units.Pa,
-#                 x=1,
-#             ),
-#             pyo.units.uPa * pyo.units.s,
-#         )
-#     )
+    assert pytest.approx(1590.7, rel=1e-3) == pyo.value(
+        pyo.units.convert(
+            te.rho_liq(T=170 * pyo.units.K, x=0),
+            pyo.units.kg / pyo.units.m**3,
+        )
+    )
 
-#     assert pytest.approx(78.97826, rel=1e-3) == pyo.value(
-#         pyo.units.convert(
-#             te.viscosity(
-#                 T=320.0 * pyo.units.K,
-#                 p=2.5e6 * pyo.units.Pa,
-#                 x=0,
-#             ),
-#             pyo.units.uPa * pyo.units.s,
-#         )
-#     )
+    assert pytest.approx(0.0021397, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.viscosity_liq(T=170 * pyo.units.K, x=0),
+            pyo.units.Pa * pyo.units.s,
+        )
+    )
 
-#     assert pytest.approx(82.16, rel=1e-2) == pyo.value(
-#         pyo.units.convert(
-#             te.viscosity(
-#                 T=320.0 * pyo.units.K,
-#                 p=4.0e6 * pyo.units.Pa,
-#                 x=0,
-#             ),
-#             pyo.units.uPa * pyo.units.s,
-#         )
-#     )
+    assert pytest.approx(5.7956e-05, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.viscosity_liq(T=370 * pyo.units.K, x=0),
+            pyo.units.Pa * pyo.units.s,
+        )
+    )
 
-#     # Test thermal conductivity with data from
-#     #
-#     # NIST Chemistry WebBook
-#     assert pytest.approx(20.78, rel=1e-3) == pyo.value(
-#         pyo.units.convert(
-#             te.thermal_conductivity(
-#                 T=320.0 * pyo.units.K,
-#                 p=1e5 * pyo.units.Pa,
-#                 x=1,
-#             ),
-#             pyo.units.mW / pyo.units.m / pyo.units.K,
-#         )
-#     )
+    assert pytest.approx(0.14516, rel=1e-3) == pyo.value(
+        pyo.units.convert(
+            te.thermal_conductivity_liq(T=170 * pyo.units.K, x=0),
+            pyo.units.W / pyo.units.m / pyo.units.K,
+        )
+    )
 
-#     assert pytest.approx(85.215, rel=1e-3) == pyo.value(
-#         pyo.units.convert(
-#             te.thermal_conductivity(
-#                 T=320.0 * pyo.units.K,
-#                 p=2.5e6 * pyo.units.Pa,
-#                 x=0,
-#             ),
-#             pyo.units.mW / pyo.units.m / pyo.units.K,
-#         )
-#     )
+    assert pytest.approx(0.093414, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.thermal_conductivity_liq(T=270 * pyo.units.K, x=0),
+            pyo.units.W / pyo.units.m / pyo.units.K,
+        )
+    )
 
-#     assert pytest.approx(87.159, rel=1e-3) == pyo.value(
-#         pyo.units.convert(
-#             te.thermal_conductivity(
-#                 T=320.0 * pyo.units.K,
-#                 p=4.0e6 * pyo.units.Pa,
-#                 x=0,
-#             ),
-#             pyo.units.mW / pyo.units.m / pyo.units.K,
-#         )
-#     )
+    assert pytest.approx(0.011871, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.surface_tension(T=270 * pyo.units.K, x=0),
+            pyo.units.N / pyo.units.m,
+        )
+    )
+
+    assert pytest.approx(6.8353e-06, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.viscosity_vap(T=170 * pyo.units.K, x=1),
+            pyo.units.Pa * pyo.units.s,
+        )
+    )
+
+    assert pytest.approx(2.1336e-05, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.viscosity_vap(T=370 * pyo.units.K, x=1),
+            pyo.units.Pa * pyo.units.s,
+        )
+    )
+
+    assert pytest.approx(0.0030921, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.thermal_conductivity_vap(T=170 * pyo.units.K, x=0),
+            pyo.units.W / pyo.units.m / pyo.units.K,
+        )
+    )
+
+    assert pytest.approx(0.011241, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.thermal_conductivity_vap(T=270 * pyo.units.K, x=0),
+            pyo.units.W / pyo.units.m / pyo.units.K,
+        )
+    )
 
 
-# @pytest.mark.unit
-# @pytest.mark.skipif(not available(), reason="General Helmholtz not available")
-# def test_initialize_param_block():
-#     # this should do absolutely nothing, so just make sure there is no exception
-#     m = pyo.ConcreteModel()
-#     m.hparam = HelmholtzParameterBlock(
-#         pure_component="r1234ze", amount_basis=AmountBasis.MASS
-#     )
-#     m.hparam.initialize()
+@pytest.mark.unit
+@pytest.mark.skipif(not available(), reason="General Helmholtz not available")
+def test_r1234ze_transport():
+    m = pyo.ConcreteModel()
+    m.hparam = HelmholtzParameterBlock(
+        pure_component="r1234ze", amount_basis=AmountBasis.MASS
+    )
+    te = HelmholtzThermoExpressions(m, m.hparam)
+
+    assert pytest.approx(0.0098503, rel=1e-3) == pyo.value(
+        pyo.units.convert(
+            te.thermal_conductivity_vap(
+                T=250 * pyo.units.K, p=0.05e6 * pyo.units.Pa, x=1
+            ),
+            pyo.units.W / pyo.units.m / pyo.units.K,
+        )
+    )
+
+    assert pytest.approx(0.013933, rel=1e-3) == pyo.value(
+        pyo.units.convert(
+            te.thermal_conductivity_vap(
+                T=300 * pyo.units.K, p=0.1e6 * pyo.units.Pa, x=1
+            ),
+            pyo.units.W / pyo.units.m / pyo.units.K,
+        )
+    )
+
+    assert pytest.approx(0.10066, rel=1e-3) == pyo.value(
+        pyo.units.convert(
+            te.thermal_conductivity_liq(
+                T=250 * pyo.units.K, p=20e6 * pyo.units.Pa, x=0
+            ),
+            pyo.units.W / pyo.units.m / pyo.units.K,
+        )
+    )
+
+    assert pytest.approx(0.085389, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.thermal_conductivity_liq(
+                T=300 * pyo.units.K, p=20e6 * pyo.units.Pa, x=0
+            ),
+            pyo.units.W / pyo.units.m / pyo.units.K,
+        )
+    )
+
+    # roughly 0 pressure
+    assert pytest.approx(11.777, rel=1e-3) == pyo.value(
+        pyo.units.convert(
+            te.viscosity_vap(T=300 * pyo.units.K, p=1e-3 * pyo.units.Pa, x=1),
+            pyo.units.microPa * pyo.units.s,
+        )
+    )
+
+    assert pytest.approx(12.041, rel=1e-3) == pyo.value(
+        pyo.units.convert(
+            te.viscosity_vap(T=300 * pyo.units.K, p=1e5 * pyo.units.Pa, x=1),
+            pyo.units.microPa * pyo.units.s,
+        )
+    )
+
+    assert pytest.approx(10.522, rel=1e-3) == pyo.value(
+        pyo.units.convert(
+            te.rho_liq(
+                T=300 * pyo.units.K,
+                p=10e6 * pyo.units.Pa,
+                x=0,
+                result_basis=AmountBasis.MOLE,
+            ),
+            pyo.units.mol / pyo.units.l,
+        )
+    )
+
+    assert pytest.approx(217.89, rel=1e-3) == pyo.value(
+        pyo.units.convert(
+            te.viscosity_liq(T=300 * pyo.units.K, p=10e6 * pyo.units.Pa, x=0),
+            pyo.units.microPa * pyo.units.s,
+        )
+    )
 
 
-# @pytest.mark.unit
-# @pytest.mark.skipif(not available(), reason="General Helmholtz not available")
-# def test_errors():
-#     m = pyo.ConcreteModel()
-#     m.hparam = HelmholtzParameterBlock(
-#         pure_component="r1234ze", amount_basis=AmountBasis.MASS
-#     )
-#     te = HelmholtzThermoExpressions(m, m.hparam)
-#     with pytest.raises(TypeError):
-#         te.p_sat()
-#     with pytest.raises(RuntimeError):
-#         te.x(T=100 * pyo.units.K, p=3 * pyo.units.Pa)
-#     with pytest.raises(RuntimeError):
-#         te.h(T=100 * pyo.units.K)
-#     with pytest.raises(RuntimeError):
-#         te.h(T=100 * pyo.units.K, tacos=3)
-#     with pytest.raises(RuntimeError):
-#         te.h(T=100 * pyo.units.K, p=3 * pyo.units.Pa)
-#     with pytest.raises(RuntimeError):
-#         te.u(T=100 * pyo.units.K, p=3 * pyo.units.Pa)
-#     with pytest.raises(RuntimeError):
-#         te.s(T=100 * pyo.units.K, p=3 * pyo.units.Pa)
-#     with pytest.raises(RuntimeError):
-#         te.cp(T=100 * pyo.units.K, p=3 * pyo.units.Pa)
-#     with pytest.raises(ConfigurationError):
-#         m.err_param = HelmholtzParameterBlock(
-#             pure_component="not a real thing", amount_basis=AmountBasis.MASS
-#         )
-#     with pytest.raises(RuntimeError):
-#         # Can't specify all tree T, P, x
-#         h = m.hparam.htpx(T=300 * pyo.units.K, p=10 * pyo.units.Pa, x=0.0)
-#     with pytest.raises(RuntimeError):
-#         # Temperature way too high
-#         h = m.hparam.htpx(T=300e7 * pyo.units.K, x=0.0)
-#     with pytest.raises(RuntimeError):
-#         # Vapor fraction > 1.0
-#         h = m.hparam.htpx(T=300 * pyo.units.K, x=10.0)
-#     with pytest.raises(RuntimeError):
-#         # Pressure way too high
-#         h = m.hparam.htpx(p=300e17 * pyo.units.Pa, x=0.0)
+@pytest.mark.unit
+@pytest.mark.skipif(not available(), reason="General Helmholtz not available")
+def test_propane_transport():
+    m = pyo.ConcreteModel()
+    m.hparam = HelmholtzParameterBlock(
+        pure_component="propane", amount_basis=AmountBasis.MASS
+    )
+    te = HelmholtzThermoExpressions(m, m.hparam)
+
+    # Test viscosity with data from
+    #
+    # Vogel E, C Küchenmeister, E Bich, A Laesecke, Reference Correlation of the
+    #     Viscosity of Propane. Journal of Physical and Chemical Reference Data
+    #     27, 947–970 (1998)
+    assert pytest.approx(8.731, rel=1e-3) == pyo.value(
+        pyo.units.convert(
+            te.viscosity(
+                T=320.0 * pyo.units.K,
+                p=1e5 * pyo.units.Pa,
+                x=1,
+            ),
+            pyo.units.uPa * pyo.units.s,
+        )
+    )
+
+    assert pytest.approx(78.97826, rel=1e-3) == pyo.value(
+        pyo.units.convert(
+            te.viscosity(
+                T=320.0 * pyo.units.K,
+                p=2.5e6 * pyo.units.Pa,
+                x=0,
+            ),
+            pyo.units.uPa * pyo.units.s,
+        )
+    )
+
+    assert pytest.approx(82.16, rel=1e-2) == pyo.value(
+        pyo.units.convert(
+            te.viscosity(
+                T=320.0 * pyo.units.K,
+                p=4.0e6 * pyo.units.Pa,
+                x=0,
+            ),
+            pyo.units.uPa * pyo.units.s,
+        )
+    )
+
+    # Test thermal conductivity with data from
+    #
+    # NIST Chemistry WebBook
+    assert pytest.approx(20.78, rel=1e-3) == pyo.value(
+        pyo.units.convert(
+            te.thermal_conductivity(
+                T=320.0 * pyo.units.K,
+                p=1e5 * pyo.units.Pa,
+                x=1,
+            ),
+            pyo.units.mW / pyo.units.m / pyo.units.K,
+        )
+    )
+
+    assert pytest.approx(85.215, rel=1e-3) == pyo.value(
+        pyo.units.convert(
+            te.thermal_conductivity(
+                T=320.0 * pyo.units.K,
+                p=2.5e6 * pyo.units.Pa,
+                x=0,
+            ),
+            pyo.units.mW / pyo.units.m / pyo.units.K,
+        )
+    )
+
+    assert pytest.approx(87.159, rel=1e-3) == pyo.value(
+        pyo.units.convert(
+            te.thermal_conductivity(
+                T=320.0 * pyo.units.K,
+                p=4.0e6 * pyo.units.Pa,
+                x=0,
+            ),
+            pyo.units.mW / pyo.units.m / pyo.units.K,
+        )
+    )
 
 
-# @pytest.mark.unit
-# @pytest.mark.skipif(not available(), reason="General Helmholtz not available")
-# def test_plot_no_exception():
-#     m = pyo.ConcreteModel()
-#     m.hparam = HelmholtzParameterBlock(
-#         pure_component="r1234ze", amount_basis=AmountBasis.MASS
-#     )
-#     m.hparam.ph_diagram(isotherms=True)
-#     m.hparam.st_diagram()
-#     m.hparam.pt_diagram()
+@pytest.mark.unit
+@pytest.mark.skipif(not available(), reason="General Helmholtz not available")
+def test_initialize_param_block():
+    # this should do absolutely nothing, so just make sure there is no exception
+    m = pyo.ConcreteModel()
+    m.hparam = HelmholtzParameterBlock(
+        pure_component="r1234ze", amount_basis=AmountBasis.MASS
+    )
+    m.hparam.initialize()
 
 
-# @pytest.mark.unit
-# @pytest.mark.skipif(not available(), reason="General Helmholtz not available")
-# def test_default_initializer():
-#     m = pyo.ConcreteModel()
-#     m.hparam = HelmholtzParameterBlock(
-#         pure_component="r1234ze", amount_basis=AmountBasis.MASS
-#     )
-#     m.state = m.hparam.build_state_block([0])
+@pytest.mark.unit
+@pytest.mark.skipif(not available(), reason="General Helmholtz not available")
+def test_errors():
+    m = pyo.ConcreteModel()
+    m.hparam = HelmholtzParameterBlock(
+        pure_component="r1234ze", amount_basis=AmountBasis.MASS
+    )
+    te = HelmholtzThermoExpressions(m, m.hparam)
+    with pytest.raises(TypeError):
+        te.p_sat()
+    with pytest.raises(RuntimeError):
+        te.x(T=100 * pyo.units.K, p=3 * pyo.units.Pa)
+    with pytest.raises(RuntimeError):
+        te.h(T=100 * pyo.units.K)
+    with pytest.raises(RuntimeError):
+        te.h(T=100 * pyo.units.K, tacos=3)
+    with pytest.raises(RuntimeError):
+        te.h(T=100 * pyo.units.K, p=3 * pyo.units.Pa)
+    with pytest.raises(RuntimeError):
+        te.u(T=100 * pyo.units.K, p=3 * pyo.units.Pa)
+    with pytest.raises(RuntimeError):
+        te.s(T=100 * pyo.units.K, p=3 * pyo.units.Pa)
+    with pytest.raises(RuntimeError):
+        te.cp(T=100 * pyo.units.K, p=3 * pyo.units.Pa)
+    with pytest.raises(ConfigurationError):
+        m.err_param = HelmholtzParameterBlock(
+            pure_component="not a real thing", amount_basis=AmountBasis.MASS
+        )
+    with pytest.raises(RuntimeError):
+        # Can't specify all tree T, P, x
+        h = m.hparam.htpx(T=300 * pyo.units.K, p=10 * pyo.units.Pa, x=0.0)
+    with pytest.raises(RuntimeError):
+        # Temperature way too high
+        h = m.hparam.htpx(T=300e7 * pyo.units.K, x=0.0)
+    with pytest.raises(RuntimeError):
+        # Vapor fraction > 1.0
+        h = m.hparam.htpx(T=300 * pyo.units.K, x=10.0)
+    with pytest.raises(RuntimeError):
+        # Pressure way too high
+        h = m.hparam.htpx(p=300e17 * pyo.units.Pa, x=0.0)
 
-#     assert m.state.default_initializer is HelmholtzEoSInitializer
+
+@pytest.mark.unit
+@pytest.mark.skipif(not available(), reason="General Helmholtz not available")
+def test_plot_no_exception():
+    m = pyo.ConcreteModel()
+    m.hparam = HelmholtzParameterBlock(
+        pure_component="r1234ze", amount_basis=AmountBasis.MASS
+    )
+    m.hparam.ph_diagram(isotherms=True)
+    m.hparam.st_diagram()
+    m.hparam.pt_diagram()
+
+
+@pytest.mark.unit
+@pytest.mark.skipif(not available(), reason="General Helmholtz not available")
+def test_default_initializer():
+    m = pyo.ConcreteModel()
+    m.hparam = HelmholtzParameterBlock(
+        pure_component="r1234ze", amount_basis=AmountBasis.MASS
+    )
+    m.state = m.hparam.build_state_block([0])
+
+    assert m.state.default_initializer is HelmholtzEoSInitializer
 
 
 @pytest.mark.unit

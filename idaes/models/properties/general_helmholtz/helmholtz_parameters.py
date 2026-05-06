@@ -124,11 +124,9 @@ class WriteParameters(object):
         self.Pt = parameters["basic"]["Pt"]
         self.rhot_l = parameters["basic"]["rhot_l"]
         self.rhot_v = parameters["basic"]["rhot_v"]
-        self.P_ref = parameters["basic"]["P_ref"]
         self.P_min = parameters["basic"]["P_min"]
         self.P_max = parameters["basic"]["P_max"]
         self.rho_max = parameters["basic"]["rho_max"]
-        self.T_ref = parameters["basic"]["T_ref"]
         self.T_min = parameters["basic"]["T_min"]
         self.T_max = parameters["basic"]["T_max"]
         # If provided, set the reference state offset, otherwise set to (0, 0).
@@ -362,11 +360,9 @@ class WriteParameters(object):
         m.Pt = pyo.Param(initialize=self.Pt)
         m.rhot_l = pyo.Param(initialize=self.rhot_l)
         m.rhot_v = pyo.Param(initialize=self.rhot_v)
-        m.P_ref = pyo.Param(initialize=self.P_ref)
         m.P_min = pyo.Param(initialize=self.P_min)
         m.P_max = pyo.Param(initialize=self.P_max)
         m.rho_max = pyo.Param(initialize=self.rho_max)
-        m.T_ref = pyo.Param(initialize=self.T_ref)
         m.T_min = pyo.Param(initialize=self.T_min)
         m.T_max = pyo.Param(initialize=self.T_max)
         return m

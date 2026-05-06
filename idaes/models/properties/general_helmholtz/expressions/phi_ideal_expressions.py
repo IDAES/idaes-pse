@@ -29,7 +29,7 @@ def phi_ideal_expressions_lead(model, parameters):
     """
     a = parameters["a"]
     return {
-        "phii": pyo.log(model.delta) + a[0] + a[1] * model.tau,
+        "phii": a[0] + a[1] * model.tau + pyo.log(model.delta),
     }
 
 
@@ -61,11 +61,10 @@ def phi_ideal_expressions_planck_einstein1(model, parameters):
     """
     n = parameters["n"]
     t = parameters["t"]
-    Tc = model.Tc
 
     rng = range(0, len(n))
     return {
-        "phii": sum(n[i] * pyo.log(1 - pyo.exp(-t[i] * model.tau/Tc)) for i in rng),
+        "phii": sum(n[i] * pyo.log(1 - pyo.exp(-t[i] * model.tau)) for i in rng),
     }
 
 
@@ -89,6 +88,24 @@ def phi_ideal_expressions_planck_einstein2(model, parameters):
         "phii": sum(n[i] * pyo.log(l[i] + d[i]*pyo.exp(t[i] * model.tau))for i in rng),
     }
 
+def phi_ideal_expressions_planck_einstein3(model, parameters):
+    """Type01 expression for the third Planck Einstein part of dimensionless ideal Helmholtz free energy
+
+    Args:
+        model (Block): Pyomo model
+        parameters (dict): Main parameters dictionary
+
+    Returns:
+        dict: Expressions for first Planck Einstein part of ideal Helmholtz free energy
+    """
+    n = parameters["n"]
+    t = parameters["t"]
+    Tc = model.Tc
+
+    rng = range(0, len(n))
+    return {
+        "phii": sum(n[i] * pyo.log(1 - pyo.exp(-t[i] * model.tau/Tc)) for i in rng),
+    }
 
 def phi_ideal_expressions_cp_constant(model, parameters):
     """Type01 expression for the cp constant part of ideal dimensionless Helmholtz free energy
@@ -118,10 +135,10 @@ def phi_ideal_expressions_power(model, parameters):
         dict: Expressions for Power part of ideal Helmholtz free energy
     """
     a = parameters["n"]
-    g = parameters["t"]
+    t = parameters["t"]
     rng = range(0, len(a))
     return {
-        "phii": sum(a[i] * model.tau ** g[i] for i in rng),
+        "phii": sum(a[i] * model.tau ** t[i] for i in rng),
     }
 
 
