@@ -329,12 +329,12 @@ def svd_rayleigh_ritz(
     
     .. math::
     
-    A_aug  := \left[
-        {\begin{array}{cc}
-            0 & A.T \\
-            A & 0
-        \end{array}}
-    \right]
+        A_aug  := \left[
+            {\begin{array}{cc}
+                0 & A.T \\
+                A & 0
+            \end{array}}
+        \right]
     
     Working with this matrix avoids the roundoff error inherent working with the
     Gram matrices :math:`A^T \times A` or :math:`A \times A^T, but also results 
