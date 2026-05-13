@@ -2843,7 +2843,7 @@ class TestJacobianCondTwoNorm:
         )
 
         with pytest.raises(
-            ValueError, match="Both largest and smallest singular value are zero"
+            ValueError, match="Both the largest and smallest singular values are zero"
         ):
             jacobian_cond(model, scaled=True, norm_type=MatrixNorm.twoNorm)
 

@@ -1344,7 +1344,7 @@ def jacobian_cond(
         small_singular_values = out["singular_values"]  # Sorted from least to greatest
         if small_singular_values[0] == 0 and large_singular_values[0] == 0:
             raise ValueError(
-                "Both largest and smallest singular value are zero. The "
+                "Both the largest and smallest singular values are zero. The "
                 "matrix's condition number is undefined."
             )
         elif small_singular_values[0] == 0:
