@@ -1243,7 +1243,7 @@ def get_jacobian(
 
 
 def jacobian_cond(
-    m=None, scaled=True, jac=None, norm=MatrixNorm.frobeniusNorm, svd_options=None
+    m=None, scaled=True, jac=None, norm_type=MatrixNorm.frobeniusNorm, svd_options=None
 ):
     """
     Get the Frobenius condition number of the scaled or unscaled Jacobian matrix
@@ -1253,7 +1253,7 @@ def jacobian_cond(
         m: Calculate the condition number of the Jacobian from this model.
         scaled: If True use scaled Jacobian, else use unscaled
         jac: (Optional) previously calculated Jacobian
-        norm: matrix norm with which to calculate the matrix condition number.
+        norm_type: matrix norm with which to calculate the matrix condition number.
             MatrixNorm.twoNorm is faster for large matrices, but takes into
             account only the largest and smallest singular values.
             MatrixNorm.frobeniusNorm takes into account all of the matrix's
@@ -1276,7 +1276,7 @@ def jacobian_cond(
             )
         jac, _ = get_jacobian(m, scaled)
     jac = jac.tocsc()
-    if norm == MatrixNorm.frobeniusNorm:
+    if norm_type == MatrixNorm.frobeniusNorm:
         if svd_options is not None:
             raise ValueError(
                 "Received dictionary of options for calculating the matrix svd, but the "
@@ -1291,7 +1291,7 @@ def jacobian_cond(
         else:
             jac_inv = spinv(jac)
             return spnorm(jac, ord="fro") * spnorm(jac_inv, ord="fro")
-    elif norm == MatrixNorm.twoNorm:
+    elif norm_type == MatrixNorm.twoNorm:
         if svd_options is None:
             svd_options = {}
 
@@ -1299,9 +1299,9 @@ def jacobian_cond(
             # Matrix with minimum dimension of 1
             if spnorm(jac) == 0:
                 raise ValueError(
-                "Both largest and smallest singular value are zero. The "
-                "matrix's condition number is undefined."
-            )
+                    "Both largest and smallest singular value are zero. The "
+                    "matrix's condition number is undefined."
+                )
             else:
                 # A matrix with a dimension of length 1 has
                 # a condition number equal to 1.
@@ -1325,7 +1325,7 @@ def jacobian_cond(
 
         if "k" in svd_options["large_svd"] and svd_options["large_svd"]["k"] != 1:
             raise ValueError(
-                f"Received the option k={svd_options["large_svd"]["k"]} for "
+                f"Received the option k={svd_options['large_svd']['k']} for "
                 "scipy.sparse.linalg.svds. We only need the largest singular "
                 "value to calculate the matrix norm, so this option should be "
                 "set to False or removed. To increase the number of Lanczos "
@@ -1358,7 +1358,7 @@ def jacobian_cond(
     else:
         raise ValueError(
             "This function supports calculating the matrix condition number only for "
-            f"the two norm and frobenius norm. Instead got the unknown option {norm}."
+            f"the two norm and frobenius norm. Instead got the unknown option {norm_type}."
         )
 
 

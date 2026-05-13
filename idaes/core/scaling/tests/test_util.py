@@ -2614,7 +2614,7 @@ class TestJacobianMethods:
 class TestJacobianCondTwoNorm:
     """
     This class collects tests used to test the jacobian_cond method using
-    the MatrixNorm.twoNorm argument. It was prepared with the assistence
+    the MatrixNorm.twoNorm argument. It was prepared with the assistance
     of Google Gemini 2.5.
     """
 
@@ -2708,7 +2708,7 @@ class TestJacobianCondTwoNorm:
             return_value={"singular_values": mock_small_singular_value},
         )
 
-        cond_number = jacobian_cond(model, scaled=True, norm=MatrixNorm.twoNorm)
+        cond_number = jacobian_cond(model, scaled=True, norm_type=MatrixNorm.twoNorm)
 
         # Assert that svds and svd_rayleigh_ritz were called with the correct (scaled) Jacobian
         mock_svds.assert_called_once()
@@ -2765,7 +2765,7 @@ class TestJacobianCondTwoNorm:
             return_value={"singular_values": mock_small_singular_value},
         )
 
-        cond_number = jacobian_cond(model, scaled=False, norm=MatrixNorm.twoNorm)
+        cond_number = jacobian_cond(model, scaled=False, norm_type=MatrixNorm.twoNorm)
 
         mock_svds.assert_called_once()
         assert len(mock_svds.call_args.args) == 1
@@ -2813,7 +2813,7 @@ class TestJacobianCondTwoNorm:
         )
 
         with pytest.raises(ValueError, match="The smallest singular value is zero"):
-            jacobian_cond(model, scaled=True, norm=MatrixNorm.twoNorm)
+            jacobian_cond(model, scaled=True, norm_type=MatrixNorm.twoNorm)
 
     @pytest.mark.unit
     def test_jacobian_cond_two_norm_both_singular_values_zero_raises_error(
@@ -2845,7 +2845,7 @@ class TestJacobianCondTwoNorm:
         with pytest.raises(
             ValueError, match="Both largest and smallest singular value are zero"
         ):
-            jacobian_cond(model, scaled=True, norm=MatrixNorm.twoNorm)
+            jacobian_cond(model, scaled=True, norm_type=MatrixNorm.twoNorm)
 
     @pytest.mark.unit
     def test_jacobian_cond_two_norm_svd_options_passed(
@@ -2884,7 +2884,7 @@ class TestJacobianCondTwoNorm:
         }
 
         jacobian_cond(
-            model, scaled=False, norm=MatrixNorm.twoNorm, svd_options=svd_options
+            model, scaled=False, norm_type=MatrixNorm.twoNorm, svd_options=svd_options
         )
 
         # Assert that svds and svd_rayleigh_ritz were called with the correct options
@@ -2932,7 +2932,10 @@ class TestJacobianCondTwoNorm:
             ValueError, match="Received the option return_singular_vectors=True"
         ):
             jacobian_cond(
-                model, scaled=False, norm=MatrixNorm.twoNorm, svd_options=svd_options
+                model,
+                scaled=False,
+                norm_type=MatrixNorm.twoNorm,
+                svd_options=svd_options,
             )
 
     @pytest.mark.unit
@@ -2957,7 +2960,10 @@ class TestJacobianCondTwoNorm:
 
         with pytest.raises(ValueError, match="Received the option k=3"):
             jacobian_cond(
-                model, scaled=False, norm=MatrixNorm.twoNorm, svd_options=svd_options
+                model,
+                scaled=False,
+                norm_type=MatrixNorm.twoNorm,
+                svd_options=svd_options,
             )
 
     @pytest.mark.unit
@@ -2975,7 +2981,7 @@ class TestJacobianCondTwoNorm:
             return_value=self.MockPyomoNLP(unscaled_jacobian, [model.x], [model.c1]),
         )
 
-        assert jacobian_cond(model, norm=MatrixNorm.twoNorm) == 1
+        assert jacobian_cond(model, norm_type=MatrixNorm.twoNorm) == 1
 
     @pytest.mark.unit
     def test_jacobian_cond_two_norm_svd_scalar_zero(self, mocker, simple_pyomo_model):
@@ -3003,7 +3009,10 @@ class TestJacobianCondTwoNorm:
             ),
         ):
             jacobian_cond(
-                model, scaled=False, norm=MatrixNorm.twoNorm, svd_options=svd_options
+                model,
+                scaled=False,
+                norm_type=MatrixNorm.twoNorm,
+                svd_options=svd_options,
             )
 
     @pytest.mark.integration
@@ -3041,7 +3050,7 @@ class TestJacobianCondTwoNorm:
 
         # Call the function under test (jacobian_cond)
         # This will internally call the real PyomoNLP, get_jacobian, svds, and svd_rayleigh_ritz
-        cond_number = jacobian_cond(model, scaled=True, norm=MatrixNorm.twoNorm)
+        cond_number = jacobian_cond(model, scaled=True, norm_type=MatrixNorm.twoNorm)
 
         # Assert the result
         assert cond_number == pytest.approx(expected_cond_number)
@@ -3061,7 +3070,7 @@ class TestJacobianCondTwoNorm:
         expected_cond_number = s[0] / s[-1]
 
         # Call the function under test
-        cond_number = jacobian_cond(model, scaled=False, norm=MatrixNorm.twoNorm)
+        cond_number = jacobian_cond(model, scaled=False, norm_type=MatrixNorm.twoNorm)
 
         # Assert the result
         assert cond_number == pytest.approx(expected_cond_number)
