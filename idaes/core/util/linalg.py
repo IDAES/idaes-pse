@@ -313,7 +313,7 @@ def svd_rayleigh_ritz(
     seed: int = None,
     suppress_warning=False,
 ):
-    """
+    r"""
     For an :math:`m \times n` sparse real matrix :math:`A`, computes an :math:`m \times k`
     dense real matrix :math:`U` of left singular vectors, an :math:`n \times k` dense real 
     matrix :math:`V` of right singular vectors, and a length :math:`k` vector :math:`\sigma`
