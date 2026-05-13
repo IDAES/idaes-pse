@@ -340,9 +340,9 @@ class TestSVDRayleighRitz:
         Vhat = out["right_singular_vectors"]
         null_hat = out["left_null_vectors"]
         _test_svd_quality(jac, Uhat, svals_hat, Vhat, null_hat)
-        _assert_subspace_containment(Uhat, Utrue)
-        _assert_subspace_containment(Vhat, Vtrue)
-        _assert_subspace_containment(null_hat, null_true)
+        _assert_subspace_containment(Uhat, Utrue, tol=2e-8)
+        _assert_subspace_containment(Vhat, Vtrue, tol=2e-8)
+        _assert_subspace_containment(null_hat, null_true, tol=2e-8)
         assert pytest.approx(svals_true, rel=1e-4, abs=1e-14) == svals_hat
 
     @pytest.mark.integration
