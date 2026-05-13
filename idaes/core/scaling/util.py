@@ -26,7 +26,7 @@ import numpy as np
 
 from scipy.linalg import norm, pinv
 from scipy.sparse import diags
-from scipy.sparse.linalg import inv as spinv, norm as spnorm
+from scipy.sparse.linalg import inv as spinv, norm as spnorm, svds
 
 from pyomo.environ import (
     Binary,
@@ -66,11 +66,34 @@ from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
 from pyomo.contrib.pynumero.asl import AmplInterface
 
 from idaes.core.util.exceptions import BurntToast
+from idaes.core.util.linalg import svd_rayleigh_ritz
+from idaes.core.util.misc import StrEnum
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
 
 TAB = " " * 4
+
+
+class MatrixNorm(StrEnum):
+    """
+    Types of norm available for calculating the matrix condition number.
+    Let A be an m by n matrix and let sigma be a vector of the singular
+    values of A. Then the matrix norms can be expressed as follows:
+
+    twoNorm ("2"): max(sigma)
+    frobeniusNorm ("fro"): sqrt(sum(a**2 for a in row for row in A))
+        = sqrt(sum(s**2 for s in sigma))
+
+    So the Frobenius norm is the square root of the sum of squares of
+    all the matrix entries, while the matrix two norm is the largest
+    singular value of A. For the matrix two norm, we have
+    norm(A @ v, 2) <= norm(A, 2) * norm(v, 2) for all vectors v with
+    a length of n.
+    """
+
+    twoNorm = "2"
+    frobeniusNorm = "fro"
 
 
 def _filter_unknown(block_data):
@@ -1219,17 +1242,28 @@ def get_jacobian(
     return jac, nlp
 
 
-# TODO should we calculate the 2-norm condition number from the SVD
-# once #1566 is merged?
-def jacobian_cond(m=None, scaled=True, jac=None):
+def jacobian_cond(
+    m=None, scaled=True, jac=None, norm=MatrixNorm.frobeniusNorm, svd_options=None
+):
     """
     Get the Frobenius condition number of the scaled or unscaled Jacobian matrix
     of a model.
 
     Args:
-        m: calculate the condition number of the Jacobian from this model.
-        scaled: if True use scaled Jacobian, else use unscaled
-        jac: (optional) previously calculated Jacobian
+        m: Calculate the condition number of the Jacobian from this model.
+        scaled: If True use scaled Jacobian, else use unscaled
+        jac: (Optional) previously calculated Jacobian
+        norm: matrix norm with which to calculate the matrix condition number.
+            MatrixNorm.twoNorm is faster for large matrices, but takes into
+            account only the largest and smallest singular values.
+            MatrixNorm.frobeniusNorm takes into account all of the matrix's
+            singular values, but requires forming the (pseudo) inverse, which
+            is a large, dense matrix and therefore can take a very long time
+            for large models.
+        svd_options: Dictionary of options to pass to SVD solvers to calculate
+            the two norm condition number. It should contain two keys:
+            "large_svd" for options to pass to scipy.sparse.linalg.svds
+            "small_svd" for options to pass to idaes.core.util.linalg.svd_rayleigh_ritz
 
     Returns:
         (float) Condition number
@@ -1242,15 +1276,90 @@ def jacobian_cond(m=None, scaled=True, jac=None):
             )
         jac, _ = get_jacobian(m, scaled)
     jac = jac.tocsc()
-    if jac.shape[0] != jac.shape[1]:
-        _log.info(
-            "Nonsquare Jacobian. Using pseudoinverse to calculate Frobenius norm."
-        )
-        jac_inv = pinv(jac.toarray())
-        return spnorm(jac, ord="fro") * norm(jac_inv, ord="fro")
+    if norm == MatrixNorm.frobeniusNorm:
+        if svd_options is not None:
+            raise ValueError(
+                "Received dictionary of options for calculating the matrix svd, but the "
+                "svd is not computed when calculating the Frobenius norm condition number."
+            )
+        if jac.shape[0] != jac.shape[1]:
+            _log.info(
+                "Nonsquare Jacobian. Using pseudoinverse to calculate Frobenius norm."
+            )
+            jac_inv = pinv(jac.toarray())
+            return spnorm(jac, ord="fro") * norm(jac_inv, ord="fro")
+        else:
+            jac_inv = spinv(jac)
+            return spnorm(jac, ord="fro") * spnorm(jac_inv, ord="fro")
+    elif norm == MatrixNorm.twoNorm:
+        if svd_options is None:
+            svd_options = {}
+
+        if min(jac.shape) == 1:
+            # Matrix with minimum dimension of 1
+            if spnorm(jac) == 0:
+                raise ValueError(
+                "Both largest and smallest singular value are zero. The "
+                "matrix's condition number is undefined."
+            )
+            else:
+                # A matrix with a dimension of length 1 has
+                # a condition number equal to 1.
+                return 1
+
+        if "large_svd" not in svd_options:
+            svd_options["large_svd"] = {}
+
+        if (
+            "return_singular_vectors" in svd_options["large_svd"]
+            and svd_options["large_svd"]["return_singular_vectors"] == True
+        ):
+            raise ValueError(
+                "Received the option return_singular_vectors=True for "
+                "scipy.sparse.linalg.svds. Singular vectors are not necessary "
+                "to calculate the matrix norm, so this option should be "
+                "set to False or removed."
+            )
+        else:
+            svd_options["large_svd"]["return_singular_vectors"] = False
+
+        if "k" in svd_options["large_svd"] and svd_options["large_svd"]["k"] != 1:
+            raise ValueError(
+                f"Received the option k={svd_options["large_svd"]["k"]} for "
+                "scipy.sparse.linalg.svds. We only need the largest singular "
+                "value to calculate the matrix norm, so this option should be "
+                "set to False or removed. To increase the number of Lanczos "
+                "vectors that Arpack uses, use the 'ncv' option instead."
+            )
+        else:
+            svd_options["large_svd"]["k"] = 1
+
+        if "small_svd" not in svd_options:
+            svd_options["small_svd"] = {}
+
+        large_singular_values = svds(
+            jac, **svd_options["large_svd"]
+        )  # Sorted from greatest to least
+        out = svd_rayleigh_ritz(jac, **svd_options["small_svd"])
+        small_singular_values = out["singular_values"]  # Sorted from least to greatest
+        if small_singular_values[0] == 0 and large_singular_values[0] == 0:
+            raise ValueError(
+                "Both largest and smallest singular value are zero. The "
+                "matrix's condition number is undefined."
+            )
+        elif small_singular_values[0] == 0:
+            raise ValueError(
+                "The smallest singular value is zero. The matrix's condition "
+                "number is infinity."
+            )
+        else:
+            return large_singular_values[0] / small_singular_values[0]
+
     else:
-        jac_inv = spinv(jac)
-        return spnorm(jac, ord="fro") * spnorm(jac_inv, ord="fro")
+        raise ValueError(
+            "This function supports calculating the matrix condition number only for "
+            f"the two norm and frobenius norm. Instead got the unknown option {norm}."
+        )
 
 
 def scale_time_discretization_equations(blk, time_set, time_scaling_factor):

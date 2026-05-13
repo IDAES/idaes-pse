@@ -22,6 +22,9 @@ import pytest
 import re
 from copy import deepcopy
 
+import numpy as np
+from scipy.sparse import csc_array
+
 from pyomo.environ import (
     Block,
     ConcreteModel,
@@ -52,6 +55,7 @@ from idaes.core.scaling.util import (
     _set_block_suffixes_from_dict,
     list_unscaled_variables,
     list_unscaled_constraints,
+    MatrixNorm,
     scaling_factors_to_dict,
     scaling_factors_from_dict,
     scaling_factors_to_json_file,
@@ -2605,6 +2609,462 @@ class TestJacobianMethods:
             ),
         ):
             _ = jacobian_cond()
+
+
+class TestJacobianCondTwoNorm:
+    """
+    This class collects tests used to test the jacobian_cond method using
+    the MatrixNorm.twoNorm argument. It was prepared with the assistence
+    of Google Gemini 2.5.
+    """
+
+    # Mock PyomoNLP for consistent Jacobian output
+    class MockPyomoNLP:
+        def __init__(self, unscaled_jacobian_matrix, var_list, con_list):
+            # PyomoNLP is expected to return the unscaled Jacobian
+            self._unscaled_jacobian_matrix = unscaled_jacobian_matrix
+            self.vlist = var_list
+            self.clist = con_list
+
+        def evaluate_jacobian_eq(self):
+            return self._unscaled_jacobian_matrix
+
+        def evaluate_jacobian(self):
+            return self._unscaled_jacobian_matrix
+
+        def get_pyomo_equality_constraints(self):
+            return self.clist
+
+        def get_pyomo_constraints(self):
+            return self.clist
+
+        def get_pyomo_variables(self):
+            return self.vlist
+
+    # Fixture to create a simple Pyomo model for testing
+    @pytest.fixture
+    def simple_pyomo_model(self):
+        model = ConcreteModel()
+        model.x = Var(initialize=1.0)
+        model.y = Var(initialize=2.0)
+        model.c1 = Constraint(expr=model.x + model.y == 3.0)
+        model.c2 = Constraint(expr=model.x - model.y == -1.0)
+        return model
+
+    @pytest.mark.unit
+    def test_jacobian_cond_two_norm_scaled(self, mocker, simple_pyomo_model):
+        model = simple_pyomo_model
+
+        # Set scaling factors
+        set_scaling_factor(model.x, 0.5)
+        set_scaling_factor(model.y, 2.0)
+        set_scaling_factor(model.c1, 10.0)
+        set_scaling_factor(model.c2, 1.0)
+
+        # The unscaled Jacobian that MockPyomoNLP should return
+        # c1: x + y - 3 = 0  => [1, 1]
+        # c2: x - y + 1 = 0  => [1, -1]
+        unscaled_jacobian = csc_array([[1.0, 1.0], [1.0, -1.0]])
+
+        # Mock PyomoNLP to return our predefined UNSEALED Jacobian and component lists
+        mocker.patch(
+            "idaes.core.scaling.util.PyomoNLP",
+            return_value=self.MockPyomoNLP(
+                unscaled_jacobian, [model.x, model.y], [model.c1, model.c2]
+            ),
+        )
+
+        # Manually calculate the expected scaled Jacobian for verification
+        # var_sf = [0.5, 2.0]
+        # con_sf = [10.0, 1.0]
+        #
+        # Scaled Jacobian (rows * con_sf, cols / var_sf):
+        # J_scaled[i, j] = J_unscaled[i, j] * con_sf[i] / var_sf[j]
+        #
+        # J_scaled[0, 0] = 1.0 * 10.0 / 0.5 = 20.0
+        # J_scaled[0, 1] = 1.0 * 10.0 / 2.0 = 5.0
+        # J_scaled[1, 0] = 1.0 * 1.0 / 0.5 = 2.0
+        # J_scaled[1, 1] = -1.0 * 1.0 / 2.0 = -0.5
+
+        expected_scaled_jacobian = csc_array([[20.0, 5.0], [2.0, -0.5]])
+
+        # Singular values for this specific expected_scaled_jacobian
+        # Using numpy.linalg.svd to get actual singular values for the expected matrix
+        # This ensures the test is robust to changes in the mock_jacobian definition
+        _, s, _ = np.linalg.svd(expected_scaled_jacobian.toarray())
+        mock_large_singular_value = np.array([s[0]])
+        mock_small_singular_value = np.array([s[-1]])
+        expected_cond_number = (
+            mock_large_singular_value[0] / mock_small_singular_value[0]
+        )
+
+        # Mock svds and svd_rayleigh_ritz to control singular values
+        mock_svds = mocker.patch(
+            "idaes.core.scaling.util.svds",
+            return_value=mock_large_singular_value,
+        )
+        mock_svd_rayleigh_ritz = mocker.patch(
+            "idaes.core.scaling.util.svd_rayleigh_ritz",
+            return_value={"singular_values": mock_small_singular_value},
+        )
+
+        cond_number = jacobian_cond(model, scaled=True, norm=MatrixNorm.twoNorm)
+
+        # Assert that svds and svd_rayleigh_ritz were called with the correct (scaled) Jacobian
+        mock_svds.assert_called_once()
+        # Verify the arguments passed to svds, including the new 'return_singular_vectors=False'
+        assert len(mock_svds.call_args.args) == 1
+        assert mock_svds.call_args.args[0].toarray() == pytest.approx(
+            expected_scaled_jacobian.toarray()
+        )
+        assert len(mock_svds.call_args.kwargs) == 2
+        assert mock_svds.call_args.kwargs["return_singular_vectors"] is False
+        assert mock_svds.call_args.kwargs["k"] == 1
+
+        mock_svd_rayleigh_ritz.assert_called_once()
+        assert len(mock_svd_rayleigh_ritz.call_args.args) == 1
+        assert mock_svd_rayleigh_ritz.call_args.args[0].toarray() == pytest.approx(
+            expected_scaled_jacobian.toarray()
+        )
+        assert len(mock_svd_rayleigh_ritz.call_args.kwargs) == 0
+
+        assert cond_number == pytest.approx(expected_cond_number)
+
+    @pytest.mark.unit
+    def test_jacobian_cond_two_norm_unscaled(self, mocker, simple_pyomo_model):
+        model = simple_pyomo_model
+
+        # The unscaled Jacobian that MockPyomoNLP should return
+        # [[1, 1],
+        #  [1, -1]]
+        unscaled_jacobian = csc_array([[1.0, 1.0], [1.0, -1.0]])
+
+        # Mock PyomoNLP
+        mocker.patch(
+            "idaes.core.scaling.util.PyomoNLP",
+            return_value=self.MockPyomoNLP(
+                unscaled_jacobian, [model.x, model.y], [model.c1, model.c2]
+            ),
+        )
+
+        # Singular values for the unscaled Jacobian [[1, 1], [1, -1]] are sqrt(2) and sqrt(2)
+        # The condition number should be 1.
+        _, s, _ = np.linalg.svd(unscaled_jacobian.toarray())
+        mock_large_singular_value = np.array([s[0]])
+        mock_small_singular_value = np.array([s[-1]])
+        expected_cond_number = (
+            mock_large_singular_value[0] / mock_small_singular_value[0]
+        )
+
+        mock_svds = mocker.patch(
+            "idaes.core.scaling.util.svds",
+            return_value=mock_large_singular_value,
+        )
+        mock_svd_rayleigh_ritz = mocker.patch(
+            "idaes.core.scaling.util.svd_rayleigh_ritz",
+            return_value={"singular_values": mock_small_singular_value},
+        )
+
+        cond_number = jacobian_cond(model, scaled=False, norm=MatrixNorm.twoNorm)
+
+        mock_svds.assert_called_once()
+        assert len(mock_svds.call_args.args) == 1
+        mock_svds.call_args.args[0].toarray() == pytest.approx(
+            unscaled_jacobian.toarray()
+        )
+        assert len(mock_svds.call_args.kwargs) == 2
+        assert mock_svds.call_args.kwargs["return_singular_vectors"] is False
+        assert mock_svds.call_args.kwargs["k"] == 1
+
+        mock_svd_rayleigh_ritz.assert_called_once()
+        assert len(mock_svd_rayleigh_ritz.call_args.args) == 1
+        mock_svd_rayleigh_ritz.call_args.args[0].toarray() == pytest.approx(
+            unscaled_jacobian.toarray()
+        )
+        assert len(mock_svd_rayleigh_ritz.call_args.kwargs) == 0
+
+        assert cond_number == pytest.approx(expected_cond_number)
+
+    @pytest.mark.unit
+    def test_jacobian_cond_two_norm_zero_singular_value_raises_error(
+        self, mocker, simple_pyomo_model
+    ):
+        model = simple_pyomo_model
+
+        unscaled_jacobian = csc_array([[1.0, 0.0], [0.0, 0.0]])
+
+        mocker.patch(
+            "idaes.core.scaling.util.PyomoNLP",
+            return_value=self.MockPyomoNLP(
+                unscaled_jacobian, [model.x, model.y], [model.c1, model.c2]
+            ),
+        )
+
+        mock_large_singular_value = np.array([1.0])
+        mock_small_singular_value = np.array([0.0])  # This will cause the error
+
+        mocker.patch(
+            "idaes.core.scaling.util.svds",
+            return_value=mock_large_singular_value,
+        )
+        mocker.patch(
+            "idaes.core.scaling.util.svd_rayleigh_ritz",
+            return_value={"singular_values": mock_small_singular_value},
+        )
+
+        with pytest.raises(ValueError, match="The smallest singular value is zero"):
+            jacobian_cond(model, scaled=True, norm=MatrixNorm.twoNorm)
+
+    @pytest.mark.unit
+    def test_jacobian_cond_two_norm_both_singular_values_zero_raises_error(
+        self, mocker, simple_pyomo_model
+    ):
+        model = simple_pyomo_model
+
+        unscaled_jacobian = csc_array([[0.0, 0.0], [0.0, 0.0]])
+
+        mocker.patch(
+            "idaes.core.scaling.util.PyomoNLP",
+            return_value=self.MockPyomoNLP(
+                unscaled_jacobian, [model.x, model.y], [model.c1, model.c2]
+            ),
+        )
+
+        mock_large_singular_value = np.array([0.0])
+        mock_small_singular_value = np.array([0.0])
+
+        mocker.patch(
+            "idaes.core.scaling.util.svds",
+            return_value=mock_large_singular_value,
+        )
+        mocker.patch(
+            "idaes.core.scaling.util.svd_rayleigh_ritz",
+            return_value={"singular_values": mock_small_singular_value},
+        )
+
+        with pytest.raises(
+            ValueError, match="Both largest and smallest singular value are zero"
+        ):
+            jacobian_cond(model, scaled=True, norm=MatrixNorm.twoNorm)
+
+    @pytest.mark.unit
+    def test_jacobian_cond_two_norm_svd_options_passed(
+        self, mocker, simple_pyomo_model
+    ):
+        model = simple_pyomo_model
+
+        unscaled_jacobian = csc_array([[1.0, 1.0], [1.0, -1.0]])
+
+        mocker.patch(
+            "idaes.core.scaling.util.PyomoNLP",
+            return_value=self.MockPyomoNLP(
+                unscaled_jacobian, [model.x, model.y], [model.c1, model.c2]
+            ),
+        )
+
+        # For unscaled, this is the same as the unscaled_jacobian
+        expected_jacobian_for_svd = unscaled_jacobian
+        _, s, _ = np.linalg.svd(expected_jacobian_for_svd.toarray())
+        mock_large_singular_value = np.array([s[0]])
+        mock_small_singular_value = np.array([s[-1]])
+
+        mock_svds = mocker.patch(
+            "idaes.core.scaling.util.svds",
+            return_value=mock_large_singular_value,
+        )
+        mock_svd_rayleigh_ritz = mocker.patch(
+            "idaes.core.scaling.util.svd_rayleigh_ritz",
+            return_value={"singular_values": mock_small_singular_value},
+        )
+
+        # Custom SVD options
+        svd_options = {
+            "large_svd": {"ncv": 25, "which": "LM", "maxiter": 1000},
+            "small_svd": {"max_iter": 500, "tol": 1e-10},
+        }
+
+        jacobian_cond(
+            model, scaled=False, norm=MatrixNorm.twoNorm, svd_options=svd_options
+        )
+
+        # Assert that svds and svd_rayleigh_ritz were called with the correct options
+        svds_kwargs = dict(
+            k=1, ncv=25, which="LM", maxiter=1000, return_singular_vectors=False
+        )
+        mock_svds.assert_called_once()
+        assert len(mock_svds.call_args.args) == 1
+        assert mock_svds.call_args.args[0].toarray() == pytest.approx(
+            expected_jacobian_for_svd.toarray()
+        )
+        assert mock_svds.call_args.kwargs == svds_kwargs
+
+        svd_rayleight_ritz_kwargs = dict(max_iter=500, tol=1e-10)
+        mock_svd_rayleigh_ritz.assert_called_once()
+        assert len(mock_svd_rayleigh_ritz.call_args.args) == 1
+        assert mock_svd_rayleigh_ritz.call_args.args[0].toarray() == pytest.approx(
+            expected_jacobian_for_svd.toarray()
+        )
+        assert mock_svd_rayleigh_ritz.call_args.kwargs == svd_rayleight_ritz_kwargs
+
+    @pytest.mark.unit
+    def test_jacobian_cond_two_norm_svd_options_return_singular_vectors_error(
+        self, mocker, simple_pyomo_model
+    ):
+        model = simple_pyomo_model
+
+        unscaled_jacobian = csc_array([[1.0, 1.0], [1.0, -1.0]])
+
+        mocker.patch(
+            "idaes.core.scaling.util.PyomoNLP",
+            return_value=self.MockPyomoNLP(
+                unscaled_jacobian, [model.x, model.y], [model.c1, model.c2]
+            ),
+        )
+
+        svd_options = {
+            "large_svd": {
+                "return_singular_vectors": True
+            },  # This is the option that should raise an error
+            "small_svd": {},
+        }
+
+        with pytest.raises(
+            ValueError, match="Received the option return_singular_vectors=True"
+        ):
+            jacobian_cond(
+                model, scaled=False, norm=MatrixNorm.twoNorm, svd_options=svd_options
+            )
+
+    @pytest.mark.unit
+    def test_jacobian_cond_two_norm_svd_options_lk_error(
+        self, mocker, simple_pyomo_model
+    ):
+        model = simple_pyomo_model
+
+        unscaled_jacobian = csc_array([[1.0, 1.0], [1.0, -1.0]])
+
+        mocker.patch(
+            "idaes.core.scaling.util.PyomoNLP",
+            return_value=self.MockPyomoNLP(
+                unscaled_jacobian, [model.x, model.y], [model.c1, model.c2]
+            ),
+        )
+
+        svd_options = {
+            "large_svd": {"k": 3},  # This is the option that should raise an error
+            "small_svd": {},
+        }
+
+        with pytest.raises(ValueError, match="Received the option k=3"):
+            jacobian_cond(
+                model, scaled=False, norm=MatrixNorm.twoNorm, svd_options=svd_options
+            )
+
+    @pytest.mark.unit
+    def test_jacobian_cond_two_norm_one_by_one(self, mocker, simple_pyomo_model):
+        model = simple_pyomo_model
+
+        unscaled_jacobian = csc_array(
+            [
+                [1.0],
+            ]
+        )
+
+        mocker.patch(
+            "idaes.core.scaling.util.PyomoNLP",
+            return_value=self.MockPyomoNLP(unscaled_jacobian, [model.x], [model.c1]),
+        )
+
+        assert jacobian_cond(model, norm=MatrixNorm.twoNorm) == 1
+
+    @pytest.mark.unit
+    def test_jacobian_cond_two_norm_svd_scalar_zero(self, mocker, simple_pyomo_model):
+        model = simple_pyomo_model
+
+        # Not equal to the actual jacobian, but we need to test the case of
+        # a scalar value of zero.
+        unscaled_jacobian = csc_array([[0]])
+
+        mocker.patch(
+            "idaes.core.scaling.util.PyomoNLP",
+            return_value=self.MockPyomoNLP(unscaled_jacobian, [model.x], [model.c1]),
+        )
+
+        svd_options = {
+            "large_svd": {"k": 3},  # This is the option that should raise an error
+            "small_svd": {},
+        }
+
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                "Both largest and smallest singular value are zero. The "
+                "matrix's condition number is undefined."
+            ),
+        ):
+            jacobian_cond(
+                model, scaled=False, norm=MatrixNorm.twoNorm, svd_options=svd_options
+            )
+
+    @pytest.mark.integration
+    def test_jacobian_cond_two_norm_integration_scaled(self, simple_pyomo_model):
+        model = simple_pyomo_model
+
+        # Set scaling factors on the actual model
+        set_scaling_factor(model.x, 0.5)
+        set_scaling_factor(model.y, 2.0)
+        set_scaling_factor(model.c1, 10.0)
+        set_scaling_factor(model.c2, 1.0)
+
+        # Expected unscaled Jacobian (from our simple model)
+        # c1: x + y - 3 = 0  => [1, 1]
+        # c2: x - y + 1 = 0  => [1, -1]
+        # PyomoNLP will produce this
+        unscaled_jacobian_expected = csc_array([[1.0, 1.0], [1.0, -1.0]])
+
+        # Manually calculate the expected scaled Jacobian
+        # var_sf = [0.5, 2.0]
+        # con_sf = [10.0, 1.0]
+        #
+        # J_scaled[i, j] = J_unscaled[i, j] * con_sf[i] / var_sf[j]
+        #
+        # J_scaled[0, 0] = 1.0 * 10.0 / 0.5 = 20.0
+        # J_scaled[0, 1] = 1.0 * 10.0 / 2.0 = 5.0
+        # J_scaled[1, 0] = 1.0 * 1.0 / 0.5 = 2.0
+        # J_scaled[1, 1] = -1.0 * 1.0 / 2.0 = -0.5
+        expected_scaled_jacobian_for_cond_calc = csc_array([[20.0, 5.0], [2.0, -0.5]])
+
+        # Calculate the expected condition number using numpy.linalg.svd
+        # on the manually derived scaled Jacobian
+        _, s, _ = np.linalg.svd(expected_scaled_jacobian_for_cond_calc.toarray())
+        expected_cond_number = s[0] / s[-1]
+
+        # Call the function under test (jacobian_cond)
+        # This will internally call the real PyomoNLP, get_jacobian, svds, and svd_rayleigh_ritz
+        cond_number = jacobian_cond(model, scaled=True, norm=MatrixNorm.twoNorm)
+
+        # Assert the result
+        assert cond_number == pytest.approx(expected_cond_number)
+
+    @pytest.mark.integration
+    def test_jacobian_cond_two_norm_integration_unscaled(self, simple_pyomo_model):
+        model = simple_pyomo_model
+
+        # No scaling factors applied for unscaled test
+
+        # Expected unscaled Jacobian (from our simple model)
+        unscaled_jacobian_expected = csc_array([[1.0, 1.0], [1.0, -1.0]])
+
+        # Calculate the expected condition number using numpy.linalg.svd
+        # on the manually derived unscaled Jacobian
+        _, s, _ = np.linalg.svd(unscaled_jacobian_expected.toarray())
+        expected_cond_number = s[0] / s[-1]
+
+        # Call the function under test
+        cond_number = jacobian_cond(model, scaled=False, norm=MatrixNorm.twoNorm)
+
+        # Assert the result
+        assert cond_number == pytest.approx(expected_cond_number)
 
 
 def discretization_tester(transformation_method, scheme, t_skip, continuity_eqns=False):
