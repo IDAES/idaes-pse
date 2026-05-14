@@ -246,9 +246,9 @@ def phi_residual_expressions_non_analytic(model, parameters):
         "phir": sum(
             n[i]
             * (
-                (1 - model.tau)
-                + ai[i] * ((model.delta - 1) ** 2) ** (1 / (2 * beta[i]))
-                + (bi[i] * (model.delta - 1) ** 2) ** a[i]
+                ((1 - model.tau)
+                + ai[i] * ((model.delta - 1) ** 2) ** (1 / (2 * beta[i])))**2
+                + bi[i] * ((model.delta - 1) ** 2) ** a[i]
             )
             ** b[i]
             * model.delta
