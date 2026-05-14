@@ -27,7 +27,7 @@ on:
 concurrency:
   # NOTE: the value of `group` should be chosen carefully,
   # otherwise we might end up over- or under-canceling workflow runs
-  group: ${{ github.workflow }}-${{ github.ref_name }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 env:
@@ -85,7 +85,7 @@ jobs:
           _GITHUB_EVENT_ACTION: ${{ github.event.action }}
         shell: python {0}
         run: |
-          import json
+          import json, os
           from os import environ as env
           def _display_on_run_dashboard(msg):
               # workflow warnings are displayed on the workflow run dashboard,
@@ -93,7 +93,8 @@ jobs:
               # without having to dig in each job's log output
               print(f'::warning ::{msg}')
           def _set_output(name, val):
-              print(f'::set-output name={name}::{val}')
+              with open(env["GITHUB_OUTPUT"], "a") as f:
+                  f.write(f"{name}={val}\n")
           event_name = env["GITHUB_EVENT_NAME"]
           event_action = env["_GITHUB_EVENT_ACTION"]
           is_pr = 'pull_request' in event_name.lower()
@@ -130,11 +131,14 @@ jobs:
         os:
           - linux
           - win64
+          - macos
         include:
           - os: linux
             runner-image: ubuntu-24.04
           - os: win64
             runner-image: windows-2022
+          - os: macos
+            runner-image: macos-latest
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/display-debug-info
@@ -197,7 +201,6 @@ jobs:
 
   pytest-site-packages:
     name: Run tests from site-packages (non-editable) installation (${{ matrix.install-mode }}/${{ matrix.os }})
-    # NOTE: using ubuntu-latest (20.04) instead of 18.04 results in failures in power_generation/carbon_capture/mea_solvent_system/unit_models/tests/test_column.py
     runs-on: ${{ matrix.runner-image }}
     needs: [precheck]
     if: >-
