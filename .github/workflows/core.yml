@@ -113,6 +113,8 @@ jobs:
           activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
           python-version: ${{ matrix.python-version }}
           miniforge-version: latest
+          channels: conda-forge
+          conda-remove-defaults: 'true'
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
@@ -176,6 +178,8 @@ jobs:
           activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
           miniforge-version: latest
+          channels: conda-forge
+          conda-remove-defaults: 'true'
       - name: Install pandoc
         run: conda install -c conda-forge pandoc
       - name: Set up idaes
@@ -214,6 +218,8 @@ jobs:
           activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
           miniforge-version: latest
+          channels: conda-forge
+          conda-remove-defaults: 'true'
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
@@ -248,6 +254,8 @@ jobs:
           activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
           miniforge-version: latest
+          channels: conda-forge
+          conda-remove-defaults: 'true'
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:

@@ -140,6 +140,8 @@ jobs:
       - uses: ./.github/actions/display-debug-info
       - name: Set up Conda environment
         uses: conda-incubator/setup-miniconda@v3
+        channels: conda-forge
+        conda-remove-defaults: 'true'
         with:
           activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
           python-version: ${{ matrix.python-version }}
@@ -182,6 +184,8 @@ jobs:
           activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
           python-version: ${{ matrix.python-version }}
           miniforge-version: latest
+          channels: conda-forge
+          conda-remove-defaults: 'true'
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
@@ -236,6 +240,8 @@ jobs:
           activate-environment: idaes-env
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
           miniforge-version: latest
+          channels: conda-forge
+          conda-remove-defaults: 'true'
       - name: Set up idaes (non-editable installation)
         uses: ./.github/actions/setup-idaes
         with:
