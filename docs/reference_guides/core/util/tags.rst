@@ -155,15 +155,15 @@ for details.  The code below provides a simple example.
     model.x[1].fix(y)
     solver.solve(model)
     row = tag_group.table_row(units=False, numeric=True)
-    df.loc[len(df.index)] = row
+    df.iloc[len(df.index)] = row
 
-  assert abs(df.loc[0][0] - 500.000) < 1e-6
-  assert abs(df.loc[0][1] - 0.000) < 1e-6
-  assert abs(df.loc[0][2] - 500.000) < 1e-6
+  assert abs(df.iloc[0][0] - 500.000) < 1e-6
+  assert abs(df.iloc[0][1] - 0.000) < 1e-6
+  assert abs(df.iloc[0][2] - 500.000) < 1e-6
 
-  assert abs(df.loc[1][0] - 500.000) < 1e-6
-  assert abs(df.loc[1][1] - 100.000) < 1e-6
-  assert abs(df.loc[1][2] - 400.000) < 1e-6
+  assert abs(df.iloc[1][0] - 500.000) < 1e-6
+  assert abs(df.iloc[1][1] - 100.000) < 1e-6
+  assert abs(df.iloc[1][2] - 400.000) < 1e-6
 
 
 Available Classes
