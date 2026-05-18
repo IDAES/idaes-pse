@@ -130,7 +130,7 @@ for details.  The code below provides a simple example.
 
 .. testcode::
 
-   import pyomo.environ as pyo
+  import pyomo.environ as pyo
   import pandas as pd
   from idaes.core.util import ModelTag, ModelTagGroup
 
@@ -177,4 +177,3 @@ Available Classes
   :members:
 
 .. autofunction:: idaes.core.util.tags.svg_tag
-  
