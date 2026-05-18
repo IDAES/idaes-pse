@@ -32,6 +32,7 @@ from idaes.core.util.model_statistics import (
     fixed_variables_set,
     activated_constraints_set,
 )
+from idaes.core.util.constants import Constants
 from idaes.core.solvers import get_solver
 
 from idaes.core import LiquidPhase, VaporPhase
@@ -551,7 +552,7 @@ class TestStateBlockScalerObject(object):
         gsf = get_scaling_factor
 
         assert len(sblock.scaling_factor) == 39
-        assert len(sblock.scaling_hint) == 12
+        assert len(sblock.scaling_hint) == 16
 
         # Variables
         assert gsf(sblock.flow_mol) == 1
@@ -615,6 +616,21 @@ class TestStateBlockScalerObject(object):
                 * 300  # scaling factor for temperature
             )
             assert gsf(edata) == pytest.approx(sf_enth, rel=1e-4)
+        # Assume that mass density is close to 1 g/cm^3
+        sf_dens_liq = 1 / value(
+            1000
+            * pyunits.kg
+            / pyunits.m**3
+            / 0.08512705000000001
+            * pyunits.kg
+            / pyunits.mol
+        )
+        assert gsf(sblock.dens_mol_phase["Liq"]) == pytest.approx(sf_dens_liq, rel=1e-4)
+        assert gsf(sblock.dens_mol_phase["Vap"]) == pytest.approx(1 / 40, rel=1e-4)
+        assert gsf(sblock.vol_mol_phase["Liq"]) == pytest.approx(
+            1 / sf_dens_liq, rel=1e-4
+        )
+        assert gsf(sblock.vol_mol_phase["Vap"]) == pytest.approx(40, rel=1e-4)
 
     @pytest.mark.unit
     def test_define_state_vars(self, model):
