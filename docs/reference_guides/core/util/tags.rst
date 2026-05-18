@@ -130,7 +130,7 @@ for details.  The code below provides a simple example.
 
 .. testcode::
 
-  import pyomo.environ as pyo
+   import pyomo.environ as pyo
   import pandas as pd
   from idaes.core.util import ModelTag, ModelTagGroup
 
@@ -150,20 +150,21 @@ for details.  The code below provides a simple example.
   assert head[0] == "z (cm)"
   assert head[1] == "x[1] (cm)"
   assert head[2] == "x[2] (cm)"
-  df = pd.DataFrame(columns=head)
+  rows = []
   for y in [0, 1, 2, 3, 4]:
     model.x[1].fix(y)
     solver.solve(model)
     row = tag_group.table_row(units=False, numeric=True)
-    df.iloc[len(df.index)] = row
+    rows.append(row)
+  df = pd.DataFrame(rows, columns=head)
 
-  assert abs(df.iloc[0][0] - 500.000) < 1e-6
-  assert abs(df.iloc[0][1] - 0.000) < 1e-6
-  assert abs(df.iloc[0][2] - 500.000) < 1e-6
+  assert abs(df.iloc[0, 0] - 500.000) < 1e-6
+  assert abs(df.iloc[0, 1] - 0.000) < 1e-6
+  assert abs(df.iloc[0, 2] - 500.000) < 1e-6
 
-  assert abs(df.iloc[1][0] - 500.000) < 1e-6
-  assert abs(df.iloc[1][1] - 100.000) < 1e-6
-  assert abs(df.iloc[1][2] - 400.000) < 1e-6
+  assert abs(df.iloc[1, 0] - 500.000) < 1e-6
+  assert abs(df.iloc[1, 1] - 100.000) < 1e-6
+  assert abs(df.iloc[1, 2] - 400.000) < 1e-6
 
 
 Available Classes
@@ -176,3 +177,4 @@ Available Classes
   :members:
 
 .. autofunction:: idaes.core.util.tags.svg_tag
+  
