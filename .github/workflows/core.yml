@@ -54,6 +54,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
@@ -106,6 +108,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
       - uses: ./.github/actions/display-debug-info
       - name: Set up Conda environment
         uses: conda-incubator/setup-miniconda@v3
@@ -204,6 +208,9 @@ jobs:
       pylint_todo_sentinel: PYLINT-TODO
     steps:
       - uses: actions/checkout@v4
+      
+        with:
+          fetch-depth: 0
       # NOTE: using Conda instead of actions/setup-python in this job is not strictly necessary
       # as it doesn't need to run on Windows or use the setup-idaes local action,
       # but we do it for consistency with the other jobs
@@ -241,6 +248,9 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+
+        with:
+          fetch-depth: 0
 
       - name: Set up Conda environment
         uses: conda-incubator/setup-miniconda@v3
