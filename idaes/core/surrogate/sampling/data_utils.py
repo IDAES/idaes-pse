@@ -88,7 +88,7 @@ def split_dataframe(dataframe, fractions, seed=None):
 
     indices = [math.floor(f * len(shuffled_df)) for f in np.cumsum(fractions)]
 
-    split_points = [0] + np.indices + [len(shuffled_df)]
+    split_points = [0] + indices + [len(shuffled_df)]
 
     dfs = [
         shuffled_df.iloc[split_points[i] : split_points[i + 1]].reset_index(drop=True)
