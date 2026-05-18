@@ -43,6 +43,36 @@ import pytest
 ####
 
 
+# Patch pd.read_csv to handle pandas 3.0 removal of parse_dates list-of-lists,
+# which affects third-party dependencies (e.g. egret) that haven't been updated yet.
+if int(pd.__version__.split(".")[0]) >= 3:
+    _original_read_csv = pd.read_csv
+
+    def _patched_read_csv(filepath_or_buffer, **kwargs):
+        parse_dates = kwargs.pop("parse_dates", False)
+
+        combining = []
+        simple = []
+        if isinstance(parse_dates, list):
+            for entry in parse_dates:
+                if isinstance(entry, list):
+                    combining.append(entry)
+                else:
+                    simple.append(entry)
+            kwargs["parse_dates"] = simple if simple else False
+
+        df = _original_read_csv(filepath_or_buffer, **kwargs)
+
+        for col_group in combining:
+            combined_col_name = "_".join(col_group)
+            df[combined_col_name] = pd.to_datetime(df[col_group])
+            df = df.drop(columns=col_group)
+
+        return df
+
+    pd.read_csv = _patched_read_csv
+
+
 def pytest_addoption(parser):
     parser.addoption(
         "--performance",
