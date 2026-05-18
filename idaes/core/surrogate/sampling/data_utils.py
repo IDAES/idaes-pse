@@ -86,10 +86,13 @@ def split_dataframe(dataframe, fractions, seed=None):
     # note seed=None is the default value for random_state (e.g., not seeded)
     shuffled_df = dataframe.sample(frac=1, random_state=seed).reset_index(drop=True)
 
-    dfs = np.split(
-        shuffled_df, [math.floor(f * len(shuffled_df)) for f in np.cumsum(fractions)]
-    )
-    # reset all the indices
-    for df in dfs:
-        df.reset_index(drop=True, inplace=True)
+    indices = [math.floor(f * len(shuffled_df)) for f in np.cumsum(fractions)]
+
+    split_points = [0] + np.indices + [len(shuffled_df)]
+
+    dfs = [
+        shuffled_df.iloc[split_points[i] : split_points[i + 1]].reset_index(drop=True)
+        for i in range(len(split_points) - 1)
+    ]
+
     return dfs
