@@ -22,7 +22,7 @@ import sys
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Union
-
+import pandas as pd
 import pytest
 
 ####
