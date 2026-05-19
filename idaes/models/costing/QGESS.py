@@ -80,42 +80,6 @@ _log = idaeslog.getLogger(__name__)
 EPS = 1e-4
 
 
-def custom_currency_units():
-    # these are needed for various power plant and REE methods
-    """
-    Define conversion rates for US Dollars based on CE Index.
-    """
-    register_idaes_currency_units()
-    if (
-        "USD_2008_Nov" in pyunits._pint_registry  # pylint: disable=protected-access
-        and "USD_2019_Sep" in pyunits._pint_registry  # pylint: disable=protected-access
-        and "USD_2018_Dec" in pyunits._pint_registry  # pylint: disable=protected-access
-        and "USD_2025" in pyunits._pint_registry  # pylint: disable=protected-access
-        and "USD_UKy_2019" in pyunits._pint_registry  # pylint: disable=protected-access
-    ):
-        # Assume that custom plant units have already been registered
-        # Log a message and end
-        _log.info(
-            "Custom plant currency units (USD_2022, USD_2025, USD_UKy_2019) "
-            "already appear in Pyomo unit registry. Assuming repeated "
-            "call of custom_power_plant_currency_units."
-        )
-    else:
-        pyunits.load_definitions_from_strings(
-            [
-                # power plant cost account units
-                # from https://toweringskills.com/financial-analysis/cost-indices/
-                "USD_2008_Nov = 500/566.2 * USD_CE500",
-                "USD_2019_Sep = 500/599.3 * USD_CE500",
-                "USD_2018_Dec = 615.7/500 * USD_CE500",
-                # from UKy 2019 report
-                "USD_UKy_2019 = 500/609.495 * USD_CE500",
-                # from UKy 2023 report
-                "USD_2025 = 500/815.59 * USD_CE500",
-            ]
-        )
-
-
 @declare_process_block_class("QGESSCosting")
 class QGESSCostingData(FlowsheetCostingBlockData):
     # Register currency and conversion rates based on CE Index

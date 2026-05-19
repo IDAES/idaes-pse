@@ -44,12 +44,10 @@ from pyomo.environ import (
 )
 
 import idaes.core.util.scaling as iscale
-from idaes.core import (
-    FlowsheetCostingBlockData,
-    register_idaes_currency_units,
-)
+from idaes.core import FlowsheetCostingBlockData
 from idaes.models_extra.power_generation.costing.costing_dictionaries import (
     load_sCO2_costing_dictionary,
+    register_power_plant_currency_units,
 )
 
 import idaes.logger as idaeslog
@@ -62,36 +60,11 @@ _log = idaeslog.getLogger(__name__)
 # -----------------------------------------------------------------------------
 
 
-def custom_power_plant_currency_units():
-    """
-    Define conversion rates for US Dollars based on CE Index.
-    """
-    register_idaes_currency_units()
-    if (
-        "USD_2008_Nov" in pyunits._pint_registry  # pylint: disable=protected-access
-        and "USD_2019_Sep" in pyunits._pint_registry  # pylint: disable=protected-access
-    ):
-        # Assume that custom power plant units have already been registered
-        # Log a message and end
-        _log.debug(
-            "Custom power plant currency units (USD_2008_Nov, USD_2019_Sep) "
-            "already appear in Pyomo unit registry. Assuming repeated "
-            "call of custom_power_plant_currency_units."
-        )
-    else:
-        pyunits.load_definitions_from_strings(
-            [
-                "USD_2008_Nov = 500/566.2 * USD_CE500",
-                "USD_2019_Sep = 500/599.3 * USD_CE500",
-            ]
-        )
-
-
 @declare_process_block_class("PowerPlantCosting")
 class PowerPlantCostingData(FlowsheetCostingBlockData):
     # Register currency and conversion rates based on CE Index
     # register_idaes_currency_units()
-    custom_power_plant_currency_units()
+    register_power_plant_currency_units()
 
     def build_global_params(self):
         """

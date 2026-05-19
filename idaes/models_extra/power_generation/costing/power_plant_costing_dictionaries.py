@@ -34,8 +34,37 @@ import json
 from pyomo.common.fileutils import this_file_dir
 from pyomo.environ import units as pyunits
 
+from idaes.core import register_idaes_currency_units
+
 directory = this_file_dir()
 
+def register_power_plant_currency_units():
+    """
+    Define conversion rates for US Dollars based on CE Index.
+    """
+    register_idaes_currency_units()
+    if (
+        "USD_2008_Nov" in pyunits._pint_registry  # pylint: disable=protected-access
+        and "USD_2019_Sep" in pyunits._pint_registry  # pylint: disable=protected-access
+        and "USD_2018_Dec" in pyunits._pint_registry  # pylint: disable=protected-access
+    ):
+        # Assume that custom plant units have already been registered
+        # Log a message and end
+        _log.info(
+            "Custom plant currency units (USD_2008_Nov, USD_2019_Sep, USD_2018_Dec) "
+            "already appear in Pyomo unit registry. Assuming repeated "
+            "call of custom_power_plant_currency_units."
+        )
+    else:
+        pyunits.load_definitions_from_strings(
+            [
+                # power plant cost account units
+                # from https://toweringskills.com/financial-analysis/cost-indices/
+                "USD_2008_Nov = 500/566.2 * USD_CE500",
+                "USD_2019_Sep = 500/599.3 * USD_CE500",
+                "USD_2018_Dec = 500/615.7 * USD_CE500",
+            ]
+        )
 
 def load_BB_costing_dictionary():
     """
@@ -55,6 +84,13 @@ def load_BB_costing_dictionary():
     This dictionary is nested with the following structure:
     tech type --> CCS --> account --> property name --> property values
     """
+
+    if (
+        not hasattr(pyunits, "USD_2008_Nov")
+        and not hasattr(pyunits, "USD_2019_Sep")
+        and not hasattr(pyunits, "USD_2018_Dec")
+    ):
+        register_power_plant_currency_units()
 
     # assuming the dictionary exists, load it so it is importable when called
     with open(os.path.join(directory, "BB_costing_data.json"), "r") as file:
