@@ -48,7 +48,7 @@ runs:
           echo "| Package | Version |"
           echo "| --- | --- |"
           for pkg in idaes-pse pyomo watertap numpy scipy pandas; do
-            version=$(pip show "$pkg" 2>/dev/null | grep "^Version:" | cut -d' ' -f2)
+            version="$(pip show "$pkg" 2>/dev/null | awk -F': ' '/^Version:/{print $2; exit}' || true)"
             if [ -n "$version" ]; then
               echo "| \`$pkg\` | \`$version\` |"
             else
