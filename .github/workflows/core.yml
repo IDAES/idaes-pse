@@ -173,6 +173,8 @@ jobs:
     needs: [code-formatting, spell-check]
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Conda environment
         uses: conda-incubator/setup-miniconda@v3
