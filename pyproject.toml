@@ -1,6 +1,6 @@
 [build-system]
+requires = ["setuptools>=64", "setuptools_scm>=8", "wheel"]
 build-backend = "setuptools.build_meta"
-requires = ["setuptools >= 64", "setuptools_scm >= 8"]
 
 [project]
 name = "idaes-pse"
@@ -39,8 +39,7 @@ keywords = [
 # Minimum python version is not set since legacy projects or other edge cases may use or rely unsupported versions. 
 # We will rely on classifiers and documentation to communicate supported versions.
 # requires-python = ">=3.10"
-
-version = "2.12.0dev0"
+dynamic = ["version"]
 
 dependencies = [
   "pyomo >= 6.10.0",
@@ -73,11 +72,10 @@ testing = ["pytest", "addheader", "pyyaml"]
 # this will install all optional dependencies
 all = ["idaes-pse[ui,grid,omlt,coolprop]"]
 
-# we have to investigate why scm_tools is not working as expected
-# [tool.setuptools_scm]
-# # https://setuptools-scm.readthedocs.io/en/v8.1.0/extending/
-# local_scheme = "node-and-date"
-# version_scheme = "only-version"
+[tool.setuptools_scm]
+version_scheme = "semver-pep440-release-branch"
+local_scheme = "no-local-version"
+fallback_version = "0.0.0"
 
 [tool.setuptools]
 zip-safe = false
