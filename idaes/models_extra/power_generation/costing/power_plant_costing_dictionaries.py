@@ -67,20 +67,21 @@ def load_sCO2_costing_dictionary():
         sCO2_costing_params = json.load(file)
     return sCO2_costing_params
 
+
 def define_preloaded_accounts():
     PC_preloaded_accounts = {
-            "Coal Handling": ["1.1", "1.2", "1.3", "1.4", "1.9a"],
-            "Sorbent Handling": ["1.5", "1.6", "1.7", "1.8", "1.9b"],
-            "Coal Feed": ["2.1", "2.2", "2.9a"],
-            "Sorbent Feed": ["2.5", "2.6", "2.9b"],
-            "Feedwater System": ["3.1", "3.3"],
-            "PC Boiler": ["4.9"],
-            "Steam Turbine": ["8.1"],
-            "Condenser": ["8.3"],
-            "Cooling Tower": ["9.1"],
-            "Circulating Water System": ["9.2", "9.3", "9.4", "9.6", "9.7"],
-            "Ash Handling": ["10.6", "10.7", "10.9"],
-        }
+        "Coal Handling": ["1.1", "1.2", "1.3", "1.4", "1.9a"],
+        "Sorbent Handling": ["1.5", "1.6", "1.7", "1.8", "1.9b"],
+        "Coal Feed": ["2.1", "2.2", "2.9a"],
+        "Sorbent Feed": ["2.5", "2.6", "2.9b"],
+        "Feedwater System": ["3.1", "3.3"],
+        "PC Boiler": ["4.9"],
+        "Steam Turbine": ["8.1"],
+        "Condenser": ["8.3"],
+        "Cooling Tower": ["9.1"],
+        "Circulating Water System": ["9.2", "9.3", "9.4", "9.6", "9.7"],
+        "Ash Handling": ["10.6", "10.7", "10.9"],
+    }
 
     IGCC_preloaded_accounts = {
         "Coal Handling": ["1.1", "1.2", "1.3", "1.4", "1.9"],
@@ -116,7 +117,13 @@ def define_preloaded_accounts():
         "Steam Piping": ["8.4"],
     }
 
-    return PC_preloaded_accounts, IGCC_preloaded_accounts, NGCC_preloaded_accounts, AUSC_preloaded_accounts
+    return (
+        PC_preloaded_accounts,
+        IGCC_preloaded_accounts,
+        NGCC_preloaded_accounts,
+        AUSC_preloaded_accounts,
+    )
+
 
 def load_default_resource_prices():
     """
@@ -137,7 +144,6 @@ def load_default_resource_prices():
         "triethylene_glycol_waste": 0.35 * 1e-6 * pyunits.USD_2018 / pyunits.gallon,
         "amine_purification_unit_waste": 38 * 1e-6 * pyunits.USD_2018 / pyunits.ton,
         "thermal_reclaimer_unit_waste": 38 * 1e-6 * pyunits.USD_2018 / pyunits.ton,
-
         # from S. McNaul, "Screening Techno-economic Analysis of NETL Reactive
         # Capture Technology," National Energy Technology Laboratory, Pittsburgh,
         # September 30, 2022. Exhibit B-8
@@ -147,7 +153,6 @@ def load_default_resource_prices():
         "reactive_membrane_replacement": 15.1 * pyunits.USD_2018_Dec / pyunits.m**2,
         "PSA_adsorbent_waste_disposal": 1.5 * pyunits.USD_2018_Dec / pyunits.ft**3,
         "nonharzardous_waste_disposal": 38 * pyunits.USD_2018_Dec / pyunits.ton,
-
         # from X. Ge, R. Zhang, P. Liu, B. Liu, B. Liu, Optimization and control of
         # extractive distillation for formic acid-water separation with maximum-boiling
         # azeotrope, Computers & Chemical Engineering, Vol. 169, 2023. Table 2.
@@ -156,21 +161,23 @@ def load_default_resource_prices():
         "lp_heating_steam": 7.78 * pyunits.USD_2016 / pyunits.GJ,
         "mp_heating_steam": 8.22 * pyunits.USD_2016 / pyunits.GJ,
         "hp_heating_steam": 9.83 * pyunits.USD_2016 / pyunits.GJ,
-
         # from Zaiz, Toufik & Lanez, Hafnaoui. (2013). ASPEN HYSYS SIMULATION AND
         # COMPARISON BETWEEN ORGANIC SOLVENTS (SULFOLANE AND DMSO) USED FOR BENZENE
         # EXTRACTION. International Journal of Chemical and Petroleum Sciences. 2.
         # 10-19. Section 7.1b on page 18.
-        "sulfolane_entrainer": 3700 * pyunits.USD_2013 / pyunits.ton,        
-        
+        "sulfolane_entrainer": 3700 * pyunits.USD_2013 / pyunits.ton,
         # from S. McNaul, "Comparison of Commericial State-of-the-Art,
         # Fossil-Based Hydrogen Production Technologies," National Energy
         # Technology Laboratory, Pittsburgh, April 12, 2022. Exhibit 3-15
         "ZnO_sulfur_guard_catalyst": 600 * pyunits.USD_2018_Dec / pyunits.ft**3,
         "prereformer_catalyst": 1250 * pyunits.USD_2018_Dec / pyunits.ft**3,
         "reformer_catalyst": 525 * pyunits.USD_2018_Dec / pyunits.ft**3,
-        "ZnO_sulfur_guard_catalyst_waste_disposal": 40 * pyunits.USD_2018_Dec / pyunits.ft**3,
-        "prereformer_catalyst_waste_disposal": 0.0 * pyunits.USD_2018_Dec / pyunits.ft**3,
+        "ZnO_sulfur_guard_catalyst_waste_disposal": 40
+        * pyunits.USD_2018_Dec
+        / pyunits.ft**3,
+        "prereformer_catalyst_waste_disposal": 0.0
+        * pyunits.USD_2018_Dec
+        / pyunits.ft**3,
         "reformer_catalyst_waste_disposal": 0.0 * pyunits.USD_2018_Dec / pyunits.ft**3,
     }
     return default_resource_prices
