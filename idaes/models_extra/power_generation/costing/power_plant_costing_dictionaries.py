@@ -166,7 +166,7 @@ def load_default_resource_prices():
         # EXTRACTION. International Journal of Chemical and Petroleum Sciences. 2.
         # 10-19. Section 7.1b on page 18.
         "sulfolane_entrainer": 3700 * pyunits.USD_2013 / pyunits.ton,
-        # from S. McNaul, "Comparison of Commericial State-of-the-Art,
+        # from S. McNaul, "Comparison of Commercial State-of-the-Art,
         # Fossil-Based Hydrogen Production Technologies," National Energy
         # Technology Laboratory, Pittsburgh, April 12, 2022. Exhibit 3-15
         "ZnO_sulfur_guard_catalyst": 600 * pyunits.USD_2018_Dec / pyunits.ft**3,

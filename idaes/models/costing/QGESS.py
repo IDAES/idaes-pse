@@ -307,7 +307,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         # if Lang_factor not None, add as param
         # this will be used to estimate installation costs of cost accounts
         # that do not already calculate construction fees and other costs, e.g.
-        # many power plant accounts have their own contruction cost factors
+        # many power plant accounts have their own construction cost factors
         if self.config.Lang_factor is not None:
 
             self.Lang_factor = Param(
@@ -932,7 +932,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 f"Costing for the block {self} already exists. Please ensure that "
                 f"the costing build method is not called twice on the same "
                 f"model. Create a new flowsheet costing block, or if needed "
-                f"use delattr() to remove the prexisting costing."
+                f"use delattr() to remove the preexisting costing."
             )
 
         # calculate BEC, TPC by summing over all the blocks
@@ -1280,13 +1280,13 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 # define overnight cost
                 self.total_overnight_capital = Expression(
                     expr=self.total_TPC
-                    # include labor costs if preesnt
+                    # include labor costs if present
                     + (
                         self.six_month_labor
                         if self.config.fixed_OM
                         else 0 * self.CE_index_units
                     )
-                    + (  # include material and reseource costs if present
+                    + (  # include material and resource costs if present
                         (
                             self.maintenance_material_cost / 12 / self.capacity_factor
                             if self.config.tech == 8 or self.config.tech == 9
@@ -1483,7 +1483,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 f"{blk.name} already has an attribute costing. "
                 f"Check that you are not calling get_costing "
                 f"twice on the same model and if needed "
-                f"use delattr() to remove the prexisting costing."
+                f"use delattr() to remove the preexisting costing."
             )
 
         # validate currency units
@@ -2063,7 +2063,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 if o.name in [block.name for block in b._registered_unit_costing]:
                     if hasattr(
                         o, "total_plant_cost"
-                    ):  # block that should not be multipled by Lang factor
+                    ):  # block that should not be multiplied by Lang factor
                         for key in o.bare_erected_cost.keys():
                             b.BEC_blocks_with_TPC_list.append(
                                 pyunits.convert(
