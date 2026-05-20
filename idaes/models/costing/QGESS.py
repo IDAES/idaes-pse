@@ -1403,7 +1403,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 by the entire total plant cost, or added with the other contigencies, e.g.
                 "True" would yield
                 TPC = BEC * (1 + eng_fee + process_conting) * (1 + project_conting)
-                wheras "False" would yield
+                whereas "False" would yield
                 TPC = BEC * (1 + eng_fee + process_conting + project_conting)
 
         The appropriate scaling parameters for various cost accounts can be
