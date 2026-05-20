@@ -65,6 +65,8 @@ jobs:
       workflow-trigger: ${{ steps.determine-trigger.outputs.workflow-trigger }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: ./.github/actions/display-debug-info
       - id: check-pr-approval
         uses: ./.github/actions/check-pr-approval
