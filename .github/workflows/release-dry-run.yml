@@ -3,7 +3,7 @@ name: Release dry run (tag build)
 on:
   push:
     tags:
-      - "9*"
+      - "*"
 
 jobs:
   build-and-test:
