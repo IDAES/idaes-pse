@@ -315,7 +315,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             }
 
             self.installation_components = Param(
-                installation_components.keys(),
+                installation_components,
                 mutable=True,
                 initialize=installation_components,
                 doc="Percentages of bare erected cost used to estimate installation costs by plant component",
@@ -1539,17 +1539,17 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             frozen_dict = {**costing_params}
             for techkey, techval in new_costing_params.items():
                 if (
-                    techkey in frozen_dict.keys()
+                    techkey in frozen_dict
                 ):  # if techkey already exists, append any new ccs types
                     for ccskey, ccsval in new_costing_params[techkey].items():
                         if (
-                            ccskey in frozen_dict[techkey].keys()
+                            ccskey in frozen_dict[techkey]
                         ):  # if ccskey already exists, append any new accounts
                             for accountkey, accountval in new_costing_params[techkey][
                                 ccskey
                             ].items():
                                 if (
-                                    accountkey in frozen_dict[techkey][ccskey].keys()
+                                    accountkey in frozen_dict[techkey][ccskey]
                                 ) and not use_additional_costing_params:
                                     if accountkey not in cost_accounts:
                                         pass  # not the current account, don't fail here
@@ -1758,7 +1758,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         try:
                             pyunits.convert(sp, ref_units)
                         except InconsistentUnitsError:
-                            raise Exception(
+                            raise ValueError(
                                 "Account %s uses units of %s. "
                                 "Units of %s were passed. "
                                 "Cannot convert unit containers."
@@ -2013,7 +2013,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     if hasattr(
                         o, "total_plant_cost"
                     ):  # block that should not be multiplied by Lang factor
-                        for key in o.bare_erected_cost.keys():
+                        for key in o.bare_erected_cost:
                             b.BEC_blocks_with_TPC_list.append(
                                 pyunits.convert(
                                     o.bare_erected_cost[key], to_units=b.CE_index_units
@@ -2028,7 +2028,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                             )
 
                     if hasattr(o, "bare_erected_cost"):  # added from cost accounts
-                        for key in o.bare_erected_cost.keys():
+                        for key in o.bare_erected_cost:
                             b.BEC_list.append(
                                 pyunits.convert(
                                     o.bare_erected_cost[key], to_units=b.CE_index_units
@@ -2195,7 +2195,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
             if additional_sales_price_dictionaries is not None:
                 for dictionary in additional_sales_price_dictionaries:
-                    for key in dictionary.keys():
+                    for key in dictionary:
                         default_sale_prices[key] = dictionary[key]
 
             if sale_prices is None:
@@ -2207,23 +2207,23 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     "Dictionary of custom sale_prices must be a dict object."
                 )
             else:
-                for key in sale_prices.keys():
+                for key in sale_prices:
                     default_sale_prices[key] = sale_prices[key]
 
             # raise error if the user included a product not in default_sale_prices
-            if not set(pure_product_output_rates).issubset(default_sale_prices.keys()):
+            if not set(pure_product_output_rates).issubset(default_sale_prices):
                 raise AttributeError(
                     f"A pure product was included that does not contain a "
                     f"sale price. Sale prices exist for the following products: "
-                    f"{list(default_sale_prices.keys())}"
+                    f"{list(default_sale_prices)}"
                 )
             elif not set(mixed_product_output_rates).issubset(
-                default_sale_prices.keys()
+                default_sale_prices
             ):
                 raise AttributeError(
                     f"A mixed product was included that does not contain a "
                     f"sale price. Sale prices exist for the following products: "
-                    f"{list(default_sale_prices.keys())}"
+                    f"{list(default_sale_prices)}"
                 )
 
         if (
@@ -2378,7 +2378,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                             * power_ratio
                         )
 
-                    except AssertionError or InconsistentUnitsError:
+                    except (AssertionError, InconsistentUnitsError):
                         # no power rate defined, don't adjust
                         return c.maintenance_material_cost == (
                             c.total_TPC
@@ -2446,7 +2446,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                                     * default_sale_prices[p],
                                     to_units=b.CE_index_units / pyunits.h,
                                 )
-                                for p in pure_product_output_rates.keys()
+                                for p in pure_product_output_rates
                             )
                             if len(pure_product_output_rates) > 0
                             else 1e-12 * b.CE_index_units / pyunits.h
@@ -2459,7 +2459,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                                     * default_sale_prices[p],
                                     to_units=b.CE_index_units / pyunits.h,
                                 )
-                                for p in mixed_product_output_rates.keys()
+                                for p in mixed_product_output_rates
                             )
                             if len(mixed_product_output_rates) > 0
                             else 1e-12 * c.CE_index_units / pyunits.h
@@ -2598,20 +2598,20 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         default_resource_prices = load_default_resource_prices()
 
         # add entries from prices to default_prices
-        for key in resource_prices.keys():
+        for key in resource_prices:
             default_resource_prices[key] = resource_prices[key]
 
         if additional_resource_price_dictionaries is not None:
             for dictionary in additional_resource_price_dictionaries:
-                for key in dictionary.keys():
+                for key in dictionary:
                     default_resource_prices[key] = dictionary[key]
 
         # raise error if the user included a resource not in default_prices
-        if not set(resources.keys()).issubset(default_resource_prices.keys()):
+        if not set(resources).issubset(default_resource_prices):
             raise AttributeError(
                 f"A resource was included that does not contain a "
                 f"price. Prices exist for the following resources: "
-                f"{list(default_resource_prices.keys())}"
+                f"{list(default_resource_prices)}"
             )
 
         # make vars
@@ -2891,13 +2891,13 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         )
 
                 if hasattr(o.costing, "bare_erected_cost"):
-                    for key in o.costing.bare_erected_cost.keys():
+                    for key in o.costing.bare_erected_cost:
                         calculate_variable_from_constraint(
                             o.bare_erected_cost[key],
                             o.bare_erected_cost_eq[key],
                         )
                 if hasattr(o.costing, "total_plant_cost"):
-                    for key in o.costing.total_plant_cost.keys():
+                    for key in o.costing.total_plant_cost:
                         calculate_variable_from_constraint(
                             o.total_plant_cost[key],
                             o.total_plant_cost_eq[key],
@@ -2991,14 +2991,14 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             # if variable OM costs exist, initialize them here
             # this is pretty much the same for all tech's, but could initialize plant overhead for REE
             if hasattr(b, "variable_operating_costs"):
-                for i in b.variable_operating_costs.keys():
+                for i in b.variable_operating_costs.items():
                     if hasattr(b, "variable_cost_eq"):
                         calculate_variable_from_constraint(
                             b.variable_operating_costs[i],
                             b.variable_cost_eq[i],
                         )
 
-                for i in b.total_variable_OM_cost.keys():
+                for i in b.total_variable_OM_cost.items():
                     calculate_variable_from_constraint(
                         b.total_variable_OM_cost[i],
                         b.total_variable_cost_eq[i],
@@ -3288,7 +3288,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
                 full_credit_years = int(
                     value(
-                        smooth_max(0, min(b.phaseout.keys()) - current_year, eps=b.eps)
+                        smooth_max(0, min(b.phaseout) - current_year, eps=b.eps)
                     )
                 )
 
@@ -3304,7 +3304,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         )
                     )
 
-                for year in b.phaseout.keys():
+                for year in b.phaseout.items():
                     if value(b.plant_end_year) >= year:
                         b.production_incentive_charge_percent_list.append(
                             value(b.phaseout[year])
@@ -3316,8 +3316,8 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                             )
                         )
 
-                if value(b.plant_end_year) > max(b.phaseout.keys()):
-                    zero_credit_years = value(b.plant_end_year) - max(b.phaseout.keys())
+                if value(b.plant_end_year) > max(b.phaseout):
+                    zero_credit_years = value(b.plant_end_year) - max(b.phaseout)
 
                     for i in range(value(zero_credit_years)):
                         b.production_incentive_charge_percent_list.append(0.0)
