@@ -2463,7 +2463,9 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     c.CE_index_units / pyunits.year,
                 )
 
-        if annual_fixed_operating_cost is None:  # we will calculate the fixed operating cost
+        if (
+            annual_fixed_operating_cost is None
+        ):  # we will calculate the fixed operating cost
             # labor costs, common to all tech types
             b.annual_operating_labor_cost = Var(
                 initialize=1,
@@ -3171,7 +3173,8 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                             if b.land_cost_reoccurrence == "annual"
                             else 0 * b.CE_index_units / pyunits.year
                         )
-                    ) * pyunits.year
+                    )
+                    * pyunits.year
                 )
             )
 
@@ -3314,9 +3317,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         b.production_incentive_charge_percent_list.append(0.0)
 
         b.npv = Var(
-            initialize=(
-                -b.capex + (b.total_sales_revenue - b.opex) * b.plant_lifetime
-            ),
+            initialize=(-b.capex + (b.total_sales_revenue - b.opex) * b.plant_lifetime),
             bounds=(None, None),
             doc="Present value of plant over entire capital and operation lifetime",
             units=b.CE_index_units,
@@ -3330,8 +3331,10 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             expressed as a decimal, N is the project lifetime, and g is the escalation rate
             (e.g. inflation) expressed as a decimal.
             """
-            if abs(r - g) < EPS/1e2: # r and g are basically the same value, use simpler expression to avoid numerical issues
-                return N/(1 + r)
+            if (
+                abs(r - g) < EPS / 1e2
+            ):  # r and g are basically the same value, use simpler expression to avoid numerical issues
+                return N / (1 + r)
             else:
                 return (1 - ((1 + g) ** (N)) * ((1 + r) ** (-N))) / (r - g)
 
@@ -3354,8 +3357,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 return c.pv_capital_cost == -pyunits.convert(
                     sum(
                         pyunits.convert(
-                            c.capital_expenditure_percentages[idx]
-                            * pyunits.percent,
+                            c.capital_expenditure_percentages[idx] * pyunits.percent,
                             to_units=pyunits.dimensionless,
                         )
                         * c.capex
@@ -3644,7 +3646,11 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 + c.pv_capital_cost
                 + c.pv_loan_interest
                 + c.pv_operating_cost
-                + (c.pv_taxes if b.config.has_taxes_and_credits else 0 * c.CE_index_units)
+                + (
+                    c.pv_taxes
+                    if b.config.has_taxes_and_credits
+                    else 0 * c.CE_index_units
+                )
                 + (
                     c.pv_production_incentive
                     if b.config.has_production_credit_phaseout

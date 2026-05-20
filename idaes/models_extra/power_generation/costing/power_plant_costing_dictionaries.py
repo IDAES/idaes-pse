@@ -47,6 +47,7 @@ directory = this_file_dir()
 
 _log = idaeslog.getLogger(__name__)
 
+
 def register_power_plant_currency_units():
     """
     Define conversion rates for US Dollars based on CE Index.
@@ -74,6 +75,7 @@ def register_power_plant_currency_units():
                 "USD_2018_Dec = 500/615.7 * USD_CE500",
             ]
         )
+
 
 def load_BB_costing_dictionary():
     """
@@ -220,6 +222,7 @@ def load_default_resource_prices():
     }
     return default_resource_prices
 
+
 def load_fixed_OM_data():
     # set labor types, rates, operators per shift
     labor_types = [
@@ -280,9 +283,7 @@ def load_fixed_OM_data():
             )
 
         if hasattr(b, "total_fixed_OM_cost"):
-            var_dict["Total fixed O&M cost [$MM/year]"] = value(
-                b.total_fixed_OM_cost
-            )
+            var_dict["Total fixed O&M cost [$MM/year]"] = value(b.total_fixed_OM_cost)
 
         if hasattr(b, "total_variable_OM_cost"):
             var_dict["Total variable O&M cost full capacity [$MM/year]"] = value(
@@ -304,9 +305,7 @@ def load_fixed_OM_data():
             )
 
         if hasattr(b, "cost_of_electricity"):
-            var_dict["Cost of Electricity [$/MWh]"] = value(
-                b.cost_of_electricity * 1e6
-            )
+            var_dict["Cost of Electricity [$/MWh]"] = value(b.cost_of_electricity * 1e6)
 
         if hasattr(b, "cost_of_production"):
             var_dict["Cost of Production [$/kg product]"] = value(
@@ -314,13 +313,17 @@ def load_fixed_OM_data():
             )
 
         if hasattr(b, "transport_cost_of_product"):
-            var_dict["Total Transport Cost Of Product [$MM]"] = value(b.transport_cost_of_product)
+            var_dict["Total Transport Cost Of Product [$MM]"] = value(
+                b.transport_cost_of_product
+            )
 
         if hasattr(b, "cost_of_capture"):
             var_dict["Cost of Capture [$/tonne CO2]"] = value(b.cost_of_capture * 1e6)
 
         if hasattr(b, "CO2_transport_cost"):
-            var_dict["Total Transport Cost of Feedstock & Captured CO2 [$MM]"] = value(b.CO2_transport_cost)
+            var_dict["Total Transport Cost of Feedstock & Captured CO2 [$MM]"] = value(
+                b.CO2_transport_cost
+            )
 
         report_dir = {}
         report_dir["Value"] = {}
