@@ -64,7 +64,12 @@ _log = idaeslog.getLogger(__name__)
 class PowerPlantCostingData(FlowsheetCostingBlockData):
     # Register currency and conversion rates based on CE Index
     # register_idaes_currency_units()
-    register_power_plant_currency_units()
+    if (
+        not hasattr(pyunits, "USD_2008_Nov")
+        and not hasattr(pyunits, "USD_2019_Sep")
+        and not hasattr(pyunits, "USD_2018_Dec")
+    ):
+        register_power_plant_currency_units()
 
     def build_global_params(self):
         """
