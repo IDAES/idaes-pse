@@ -45,7 +45,7 @@ from pyomo.environ import (
 
 import idaes.core.util.scaling as iscale
 from idaes.core import FlowsheetCostingBlockData
-from idaes.models_extra.power_generation.costing.costing_dictionaries import (
+from idaes.models_extra.power_generation.costing.power_plant_costing_dictionaries import (
     load_sCO2_costing_dictionary,
     register_power_plant_currency_units,
 )

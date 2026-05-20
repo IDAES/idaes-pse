@@ -34,14 +34,14 @@ import json
 from sys import stdout
 import textwrap
 
+from pandas import DataFrame
+
 from pyomo.common.fileutils import this_file_dir
 from pyomo.environ import value, units as pyunits
 
 from idaes.core import register_idaes_currency_units
 from idaes.core.util.tables import stream_table_dataframe_to_string
 import idaes.logger as idaeslog
-
-from pandas import DataFrame
 
 directory = this_file_dir()
 
@@ -261,87 +261,87 @@ def load_fixed_OM_data():
 
     return labor_types, labor_rates, maintenance_percentages
 
-    def report(b, export=False):
-        """
-        b: flowsheet-level costing block
-        export: generate csv results file of costing results
-        """
-        var_dict = {}
+def report(b, export=False):
+    """
+    b: flowsheet-level costing block
+    export: generate csv results file of costing results
+    """
+    var_dict = {}
 
-        if hasattr(b, "total_TPC"):
-            var_dict["Total TPC [$MM]"] = value(b.total_TPC)
+    if hasattr(b, "total_TPC"):
+        var_dict["Total TPC [$MM]"] = value(b.total_TPC)
 
-        if hasattr(b, "total_overnight_capital"):
-            var_dict["Total Overnight Cost [$MM]"] = value(b.total_overnight_capital)
+    if hasattr(b, "total_overnight_capital"):
+        var_dict["Total Overnight Cost [$MM]"] = value(b.total_overnight_capital)
 
-        if hasattr(b, "total_as_spent_cost"):
-            var_dict["Total As Spent Cost [$MM]"] = value(b.total_as_spent_cost)
+    if hasattr(b, "total_as_spent_cost"):
+        var_dict["Total As Spent Cost [$MM]"] = value(b.total_as_spent_cost)
 
-        if hasattr(b, "annualized_cost"):
-            var_dict["Total Annualized Capital Cost [$MM/year]"] = value(
-                b.annualized_cost
-            )
+    if hasattr(b, "annualized_cost"):
+        var_dict["Total Annualized Capital Cost [$MM/year]"] = value(
+            b.annualized_cost
+        )
 
-        if hasattr(b, "total_fixed_OM_cost"):
-            var_dict["Total fixed O&M cost [$MM/year]"] = value(b.total_fixed_OM_cost)
+    if hasattr(b, "total_fixed_OM_cost"):
+        var_dict["Total fixed O&M cost [$MM/year]"] = value(b.total_fixed_OM_cost)
 
-        if hasattr(b, "total_variable_OM_cost"):
-            var_dict["Total variable O&M cost full capacity [$MM/year]"] = value(
-                b.total_variable_OM_cost[0]
-            )
-            var_dict["Total variable O&M cost operating capacity [$MM/year]"] = value(
-                b.total_variable_OM_cost[0] * b.capacity_factor
-            )
+    if hasattr(b, "total_variable_OM_cost"):
+        var_dict["Total variable O&M cost full capacity [$MM/year]"] = value(
+            b.total_variable_OM_cost[0]
+        )
+        var_dict["Total variable O&M cost operating capacity [$MM/year]"] = value(
+            b.total_variable_OM_cost[0] * b.capacity_factor
+        )
 
-        if (
-            hasattr(b, "annualized_cost")
-            and hasattr(b, "total_fixed_OM_cost")
-            and hasattr(b, "total_variable_OM_cost")
-        ):
-            var_dict["Total Annualized Cost [$MM/year]"] = (
-                value(b.annualized_cost)
-                + value(b.total_fixed_OM_cost)
-                + b.capacity_factor * value(b.total_variable_OM_cost[0])
-            )
+    if (
+        hasattr(b, "annualized_cost")
+        and hasattr(b, "total_fixed_OM_cost")
+        and hasattr(b, "total_variable_OM_cost")
+    ):
+        var_dict["Total Annualized Cost [$MM/year]"] = (
+            value(b.annualized_cost)
+            + value(b.total_fixed_OM_cost)
+            + b.capacity_factor * value(b.total_variable_OM_cost[0])
+        )
 
-        if hasattr(b, "cost_of_electricity"):
-            var_dict["Cost of Electricity [$/MWh]"] = value(b.cost_of_electricity * 1e6)
+    if hasattr(b, "cost_of_electricity"):
+        var_dict["Cost of Electricity [$/MWh]"] = value(b.cost_of_electricity * 1e6)
 
-        if hasattr(b, "cost_of_production"):
-            var_dict["Cost of Production [$/kg product]"] = value(
-                b.cost_of_production * 1e6
-            )
+    if hasattr(b, "cost_of_production"):
+        var_dict["Cost of Production [$/kg product]"] = value(
+            b.cost_of_production * 1e6
+        )
 
-        if hasattr(b, "transport_cost_of_product"):
-            var_dict["Total Transport Cost Of Product [$MM]"] = value(
-                b.transport_cost_of_product
-            )
+    if hasattr(b, "transport_cost_of_product"):
+        var_dict["Total Transport Cost Of Product [$MM]"] = value(
+            b.transport_cost_of_product
+        )
 
-        if hasattr(b, "cost_of_capture"):
-            var_dict["Cost of Capture [$/tonne CO2]"] = value(b.cost_of_capture * 1e6)
+    if hasattr(b, "cost_of_capture"):
+        var_dict["Cost of Capture [$/tonne CO2]"] = value(b.cost_of_capture * 1e6)
 
-        if hasattr(b, "CO2_transport_cost"):
-            var_dict["Total Transport Cost of Feedstock & Captured CO2 [$MM]"] = value(
-                b.CO2_transport_cost
-            )
+    if hasattr(b, "CO2_transport_cost"):
+        var_dict["Total Transport Cost of Feedstock & Captured CO2 [$MM]"] = value(
+            b.CO2_transport_cost
+        )
 
-        report_dir = {}
-        report_dir["Value"] = {}
-        report_dir["pos"] = {}
+    report_dir = {}
+    report_dir["Value"] = {}
+    report_dir["pos"] = {}
 
-        count = 1
-        for k, v in var_dict.items():
-            report_dir["Value"][k] = value(v)
-            report_dir["pos"][k] = count
-            count += 1
+    count = 1
+    for k, v in var_dict.items():
+        report_dir["Value"][k] = value(v)
+        report_dir["pos"][k] = count
+        count += 1
 
-        df = DataFrame.from_dict(report_dir, orient="columns")
-        del df["pos"]
-        if export:
-            df.to_csv(f"{b.local_name}_report.csv")
+    df = DataFrame.from_dict(report_dir, orient="columns")
+    del df["pos"]
+    if export:
+        df.to_csv(f"{b.local_name}_report.csv")
 
-        print("\n" + "=" * 84)
-        print(f"{b.local_name}")
-        print("-" * 84)
-        stdout.write(textwrap.indent(stream_table_dataframe_to_string(df), " " * 4))
-        print("\n" + "=" * 84 + "\n")
+    print("\n" + "=" * 84)
+    print(f"{b.local_name}")
+    print("-" * 84)
+    stdout.write(textwrap.indent(stream_table_dataframe_to_string(df), " " * 4))
+    print("\n" + "=" * 84 + "\n")

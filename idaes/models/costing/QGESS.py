@@ -25,6 +25,9 @@ operating costs and estimated revenue over the plant lifetime, tax estimation,
 net present value calculation, and economy of numbers.
 """
 
+# TODO: Missing docstrings
+# pylint: disable=missing-function-docstring
+
 # all authors
 __author__ = "Costing Team (B. Paul, L. Deng, A. Fritz, A. Ojo, A. Dasgupta, A. Noring, A. Deshpande, D. Caballero, and M. Zamarripa)"
 
@@ -54,10 +57,12 @@ from idaes.core.util.tables import stream_table_dataframe_to_string
 from idaes.models_extra.power_generation.costing.power_plant_costing_dictionaries import (
     register_power_plant_currency_units,
     load_BB_costing_dictionary,
-    load_generic_ccs_costing_dictionary,
     define_preloaded_accounts,
     load_default_resource_prices,
     load_fixed_OM_data,
+)
+from idaes.models_extra.power_generation.costing.generic_ccs_capcost_custom_dict import (
+    load_generic_ccs_costing_dictionary,
 )
 
 from pandas import DataFrame
@@ -320,7 +325,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             self.Lang_factor = Expression(
                 expr=sum(
                     self.installation_components[k]
-                    for k in installation_components.keys()
+                    for k in installation_components
                 )
             )
 
@@ -607,6 +612,8 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             )
 
         # annualization factors that depend on which tech is being used
+        # TODO is there another way to do this besides setting strings manually?
+        # pylint: disable=pointless-string-statement
 
         if self.config.tech == 10:
 
@@ -730,7 +737,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         stdout.write(textwrap.indent(stream_table_dataframe_to_string(df), " " * 4))
         print("\n" + "=" * 84 + "\n")
 
-        if type(self.Lang_factor) is Expression:
+        if isinstance(self.Lang_factor, Expression):
             print("Lang factor built as Expression: \n", self.Lang_factor.expr)
         if self.config.has_economy_of_numbers:
             print(
@@ -1445,14 +1452,14 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     NGCC_preloaded_accounts,
                     AUSC_preloaded_accounts,
                 ) = define_preloaded_accounts()
-            if tech in [1, 2]:
-                cost_accounts = PC_preloaded_accounts[cost_accounts]
-            elif tech in [3, 4, 5]:
-                cost_accounts = IGCC_preloaded_accounts[cost_accounts]
-            elif tech == 6:
-                cost_accounts = NGCC_preloaded_accounts[cost_accounts]
-            elif tech == 7:
-                cost_accounts = AUSC_preloaded_accounts[cost_accounts]
+                if tech in [1, 2]:
+                    cost_accounts = PC_preloaded_accounts[cost_accounts]
+                elif tech in [3, 4, 5]:
+                    cost_accounts = IGCC_preloaded_accounts[cost_accounts]
+                elif tech == 6:
+                    cost_accounts = NGCC_preloaded_accounts[cost_accounts]
+                elif tech == 7:
+                    cost_accounts = AUSC_preloaded_accounts[cost_accounts]
             elif tech in range(8, 10):
                 cost_accounts = (
                     dict()
