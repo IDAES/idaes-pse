@@ -15,10 +15,10 @@ Costing package based on methods from:
 
     Quality Guidelines for Energy System Studies: Capital Cost Scaling Methodology
     Revision 4 Report) https://doi.org/10.2172/1573493
-    
+
     Quality Guidelines for Energy Systems Studies: Cost Estimation Methodology for
     NETL Assessments of Power Plant Performance https://doi.org/10.2172/1567736
-    
+
 This costing package includes common methods for equipment cost scaling using
 economies of scale, cost model initialization and scaling, fixed and variable
 operating costs and estimated revenue over the plant lifetime, tax estimation,
