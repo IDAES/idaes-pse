@@ -261,6 +261,7 @@ def load_fixed_OM_data():
 
     return labor_types, labor_rates, maintenance_percentages
 
+
 def report(b, export=False):
     """
     b: flowsheet-level costing block
@@ -278,9 +279,7 @@ def report(b, export=False):
         var_dict["Total As Spent Cost [$MM]"] = value(b.total_as_spent_cost)
 
     if hasattr(b, "annualized_cost"):
-        var_dict["Total Annualized Capital Cost [$MM/year]"] = value(
-            b.annualized_cost
-        )
+        var_dict["Total Annualized Capital Cost [$MM/year]"] = value(b.annualized_cost)
 
     if hasattr(b, "total_fixed_OM_cost"):
         var_dict["Total fixed O&M cost [$MM/year]"] = value(b.total_fixed_OM_cost)

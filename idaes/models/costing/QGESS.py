@@ -44,6 +44,8 @@ from pyomo.environ import units as pyunits
 from pyomo.environ import value
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
+from pandas import DataFrame
+
 import idaes.core.util.scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError, BurntToast
 import idaes.logger as idaeslog
@@ -64,8 +66,6 @@ from idaes.models_extra.power_generation.costing.power_plant_costing_dictionarie
 from idaes.models_extra.power_generation.costing.generic_ccs_capcost_custom_dict import (
     load_generic_ccs_costing_dictionary,
 )
-
-from pandas import DataFrame
 
 _log = idaeslog.getLogger(__name__)
 
@@ -324,8 +324,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
             self.Lang_factor = Expression(
                 expr=sum(
-                    self.installation_components[k]
-                    for k in installation_components
+                    self.installation_components[k] for k in installation_components
                 )
             )
 
