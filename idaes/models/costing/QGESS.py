@@ -134,6 +134,19 @@ class QGESSCostingData(FlowsheetCostingBlockData):
     )
 
     CONFIG.declare(
+        "phaseout_fractions",
+        ConfigValue(
+            default=None,
+            domain=dict,
+            description="dictionary of phaseout fractiosn indexed by years during which production incentive tax credit is phased out. "
+            "MUST be in chronological (ascending) order. The list MUST have the same length as "
+            "phaseout_fractions. Defaults to [2031, 2032, 2033] based on the One Big Beautiful "
+            "Bill Amendment (OBBBA) https://www.congress.gov/bill/119th-congress/house-bill/1/text "
+            "(Volume 139 STAT. 274).",
+        ),
+    )
+
+    CONFIG.declare(
         "has_net_present_value",
         ConfigValue(
             default=False,
@@ -231,6 +244,22 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         location factor (Washington, D.C. = 1), and so on.
         """
 
+        # check that the user selected a technology
+        if self.config.tech == None:
+            raise ValueError(
+                "Must set a technology type. Valid options include: \n"
+                "1. Supercritical PC, air-fired, with and without CO2 capture, Illinois No. 6 coal \n"
+                "2. Subcritical PC, air-fired, with and without CO2 capture, Illinois No. 6 coal \n"
+                "3. Two-stage, slurry-feed, oxygen-blown gasifier with and without CO2 capture, Illinois No. 6 coal \n"
+                "4. Single-stage, slurry-feed, oxygen-blown gasifier with and without CO2 capture, Illinois No. 6 coal \n"
+                "5. Single-stage, dry-feed, oxygen-blown, up-flow gasifier with and without CO2 capture, Illinois No. 6 coal \n"
+                "6. Natural gas, air-fired, with and without CO2 capture \n"
+                "7. Advanced Ultrasupercritical PC \n"
+                "8. Polymer Layers accounts \n"
+                "9. Sensors & Controls accounts \n"
+                "10. University of Kentucky Fire Clay Seam (Hazard No. 4) Rejects \n"
+                )
+
         # Set the base year for all costs
 
         # check that the currency units are built-in or user-defined
@@ -243,7 +272,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 f"units such as 2019_Sep and UKy_2019."
             )
 
-        if self.has_production_credit_phaseout:
+        if self.config.has_production_credit_phaseout:
             # validate: must start or end with a 4-digit year
             if self.config.CE_index_year[:4].isdigit():
                 current_year = int(self.config.CE_index_year[:4])
@@ -383,14 +412,14 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 labor_types,
                 initialize=dict(zip(labor_types, labor_rates)),
                 mutable=True,
-                units=getattr(pyunits, "USD_" + self.base_currency) / pyunits.hr,
+                units=self.base_currency / pyunits.hr,
                 doc="Pay rates for each labor type",
             )
             self.labor_burden = Param(
                 initialize=labor_burden,
                 mutable=True,
-                units=pyunits.dimensionless,
-                doc="Fringe labor benefits",
+                units=pyunits.percent,
+                doc="Fringe labor benefits percentage",
             )
             self.operators_per_shift = Param(
                 labor_types,
@@ -441,50 +470,40 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 # phaseout is only relevant if tax calculations are enabled
                 if self.config.has_production_credit_phaseout:
 
-                    self.phaseout_years = Param(
-                        initialize=[2031, 2032, 2033],
-                        mutable=True,
-                        doc="list of years during which production incentive tax credit is phased out. "
-                        "MUST be in chronological (ascending) order. The list MUST have the same length as "
-                        "phaseout_fractions. Defaults to [2031, 2032, 2033] based on the One Big Beautiful "
-                        "Bill Amendment (OBBBA) https://www.congress.gov/bill/119th-congress/house-bill/1/text "
-                        "(Volume 139 STAT. 274).",
-                    )
+                    if not isinstance(self.config.phaseout_fractions, dict):  # includes not set as default is None
+                        raise ValueError("Must set phaseout_fractions as dict of fractions indexed by integer years.")
+
+                    if not list(self.config.phaseout_fractions.keys()) == sorted(self.config.phaseout_fractions.keys()):
+                        raise ValueError("Years for phaseout_fractions must be in ascending order.")
+
+                    if not list(self.config.phaseout_fractions.values()) == sorted(self.config.phaseout_fractions.values(), reverse=True):
+                        raise ValueError("Fractions for phaseout_fractions must be in descending order.")
 
                     self.phaseout_fractions = Param(
-                        initialize=[75, 50, 25],
-                        # TODO write domain validator that values are in descending order
+                        self.config.phaseout_fractions.keys(),
+                        initialize=self.config.phaseout_fractions,
                         mutable=True,
-                        doc="list of fractions of the production incentive tax credit that are applied during the "
+                        doc="dict of fractions of the production incentive tax credit that are applied during the "
                         "phaseout years. Each value MUST be between 0 and 1, and the list MUST have the same length "
-                        "as phaseout_years. Defaults to [75, 50, 25] based on OBBBA, which specifies a 25% "
-                        "reduction in the first year of phaseout, 50% reduction in the second year, and 75% reduction "
-                        "in the third year before the tax credit is fully phased out.",
-                        units=pyunits.percent,
-                    )
-
-                    self.phaseout = Param(
-                        self.phaseout_years,
-                        initialize=dict(
-                            zip(self.phaseout_years, self.phaseout_fractions)
-                        ),
-                        mutable=True,
-                        doc="Phaseout fractions for production incentive charge, indexed by year",
+                        "as phaseout_years. Defaults to [75, 50, 25] based on the One Big Beautiful Bill Amendment "
+                        "(OBBBA) https://www.congress.gov/bill/119th-congress/house-bill/1/text (Volume 139 STAT. 274), "
+                        "which specifies a 25% reduction in the first year of phaseout, 50% reduction in the second year, "
+                        "and 75% reduction in the third year before the tax credit is fully phased out.",
                     )
 
                     self.phaseout_factor = Param(
-                        initialize=1.0,
+                        initialize=1,
                         mutable=True,
                         doc="Phaseout fraction applied to project year",
                         units=pyunits.dimensionless,
                     )
 
-                    if value(self.current_year) < min(self.phaseout_years):
-                        self.phaseout_factor.set_value(1.0)
-                    elif value(self.current_year) <= max(self.phaseout_years):
-                        self.phaseout_factor.set_value(self.phaseout[self.current_year])
+                    if value(self.current_year) < min([int(y) for y in self.phaseout_fractions.keys()]):
+                        self.phaseout_factor.set_value(1)
+                    elif value(self.current_year) <= max([int(y) for y in self.phaseout_fractions.keys()]):
+                        self.phaseout_factor.set_value(value(self.phaseout_fractions[str(value(self.current_year))]) / 100)
                     else:
-                        self.phaseout_factor.set_value(0.0)
+                        self.phaseout_factor.set_value(0)
 
         else:
             if self.config.has_taxes_and_credits:
@@ -516,23 +535,19 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
             if self.config.has_capital_expenditure_period:
 
-                if self.config.capital_expenditure_percentages is None:
-                    self.config.capital_expenditure_percentages = [10, 60, 30]
+                if not isinstance(self.config.capital_expenditure_percentages, list):
+                    raise ValueError("Must set capital_expenditure_percentages as list of integer values on [0, 100].")
 
                 if not sum(self.config.capital_expenditure_percentages) == 100:
-                    raise AttributeError(
+                    raise ValueError(
                         f"Argument capital_expenditure_percentages has a sum of "
                         f"{sum(self.config.capital_expenditure_percentages)}. List must sum to 100 percent."
                     )
 
                 self.capital_expenditure_percentages = Param(
                     range(len(self.config.capital_expenditure_percentages)),
-                    initialize=dict(
-                        zip(
-                            range(len(self.config.capital_expenditure_percentages)),
-                            self.config.capital_expenditure_percentages,
-                        )
-                    ),
+                    initialize=self.config.capital_expenditure_percentages,
+                    mutable=True,
                     doc="A list of values that sum to 100 representing how "
                     "capital costs are spread over a capital expenditure period; for "
                     "example, an input of [10, 60, 30] is parsed as a 3-year period "
@@ -547,7 +562,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             self.capital_escalation_percentage = Param(
                 initialize=3.6,
                 units=pyunits.percent,
-                description="Rate at which capital costs escalate during the "
+                doc="Rate at which capital costs escalate during the "
                 "capital expenditure period. The value should be a percentage, "
                 "for example 10 for a 10% escalation rate. Set to 0 to indicate "
                 "there is no cost escalation in the expenditure period.",
@@ -556,7 +571,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             self.capital_loan_interest_percentage = Param(
                 initialize=6,
                 units=pyunits.percent,
-                description="Interest rate for capital equipment loan repayment."
+                doc="Interest rate for capital equipment loan repayment."
                 "The value should be a percentage, for example 10 for a 10% "
                 "interest rate.",
             )
@@ -564,13 +579,13 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             self.capital_loan_repayment_period = Param(
                 initialize=10,
                 units=pyunits.year,
-                description="Length of loan repayment period in years.",
+                doc="Length of loan repayment period in years.",
             )
 
             self.debt_percentage_of_capex = Param(
                 initialize=50,
                 units=pyunits.percent,
-                description="Percentage of CAPEX financed by debt; the value should be "
+                doc="Percentage of CAPEX financed by debt; the value should be "
                 "set as a percentage, for example 10 for a debt corresponding to 10% of "
                 "the CAPEX. Set to zero to indicate no loans are taken out on capital.",
             )
@@ -578,7 +593,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             self.operating_inflation_percentage = Param(
                 initialize=3,
                 units=pyunits.percent,
-                description="Inflation rate for operating costs during the "
+                doc="Inflation rate for operating costs during the "
                 "operating period. The value should be a percentage, for example "
                 "10 for a 10% inflation rate. Set to 0 to indicate no inflation.",
             )
@@ -586,7 +601,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             self.revenue_inflation_percentage = Param(
                 initialize=3,
                 units=pyunits.percent,
-                description="Inflation rate for revenue during the operating "
+                doc="Inflation rate for revenue during the operating "
                 "period. The value should be a percentage, for example 10 for a "
                 "10% inflation rate. Set to 0 to indicate no inflation.",
             )
@@ -715,19 +730,22 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         param_dict["CE_index_units"] = self.CE_index_units
         param_dict["base_period"] = self.base_period
         for p in self.component_data_objects(Param, descend_into=True):
-            param_dict[p.name, ", ", pyunits.get_units(p)] = value(p)
+            param_dict[p.name] = p
+            # param_dict[p.name, ", ", pyunits.get_units(p)] = value(p)
 
-        report_dir = {}
-        report_dir["Value"] = {}
-        report_dir["pos"] = {}
+        self.param_dir = {}
+        self.param_dir["Value"] = {}
+        self.param_dir["Units"] = {}
+        self.param_dir["pos"] = {}
 
         count = 1
         for k, v in param_dict.items():
-            report_dir["Value"][k] = value(v)
-            report_dir["pos"][k] = count
+            self.param_dir["Value"][k] = value(v)
+            self.param_dir["Units"][k] = pyunits.get_units(v)
+            self.param_dir["pos"][k] = count
             count += 1
 
-        df = DataFrame.from_dict(report_dir, orient="columns")
+        df = DataFrame.from_dict(self.param_dir, orient="columns")
         del df["pos"]
 
         print("\n" + "=" * 84)
@@ -741,7 +759,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         if self.config.has_economy_of_numbers:
             print(
                 "EON learning rate exponent built as Expression: \n",
-                self.learning_rate_exponent,
+                self.learning_rate_exponent.expr,
             )
 
     def build_process_costs(
@@ -1444,7 +1462,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
         # preloaded account handling
         if isinstance(cost_accounts, str):
-            if tech in range(1, 7):
+            if tech in [1, 2, 3, 4, 5, 6, 7]:
                 (
                     PC_preloaded_accounts,
                     IGCC_preloaded_accounts,
@@ -1459,7 +1477,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     cost_accounts = NGCC_preloaded_accounts[cost_accounts]
                 elif tech == 7:
                     cost_accounts = AUSC_preloaded_accounts[cost_accounts]
-            elif tech in range(8, 10):
+            elif tech in [8, 9, 10]:
                 cost_accounts = (
                     dict()
                 )  # empty dictionary to append these additional costing accounts to
@@ -1488,7 +1506,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         reference_costs_init = {}
         reference_params = {}
 
-        if tech in range(1, 9):
+        if tech in [1, 2, 3, 4, 5, 6, 7, 8, 9]:
             cost_scaling_fractions = {}
             engineering_fees = {}
             process_contingencies = {}
@@ -1606,7 +1624,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         reference_params[account, processparam] = costing_params[
                             str(tech)
                         ][ccs][account]["RP Value"][i]
-                        if tech in range(1, 9):
+                        if tech in [1, 2, 3, 4, 5, 6, 7, 8, 9]:
                             cost_scaling_fractions[account, processparam] = (
                                 costing_params[str(tech)][ccs][account][
                                     "Cost scaling fraction"
@@ -1618,7 +1636,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         "RP Value"
                     ]
 
-                if tech in range(1, 9):
+                if tech in [1, 2, 3, 4, 5, 6, 7, 8, 9]:
                     engineering_fees[account] = costing_params[str(tech)][ccs][account][
                         "Eng Fee"
                     ]
@@ -1830,7 +1848,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     doc="reference parameter for account",
                 )
 
-                if tech in range(1, 9):
+                if tech in [1, 2, 3, 4, 5, 6, 7, 8, 9]:
                     blk.cost_scaling_fracs = Param(
                         cost_accounts,
                         process_params[cost_accounts[0]],
@@ -1846,7 +1864,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 doc="reference parameter for account",
             )
 
-        if tech in range(1, 9):
+        if tech in [1, 2, 3, 4, 5, 6, 7, 8, 9]:
             blk.eng_fee = Param(
                 cost_accounts,
                 mutable=True,
@@ -1877,7 +1895,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             units=CE_index_units,
         )
 
-        if tech in range(1, 9):
+        if tech in [1, 2, 3, 4, 5, 6, 7, 8, 9]:
             blk.total_plant_cost = Var(
                 cost_accounts,
                 initialize=reference_costs_init,
@@ -1923,7 +1941,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         * sum(
                             (
                                 costing.cost_scaling_fracs[i, p]
-                                if tech in range(1, 9)
+                                if tech in [1, 2, 3, 4, 5, 6, 7, 8, 9]
                                 else 1
                             )
                             * (
@@ -1947,7 +1965,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     ** costing.exp[i]
                 )
 
-        if tech in range(1, 9):
+        if tech in [1, 2, 3, 4, 5, 6, 7, 8, 9]:
             # rule for calculating TPC
             if multiply_project_conting is True:
 
@@ -2508,7 +2526,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                                 "operator",
                             ]
                         )
-                        * (1 + c.labor_burden / 100)
+                        * (1 + c.labor_burden)
                         * c.capacity_factor
                     ),
                     c.CE_index_units / pyunits.year,
@@ -2522,7 +2540,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                             c.operators_per_shift[i] * c.labor_rate[i]
                             for i in ["technician", "engineer"]
                         )
-                        * (1 + c.labor_burden / 100)
+                        * (1 + c.labor_burden)
                         * c.capacity_factor
                     ),
                     c.CE_index_units / pyunits.year,
@@ -2802,19 +2820,12 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         )
 
         if b.config.has_production_credit_phaseout:
-            if value(b.current_year) < min(b.phaseout_years):
-                phase_out_factor = 1.0
-            elif value(b.current_year) <= max(b.phaseout_years):
-                phase_out_factor = b.phaseout[b.current_year]
-            else:
-                phase_out_factor = 0.0
-
             b.production_incentive_charge = Expression(
                 expr=pyunits.convert(
                     b.production_incentive_percentage,
                     to_units=pyunits.dimensionless,
                 )
-                * phase_out_factor
+                * b.phaseout_factor
                 * (b.total_variable_OM_cost[0] + b.total_fixed_OM_cost)
             )
         else:
