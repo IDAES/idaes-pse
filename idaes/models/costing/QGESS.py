@@ -258,7 +258,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 "8. Polymer Layers accounts \n"
                 "9. Sensors & Controls accounts \n"
                 "10. University of Kentucky Fire Clay Seam (Hazard No. 4) Rejects \n"
-                )
+            )
 
         # Set the base year for all costs
 
@@ -470,14 +470,26 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 # phaseout is only relevant if tax calculations are enabled
                 if self.config.has_production_credit_phaseout:
 
-                    if not isinstance(self.config.phaseout_fractions, dict):  # includes not set as default is None
-                        raise ValueError("Must set phaseout_fractions as dict of fractions indexed by integer years.")
+                    if not isinstance(
+                        self.config.phaseout_fractions, dict
+                    ):  # includes not set as default is None
+                        raise ValueError(
+                            "Must set phaseout_fractions as dict of fractions indexed by integer years."
+                        )
 
-                    if not list(self.config.phaseout_fractions.keys()) == sorted(self.config.phaseout_fractions.keys()):
-                        raise ValueError("Years for phaseout_fractions must be in ascending order.")
+                    if not list(self.config.phaseout_fractions.keys()) == sorted(
+                        self.config.phaseout_fractions.keys()
+                    ):
+                        raise ValueError(
+                            "Years for phaseout_fractions must be in ascending order."
+                        )
 
-                    if not list(self.config.phaseout_fractions.values()) == sorted(self.config.phaseout_fractions.values(), reverse=True):
-                        raise ValueError("Fractions for phaseout_fractions must be in descending order.")
+                    if not list(self.config.phaseout_fractions.values()) == sorted(
+                        self.config.phaseout_fractions.values(), reverse=True
+                    ):
+                        raise ValueError(
+                            "Fractions for phaseout_fractions must be in descending order."
+                        )
 
                     self.phaseout_fractions = Param(
                         self.config.phaseout_fractions.keys(),
@@ -498,10 +510,19 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         units=pyunits.dimensionless,
                     )
 
-                    if value(self.current_year) < min([int(y) for y in self.phaseout_fractions.keys()]):
+                    if value(self.current_year) < min(
+                        [int(y) for y in self.phaseout_fractions.keys()]
+                    ):
                         self.phaseout_factor.set_value(1)
-                    elif value(self.current_year) <= max([int(y) for y in self.phaseout_fractions.keys()]):
-                        self.phaseout_factor.set_value(value(self.phaseout_fractions[str(value(self.current_year))]) / 100)
+                    elif value(self.current_year) <= max(
+                        [int(y) for y in self.phaseout_fractions.keys()]
+                    ):
+                        self.phaseout_factor.set_value(
+                            value(
+                                self.phaseout_fractions[str(value(self.current_year))]
+                            )
+                            / 100
+                        )
                     else:
                         self.phaseout_factor.set_value(0)
 
@@ -536,7 +557,9 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             if self.config.has_capital_expenditure_period:
 
                 if not isinstance(self.config.capital_expenditure_percentages, list):
-                    raise ValueError("Must set capital_expenditure_percentages as list of integer values on [0, 100].")
+                    raise ValueError(
+                        "Must set capital_expenditure_percentages as list of integer values on [0, 100]."
+                    )
 
                 if not sum(self.config.capital_expenditure_percentages) == 100:
                     raise ValueError(
@@ -2235,9 +2258,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     f"sale price. Sale prices exist for the following products: "
                     f"{list(default_sale_prices)}"
                 )
-            elif not set(mixed_product_output_rates).issubset(
-                default_sale_prices
-            ):
+            elif not set(mixed_product_output_rates).issubset(default_sale_prices):
                 raise AttributeError(
                     f"A mixed product was included that does not contain a "
                     f"sale price. Sale prices exist for the following products: "
@@ -3298,9 +3319,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 )
 
                 full_credit_years = int(
-                    value(
-                        smooth_max(0, min(b.phaseout) - current_year, eps=b.eps)
-                    )
+                    value(smooth_max(0, min(b.phaseout) - current_year, eps=b.eps))
                 )
 
                 b.production_incentive_charge_percent_list = []

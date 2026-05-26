@@ -11,9 +11,7 @@
 # for full copyright and license information.
 #################################################################################
 
-__author__ = (
-    "Costing Team (A. Noring, A. Deshpande, B. Paul, D. Caballero, and M. Zamarripa)"
-)
+__author__ = "Costing Team (B. Paul, L. Deng, A. Fritz, A. Ojo, A. Dasgupta, A. Noring, A. Deshpande, D. Caballero, and M. Zamarripa)"
 __version__ = "1.0.0"
 
 import pytest
