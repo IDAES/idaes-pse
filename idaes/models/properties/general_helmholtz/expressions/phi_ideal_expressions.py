@@ -85,8 +85,11 @@ def phi_ideal_expressions_planck_einstein2(model, parameters):
     rng = range(0, len(n))
 
     return {
-        "phii": sum(n[i] * pyo.log(l[i] + d[i]*pyo.exp(t[i] * model.tau))for i in rng),
+        "phii": sum(
+            n[i] * pyo.log(l[i] + d[i] * pyo.exp(t[i] * model.tau)) for i in rng
+        ),
     }
+
 
 def phi_ideal_expressions_planck_einstein3(model, parameters):
     """Type01 expression for the third Planck Einstein part of dimensionless ideal Helmholtz free energy
@@ -104,8 +107,9 @@ def phi_ideal_expressions_planck_einstein3(model, parameters):
 
     rng = range(0, len(n))
     return {
-        "phii": sum(n[i] * pyo.log(1 - pyo.exp(-t[i] * model.tau/Tc)) for i in rng),
+        "phii": sum(n[i] * pyo.log(1 - pyo.exp(-t[i] * model.tau / Tc)) for i in rng),
     }
+
 
 def phi_ideal_expressions_cp_constant(model, parameters):
     """Type01 expression for the cp constant part of ideal dimensionless Helmholtz free energy
