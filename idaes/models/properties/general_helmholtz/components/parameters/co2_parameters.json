@@ -44,7 +44,14 @@
             8.82013935801453
         ]
     },
-    "have_tcx": false,
+    "nl_file_tcx": "co2_expressions_tcx.nl",
+    "var_map_tcx": [
+        1,
+        0,
+        1000,
+        1000
+    ],
+    "have_tcx": true,
     "nl_file_st": "co2_expressions_st.nl",
     "var_map_st": [
         1,
@@ -53,5 +60,12 @@
         1000
     ],
     "have_st": true,
-    "have_visc": false
+    "nl_file_visc": "co2_expressions_visc.nl",
+    "var_map_visc": [
+        1,
+        0,
+        1000,
+        1000
+    ],
+    "have_visc": true
 }
