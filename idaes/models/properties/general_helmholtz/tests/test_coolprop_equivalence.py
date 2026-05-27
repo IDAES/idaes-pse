@@ -34,15 +34,10 @@ except ImportError:  # pragma: no cover
 
 
 _COOLPROP_NAME_MAP = {
-    # "water": "Water",
     "h2o": "Water",
-    # "carbondioxide": "CO2",
     "co2": "CO2",
-    # "ammonia": "Ammonia",
     "nh3": "Ammonia",
-    # "n-propane": "n-Propane",
     "propane": "n-Propane",
-    # "n-butane": "n-Butane",
     "butane": "n-Butane",
     "isobutane": "IsoButane",
     "r32": "R32",
@@ -52,13 +47,9 @@ _COOLPROP_NAME_MAP = {
     "r227ea": "R227EA",
 }
 
-_SOLVER = pyo.SolverFactory("ipopt")
 _PARAMETER_DIR = Path(__file__).resolve().parents[1] / "components" / "parameters"
 _COMPONENTS = tuple(sorted(_COOLPROP_NAME_MAP))
 _T_FRACS = (0.2, 0.5, 0.7)
-_P_FRACS = (0.4, 0.5, 0.6)
-_QUALITIES = (0, 0.5, 1)
-
 
 def _component_basic_data(c):
     with (_PARAMETER_DIR / f"{c}.json").open() as f:
@@ -73,45 +64,10 @@ def _sample_temperatures(c):
     return tuple(t_low + frac * span for frac in _T_FRACS)
     # return [400, 400]
 
-def _sample_pressures(c):
-    basic = _component_basic_data(c)
-    p_low = max(basic["P_min"], basic["Pt"])
-    p_high = basic["Pc"]
-    span = p_high - p_low
-    return tuple(p_low + frac * span for frac in _P_FRACS)
-
 def temperature_from_coolprop(c, p):
     fluid = _COOLPROP_NAME_MAP[c]
     return CP.PropsSI("T", "P", p, "Q", 1, fluid)
 
-
-def compare_pressure(c, t):
-    """Evaluate pressure for a saturated state from TPX and CoolProp."""
-    fluid = _COOLPROP_NAME_MAP[c]
-    m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.props = HelmholtzParameterBlock(
-        pure_component=c, amount_basis=AmountBasis.MOLE, state_vars=StateVars.TPX
-    )
-    m.fs.sb = m.fs.props.build_state_block()
-
-    state = m.fs.sb
-
-    state.flow_mol.fix(1)
-    state.temperature.fix(t)
-    for quality in [0.5]:
-
-        p = CP.PropsSI("P", "T", t, "Q", quality, fluid)
-        h = CP.PropsSI("Hmolar", "T", t, "P", p, fluid)
-        m.enthConstr = pyo.Constraint(expr=state.enth_mol == h*pyo.units.J/pyo.units.mol)
-        # state.enth_mol.fix(h*pyo.units.J/pyo.units.mol)
-        _SOLVER.solve(m, tee=False)
-        p_stateblock = pyo.value(pyo.units.convert(m.fs.sb.pressure, to_units=pyo.units.Pa))
-        p_coolprop = CP.PropsSI("P", "T", t, "Hmolar", h, fluid)
-        print(f"State block pressure: {p_stateblock:.3f} Pa")
-        print(f"CoolProp pressure: {p_coolprop:.3f} Pa")
-        assert  p_stateblock == pytest.approx(p_coolprop)
-    return True
 
 
 def compare_enthalpy_difference(c, temps):
@@ -141,15 +97,6 @@ def compare_enthalpy_difference(c, temps):
         print(f"CoolProp enthalpy difference: {delta_h_coolprop:.3f} J/Kg")
         assert  delta_h_stateblock == pytest.approx(delta_h_coolprop,  rel=1e2)
     return True
-
-# @pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
-# @pytest.mark.skipif(CP is None, reason="CoolProp not available")
-# @pytest.mark.integration
-# @pytest.mark.parametrize("component", _COMPONENTS)
-# def test_coolprop_pressure(component):
-#     temperatures = _sample_temperatures(component)
-#     for temperature in temperatures:
-#         assert compare_pressure(component, temperature)
 
 
 @pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
