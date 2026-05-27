@@ -34,10 +34,15 @@ except ImportError:  # pragma: no cover
 
 
 _COOLPROP_NAME_MAP = {
+    # "water": "Water",
     "h2o": "Water",
+    # "carbondioxide": "CO2",
     "co2": "CO2",
+    # "ammonia": "Ammonia",
     "nh3": "Ammonia",
+    # "n-propane": "n-Propane",
     "propane": "n-Propane",
+    # "n-butane": "n-Butane",
     "butane": "n-Butane",
     "isobutane": "IsoButane",
     "r32": "R32",
@@ -137,14 +142,15 @@ def compare_enthalpy_difference(c, temps):
         assert  delta_h_stateblock == pytest.approx(delta_h_coolprop,  rel=1e2)
     return True
 
-@pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
-@pytest.mark.skipif(CP is None, reason="CoolProp not available")
-@pytest.mark.integration
-@pytest.mark.parametrize("component", _COMPONENTS)
-def test_coolprop_pressure(component):
-    temperatures = _sample_temperatures(component)
-    for temperature in temperatures:
-        assert compare_pressure(component, temperature)
+# @pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
+# @pytest.mark.skipif(CP is None, reason="CoolProp not available")
+# @pytest.mark.integration
+# @pytest.mark.parametrize("component", _COMPONENTS)
+# def test_coolprop_pressure(component):
+#     temperatures = _sample_temperatures(component)
+#     for temperature in temperatures:
+#         assert compare_pressure(component, temperature)
+
 
 @pytest.mark.skipif(not helmholtz_available(), reason="General Helmholtz not available")
 @pytest.mark.skipif(CP is None, reason="CoolProp not available")

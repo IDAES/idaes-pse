@@ -29,7 +29,7 @@ def phi_ideal_expressions_lead(model, parameters):
     """
     a = parameters["a"]
     return {
-        "phii": a[0] + a[1] * model.tau + pyo.log(model.delta),
+        "phii": pyo.log(model.delta) + a[0] + a[1] * model.tau,
     }
 
 

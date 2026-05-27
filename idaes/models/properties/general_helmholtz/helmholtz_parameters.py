@@ -162,28 +162,27 @@ class WriteParameters(object):
                     phi_expressions = phi_ideal_modular_parts[ideal_term["ideal_type"]](
                         model=self.model, parameters=ideal_term
                     )
-                    phii = phi_expressions["phii"]
-                    phii_d = pyo.differentiate(
-                        phii, self.model.delta, mode="reverse_symbolic"
+                    phi_ideal["phii"] = phi_ideal["phii"] + phi_expressions["phii"]
+                phii_d = pyo.differentiate(
+                        phi_ideal["phii"], self.model.delta, mode="sympy"
                     )
-                    phii_dd = pyo.differentiate(
-                        phii_d, self.model.delta, mode="reverse_symbolic"
-                    )
-                    phii_t = pyo.differentiate(
-                        phii, self.model.tau, mode="reverse_symbolic"
-                    )
-                    phii_tt = pyo.differentiate(
-                        phii_t, self.model.tau, mode="reverse_symbolic"
-                    )
-                    phii_dt = pyo.differentiate(
-                        phii_d, self.model.tau, mode="reverse_symbolic"
-                    )
-                    phi_ideal["phii"] = phi_ideal["phii"] + phii
-                    phi_ideal["phii_d"] = phi_ideal["phii_d"] + phii_d
-                    phi_ideal["phii_dd"] = phi_ideal["phii_dd"] + phii_dd
-                    phi_ideal["phii_t"] = phi_ideal["phii_t"] + phii_t
-                    phi_ideal["phii_tt"] = phi_ideal["phii_tt"] + phii_tt
-                    phi_ideal["phii_dt"] = phi_ideal["phii_dt"] + phii_dt
+                phii_dd = pyo.differentiate(
+                    phii_d, self.model.delta, mode="sympy"
+                )
+                phii_t = pyo.differentiate(
+                    phi_ideal["phii"], self.model.tau, mode="sympy"
+                )
+                phii_tt = pyo.differentiate(
+                    phii_t, self.model.tau, mode="sympy"
+                )
+                phii_dt = pyo.differentiate(
+                    phii_d, self.model.tau, mode="sympy"
+                )
+                phi_ideal["phii_d"] = phi_ideal["phii_d"] + phii_d
+                phi_ideal["phii_dd"] = phi_ideal["phii_dd"] + phii_dd
+                phi_ideal["phii_t"] = phi_ideal["phii_t"] + phii_t
+                phi_ideal["phii_tt"] = phi_ideal["phii_tt"] + phii_tt
+                phi_ideal["phii_dt"] = phi_ideal["phii_dt"] + phii_dt
                 self.add(phi_ideal)
         except KeyError:
             phi_ideal_type = 0
@@ -204,28 +203,27 @@ class WriteParameters(object):
                     phi_expressions = phi_residual_modular_parts[
                         residual_term["residual_type"]
                     ](model=self.model, parameters=residual_term)
-                    phir = phi_expressions["phir"]
-                    phir_d = pyo.differentiate(
-                        phir, self.model.delta, mode="reverse_symbolic"
+                    phi_residual["phir"] = phi_residual["phir"] + phi_expressions["phir"]
+                phir_d = pyo.differentiate(
+                        phi_residual["phir"], self.model.delta, mode="sympy"
                     )
-                    phir_dd = pyo.differentiate(
-                        phir_d, self.model.delta, mode="reverse_symbolic"
-                    )
-                    phir_t = pyo.differentiate(
-                        phir, self.model.tau, mode="reverse_symbolic"
-                    )
-                    phir_tt = pyo.differentiate(
-                        phir_t, self.model.tau, mode="reverse_symbolic"
-                    )
-                    phir_dt = pyo.differentiate(
-                        phir_d, self.model.tau, mode="reverse_symbolic"
-                    )
-                    phi_residual["phir"] = phi_residual["phir"] + phir
-                    phi_residual["phir_d"] = phi_residual["phir_d"] + phir_d
-                    phi_residual["phir_dd"] = phi_residual["phir_dd"] + phir_dd
-                    phi_residual["phir_t"] = phi_residual["phir_t"] + phir_t
-                    phi_residual["phir_tt"] = phi_residual["phir_tt"] + phir_tt
-                    phi_residual["phir_dt"] = phi_residual["phir_dt"] + phir_dt
+                phir_dd = pyo.differentiate(
+                    phir_d, self.model.delta, mode="sympy"
+                )
+                phir_t = pyo.differentiate(
+                    phi_residual["phir"], self.model.tau, mode="sympy"
+                )
+                phir_tt = pyo.differentiate(
+                    phir_t, self.model.tau, mode="sympy"
+                )
+                phir_dt = pyo.differentiate(
+                    phir_d, self.model.tau, mode="sympy"
+                )
+                phi_residual["phir_d"] = phi_residual["phir_d"] + phir_d
+                phi_residual["phir_dd"] = phi_residual["phir_dd"] + phir_dd
+                phi_residual["phir_t"] = phi_residual["phir_t"] + phir_t
+                phi_residual["phir_tt"] = phi_residual["phir_tt"] + phir_tt
+                phi_residual["phir_dt"] = phi_residual["phir_dt"] + phir_dt
                 self.add(phi_residual)
         except KeyError:
             phi_residual_type = 0

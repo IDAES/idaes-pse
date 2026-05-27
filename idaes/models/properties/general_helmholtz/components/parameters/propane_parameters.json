@@ -44,14 +44,7 @@
             0.0
         ]
     },
-    "nl_file_tcx": "propane_expressions_tcx.nl",
-    "var_map_tcx": [
-        1,
-        0,
-        1000,
-        1000
-    ],
-    "have_tcx": true,
+    "have_tcx": false,
     "nl_file_st": "propane_expressions_st.nl",
     "var_map_st": [
         1,
@@ -60,12 +53,5 @@
         1000
     ],
     "have_st": true,
-    "nl_file_visc": "propane_expressions_visc.nl",
-    "var_map_visc": [
-        0,
-        1,
-        1000,
-        1000
-    ],
-    "have_visc": true
+    "have_visc": false
 }
