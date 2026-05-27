@@ -29,7 +29,7 @@
         "rho_star": 322.0,
         "Tc": 647.096,
         "rhoc": 322.0,
-        "Pc": 22063.99977936212,
+        "Pc": 22063.999779362184,
         "Tt": 273.16,
         "Pt": 0.611655,
         "rhot_l": 999.793,
@@ -44,14 +44,7 @@
             0.0
         ]
     },
-    "nl_file_tcx": "h2o_expressions_tcx.nl",
-    "var_map_tcx": [
-        0,
-        1,
-        1000,
-        1000
-    ],
-    "have_tcx": true,
+    "have_tcx": false,
     "nl_file_st": "h2o_expressions_st.nl",
     "var_map_st": [
         1,
@@ -60,12 +53,5 @@
         1000
     ],
     "have_st": true,
-    "nl_file_visc": "h2o_expressions_visc.nl",
-    "var_map_visc": [
-        1,
-        0,
-        1000,
-        1000
-    ],
-    "have_visc": true
+    "have_visc": false
 }
