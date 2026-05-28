@@ -68,7 +68,7 @@ omlt = [
 testing = ["pytest", "addheader", "pyyaml"]
 
 # this will install all optional dependencies
-all = ["idaes-pse[ui,grid,omlt,coolprop]"]
+all = ["idaes-pse[ui,omlt,coolprop]"]
 
 # we have to investigate why scm_tools is not working as expected
 # [tool.setuptools_scm]
