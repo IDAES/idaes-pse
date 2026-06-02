@@ -222,7 +222,7 @@ combined within a parameter file.
 Ideal Part of Dimensionless Helmholtz Free Energy
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Predefined terms for the dimensionless Helmholtz free energy are outlined below. These expressions reflect the 
-commmon equation families used to evaluate the Ideal part of Helmholtz energy.
+common equation families used to evaluate the Ideal part of Helmholtz energy.
 In each instance, :math:`\delta` is the reduced density amd :math:`\tau` is the inverse reduced temperature, 
 with additional parameters defined within the parameter file for the component.
 
