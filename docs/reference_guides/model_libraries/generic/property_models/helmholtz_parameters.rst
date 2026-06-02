@@ -236,6 +236,7 @@ with additional parameters defined within the parameter file for the component.
 
 **Type 2**
     Log-tau expression for the ideal part of dimensionless Helmholtz free energy
+
 .. math::
 
    \phi_i^0 = a \ln(\tau)
@@ -243,6 +244,7 @@ with additional parameters defined within the parameter file for the component.
 
 **Type 3**
 Type01 expression for the first Planck Einstein part of dimensionless ideal Helmholtz free energy
+
 .. math::
 
    \phi_i^0 = \sum_i n_i \ln\left(1 - \exp(-t_i \tau)\right)
@@ -250,46 +252,60 @@ Type01 expression for the first Planck Einstein part of dimensionless ideal Helm
 
 **Type 4**
 Second Planck Einstein expression for the ideal part of dimensionless Helmholtz free energy
+
 .. math::
 
-   \phi_i^0 = n \ln\left(l + \exp(t \tau)\right)
+   \phi_i^0 = \sum_i n_i \ln\left(l_i + d_i \exp(t_i \tau)\right)
 
 
 **Type 5**
+Third Planck Einstein expression for the ideal part of dimensionless Helmholtz free energy
+
+.. math::
+
+   \phi_i^0 = \sum_i n_i \ln\left(1 - \exp(-t_i \frac{\tau}{T_c})\right)
+
+
+
+**Type 6**
 Expression for the cp constant part of ideal dimensionless Helmholtz free energy
+
 .. math::
 
    \phi_i^0 = a - a t_0 + a \ln(t_0)
 
 
-**Type 6**
+**Type 7**
 Power part of dimensionless ideal Helmholtz free energy
+
 .. math::
 
    \phi_i^0 = \sum_i n_i \tau^{t_i}
 
 
-**Type 7**
-    7: phi_ideal_expressions_enth_entr_offset,
+**Type 8**
+Enthalpy entropy offset term for dimensionless ideal Helmholtz free energy
+
 .. math::
 
    \phi_i^0 = a_0 + a_1 \tau
 
-**Type 8**
-GERG-cosh of dimensionless ideal Helmholtz free energy
+**Type 9**
+GERG-cosh term for dimensionless ideal Helmholtz free energy
 
 .. math::
 
    \phi_i^0 = \sum_i a_i \ln\left|\sinh\left(g_i \frac{T_c}{T^*} \tau\right)\right|
 
-**Type 9**
-GERG-sinh of dimensionless ideal Helmholtz free energy
+**Type 10**
+GERG-sinh term for dimensionless ideal Helmholtz free energy
+
 .. math::
 
    \phi_i^0 = \sum_i -a_i \ln\left|\cosh\left(g_i \frac{T_c}{T^*} \tau\right)\right|
 
 A truncated example of a main parameter file is provided below, with the Helmholtz ideal energy contribution,
- made up of a combination of type 1, 2, and 3 expressions:
+ made up of a combination of type 1, 2, and 3 expressions::
 
     {
         "comp": "co2",
@@ -382,11 +398,8 @@ free energy expression::
             },
             {"residual_type":2,
                ...
-            },
-            {"residual_type": 8,
-                ...
             }
-        ], 
+        ] 
         }
         ...
     }
@@ -450,27 +463,14 @@ Expression for reduced density exponentials in the residual part of dimensionles
    \phi_i^r = \sum_i n_i \delta^{d_i} \tau^{t_i}
    \exp\left(-g_i \delta^{c_i}\right)
 
-**Type 8**
-Expression for the non-analytic term of the residual part of dimensionless Helmholtz free energy
-
-.. math::
-
-   \phi_i^r = \sum_i n_i
-   \left(
-   (1 - \tau)
-   + A_i \left((\delta - 1)^2\right)^{\frac{1}{2\beta_i}}
-   + \left(B_i (\delta - 1)^2\right)^{a_i}
-   \right)^{b_i}
-   \delta
-   \exp\left(-C_i (\delta - 1)^2 - D_i (\tau - 1)^2\right)
 
 Approximate Saturated Reduced Density
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To assist in the equilibrium calculation, curves for approximate saturated liquid 
 and vapor density are required. These curves are typically provided in the papers 
-where the equations of state are defined. There are two common forms for these 
-curves, which we call type 1 and type 2 for convenience.
+where the equations of state are defined. There are three common forms for these 
+curves, which we call type 1, type 2, and type 3 for convenience.
 
 An example main parameter file entry for the approximate density curves is given 
 below::
@@ -523,17 +523,23 @@ below::
         ...
     }
 
-*Type 1*
+**Type 1**
 
 .. math:: 
  
     \delta = c + \sum_{i=1}^h n_i  \left(1 - \frac{T}{T_c} \right)^{t_i}
     
-*Type 2*
+**Type 2**
 
 .. math::
 
-    \delta = c \exp \left[ \sum_{i=0}^h \left(1 - \frac{T}{T_c} \right)^{t_i} \right]
+    \delta = c \exp \left[ \sum_{i=0}^h n_i  \left(1 - \frac{T}{T_c} \right)^{t_i} \right]
+
+**Type 3**
+
+.. math::
+
+    \delta = c \exp \left[ \tau \sum_{i=0}^h n_i  \left(1 - \frac{T}{T_c} \right)^{t_i} \right]
 
 Surface Tension
 ~~~~~~~~~~~~~~~
