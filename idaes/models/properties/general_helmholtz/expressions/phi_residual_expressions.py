@@ -25,7 +25,7 @@ def phi_residual_expressions_power(model, parameters):
         parameters (dict): Main parameters dictionary
 
     Returns:
-        dict: Expressions for  part of residual Helmholtz free energy
+        dict: Expressions for power part of residual Helmholtz free energy
     """
 
     n = parameters["n"]
@@ -46,7 +46,7 @@ def phi_residual_expressions_gaussian(model, parameters):
         parameters (dict): Main parameters dictionary
 
     Returns:
-        dict: Expressions for  part of residual Helmholtz free energy
+        dict: Expressions for Gaussian part of residual Helmholtz free energy
     """
     n = parameters["n"]
     t = parameters["t"]
@@ -78,7 +78,7 @@ def phi_residual_expressions_gaussian_GERG2008(model, parameters):
         parameters (dict): Main parameters dictionary
 
     Returns:
-        dict: Expressions for  part of residual Helmholtz free energy
+        dict: Expressions for Gaussian part of residual Helmholtz free energy
     """
     n = parameters["n"]
     t = parameters["t"]
@@ -107,7 +107,7 @@ def phi_residual_expressions_gaob(model, parameters):
         parameters (dict): Main parameters dictionary
 
     Returns:
-        dict: Expression for part of residual Helmholtz free energy
+        dict: Expression for associating term of residual Helmholtz free energy
     """
     n = parameters["n"]
     t = parameters["t"]
@@ -142,7 +142,7 @@ def phi_residual_expressions_exponential_delta_tau(model, parameters):
         parameters (dict): Main parameters dictionary
 
     Returns:
-        dict: Expressions for  part of residual Helmholtz free energy
+        dict: Expressions for exponential part of residual Helmholtz free energy with regard to delta and tau
     """
     n = parameters["n"]
     t = parameters["t"]
@@ -173,7 +173,7 @@ def phi_residual_expressions_double_exponential(model, parameters):
         parameters (dict): Main parameters dictionary
 
     Returns:
-        dict: Expressions for  part of residual Helmholtz free energy
+        dict: Expressions for double exponential part of residual Helmholtz free energy
     """
     n = parameters["n"]
     t = parameters["t"]
@@ -204,7 +204,7 @@ def phi_residual_expressions_exponential_reduced_density(model, parameters):
         parameters (dict): Main parameters dictionary
 
     Returns:
-        dict: Expressions for  part of residual Helmholtz free energy
+        dict: Expressions for exponential part of residual Helmholtz free energy with regard to reduced density
     """
     n = parameters["n"]
     t = parameters["t"]
@@ -220,42 +220,4 @@ def phi_residual_expressions_exponential_reduced_density(model, parameters):
             * pyo.exp(-g[i] * model.delta ** l[i])
             for i in rng
         ),  ##Check gamma value
-    }
-
-
-def phi_residual_expressions_non_analytic(model, parameters):
-    """Expression for the non-analytic term of the residual part of dimensionless Helmholtz free energy
-    reference: Span, R., & Wagner, W. (1996). A new equation of state for carbon dioxide covering the fluid region from the triple‐point temperature to 1100 K at pressures up to 800 MPa. Journal of physical and chemical reference data, 25(6), 1509-1596.
-    Args:
-        model (Block): Pyomo model
-        parameters (dict): Main parameters dictionary
-
-    Returns:
-        dict: Expressions for  part of residual Helmholtz free energy
-    """
-    n = parameters["n"]
-    a = parameters["a"]
-    b = parameters["b"]
-    ai = parameters["A"]
-    bi = parameters["B"]
-    ci = parameters["C"]
-    di = parameters["D"]
-    beta = parameters["beta"]
-    rng = range(0, len(n))
-    return {
-        "phir": sum(
-            n[i]
-            * (
-                (
-                    (1 - model.tau)
-                    + ai[i] * ((model.delta - 1) ** 2) ** (1 / (2 * beta[i]))
-                )
-                ** 2
-                + bi[i] * ((model.delta - 1) ** 2) ** a[i]
-            )
-            ** b[i]
-            * model.delta
-            * pyo.exp(-ci[i] * (model.delta - 1) ** 2 - di[i] * (model.tau - 1) ** 2)
-            for i in rng
-        ),
     }

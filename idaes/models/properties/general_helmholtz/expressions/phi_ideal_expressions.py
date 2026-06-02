@@ -99,7 +99,7 @@ def phi_ideal_expressions_planck_einstein3(model, parameters):
         parameters (dict): Main parameters dictionary
 
     Returns:
-        dict: Expressions for first Planck Einstein part of ideal Helmholtz free energy
+        dict: Expressions for third Planck Einstein part of ideal Helmholtz free energy
     """
     n = parameters["n"]
     t = parameters["t"]
@@ -138,11 +138,11 @@ def phi_ideal_expressions_power(model, parameters):
     Returns:
         dict: Expressions for Power part of ideal Helmholtz free energy
     """
-    a = parameters["n"]
+    n = parameters["n"]
     t = parameters["t"]
-    rng = range(0, len(a))
+    rng = range(0, len(n))
     return {
-        "phii": sum(a[i] * model.tau ** t[i] for i in rng),
+        "phii": sum(n[i] * model.tau ** t[i] for i in rng),
     }
 
 
