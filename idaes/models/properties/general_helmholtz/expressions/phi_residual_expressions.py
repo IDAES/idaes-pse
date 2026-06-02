@@ -219,5 +219,5 @@ def phi_residual_expressions_exponential_reduced_density(model, parameters):
             * model.tau ** t[i]
             * pyo.exp(-g[i] * model.delta ** l[i])
             for i in rng
-        ),  ##Check gamma value
+        ),
     }
