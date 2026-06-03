@@ -32,7 +32,7 @@ def wind_df():
     ix = pd.date_range(
         start=start_date,
         end=start_date + pd.offsets.DateOffset(days=1) - pd.offsets.DateOffset(hours=1),
-        freq="1H",
+        freq="1h",
     )
     df = pd.DataFrame(index=ix)
     df["303_WIND_1-DACF"] = list(i / 100 for i in range(24))
