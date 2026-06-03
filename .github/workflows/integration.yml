@@ -64,7 +64,7 @@ jobs:
       is-pr-approved: ${{ steps.check-pr-approval.outputs.is-approved }}
       workflow-trigger: ${{ steps.determine-trigger.outputs.workflow-trigger }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - uses: ./.github/actions/display-debug-info
@@ -138,12 +138,15 @@ jobs:
           - os: win64
             runner-image: windows-2022
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/display-debug-info
       - name: Set up Conda environment
-        uses: conda-incubator/setup-miniconda@v3
+        uses: conda-incubator/setup-miniconda@v4
+        channels: conda-forge
+        conda-remove-defaults: 'true'
         with:
           activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
           python-version: ${{ matrix.python-version }}
@@ -178,16 +181,18 @@ jobs:
           - os: win64
             runner-image: windows-2022
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - uses: ./.github/actions/display-debug-info
       - name: Set up Conda environment
-        uses: conda-incubator/setup-miniconda@v3
+        uses: conda-incubator/setup-miniconda@v4
         with:
           activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
           python-version: ${{ matrix.python-version }}
           miniforge-version: latest
+          channels: conda-forge
+          conda-remove-defaults: 'true'
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
@@ -235,15 +240,17 @@ jobs:
             pip-install-target: '.'
             dependencies-to-uninstall: omlt
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Set up Conda environment
-        uses: conda-incubator/setup-miniconda@v3
+        uses: conda-incubator/setup-miniconda@v4
         with:
           activate-environment: idaes-env
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
           miniforge-version: latest
+          channels: conda-forge
+          conda-remove-defaults: 'true'
       - name: Set up idaes (non-editable installation)
         uses: ./.github/actions/setup-idaes
         with:
