@@ -75,7 +75,7 @@ all = ["idaes-pse[ui,grid,omlt,coolprop]"]
 [tool.setuptools_scm]
 version_scheme = "guess-next-dev"
 local_scheme = "node-and-date"
-fallback_version = "0.0.0"
+tag_regex = '^(?P<version>\d+\.\d+\.\d+(?:\.dev\d+|a\d+|b\d+|rc\d+)?)$'
 
 [tool.setuptools]
 zip-safe = false
