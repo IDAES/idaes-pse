@@ -73,8 +73,8 @@ testing = ["pytest", "addheader", "pyyaml"]
 all = ["idaes-pse[ui,grid,omlt,coolprop]"]
 
 [tool.setuptools_scm]
-version_scheme = "semver-pep440-release-branch"
-local_scheme = "no-local-version"
+version_scheme = "guess-next-dev"
+local_scheme = "node-and-date"
 fallback_version = "0.0.0"
 
 [tool.setuptools]
