@@ -73,7 +73,7 @@ def NRTL_model(data):
     m.fs.flash.initialize(outlvl=idaeslog.INFO_LOW)
 
     # Fix at actual temperature
-    m.fs.flash.inlet.temperature.fix(float(data["temperature"]))
+    m.fs.flash.inlet.temperature.fix(float(data["temperature"].iloc[0]))
 
     # Set bounds on variables to be estimated
     m.fs.properties.tau["benzene", "toluene"].setlb(-5)
