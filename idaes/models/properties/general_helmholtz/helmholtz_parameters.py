@@ -179,7 +179,8 @@ class WriteParameters(object):
                 phi_ideal["phii_dt"] = phi_ideal["phii_dt"] + phii_dt
                 self.add(phi_ideal)
         except KeyError:
-            phi_ideal_type = 0
+            # No ideal part of Helmholtz free energy provided, so skip
+            pass
 
         # Check if a predefined form of the residual part of Helmholtz free energy is used
         try:
@@ -216,7 +217,8 @@ class WriteParameters(object):
                 phi_residual["phir_dt"] = phi_residual["phir_dt"] + phir_dt
                 self.add(phi_residual)
         except KeyError:
-            phi_residual_type = 0
+            # No residual part of Helmholtz free energy provided, so skip
+            pass
 
         # Check if predefined approximate liquid and vapor saturated density curves are used
         aux_parameters = parameters.get("aux", None)
