@@ -43,7 +43,7 @@ keywords = [
 version = "2.12.0dev0"
 
 dependencies = [
-  "pyomo >= 6.10.0",
+  "pyomo @ https://github.com/IDAES/pyomo/archive/6.10.0.idaes.2026.06.04.zip",
   "pint >= 0.24.1",   # required to use Pyomo units. Pint 0.24.1 needed for Python 3.9 support,
   "networkx", # required to use Pyomo network
   "numpy>=1,<3",
