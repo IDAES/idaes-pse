@@ -1128,7 +1128,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         self.config.tech == 8 or self.config.tech == 9
                     ):  # at 100% capacity, 25% of a month
                         self.fuel_cost_OC = Expression(
-                            expr=sum(self.variable_operating_costs[0, fuel] for i in fuel)
+                            expr=sum(self.variable_operating_costs[0, i] for i in fuel)
                             / 12
                             * 0.25
                             / self.capacity_factor,
@@ -1136,7 +1136,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         )
                     else:  # at operating capacity, 2.25 months
                         self.fuel_cost_OC = Expression(
-                            expr=sum(self.variable_operating_costs[0, fuel] for i in fuel) / 12 * 2.25,
+                            expr=sum(self.variable_operating_costs[0, i] for i in fuel) / 12 * 2.25,
                             doc="Owner's costs - 2.25 months of fuel costs",
                         )
                     for i in fuel:
@@ -1147,7 +1147,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         self.config.tech == 8 or self.config.tech == 9
                     ):  # at 100% capacity, 25% of a month
                         self.feedstock_cost_OC = Expression(
-                            expr=sum(self.variable_operating_costs[0, feedstock] for i in feedstock)
+                            expr=sum(self.variable_operating_costs[0, i] for i in feedstock)
                             / 12
                             * 0.25
                             / self.capacity_factor,
@@ -1155,7 +1155,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         )
                     else:  # at operating capacity, 2.25 months
                         self.feedstock_cost_OC = Expression(
-                            expr=sum(self.variable_operating_costs[0, feedstock] for i in feedstock) / 12 * 0.25 * 0, # exclude feedstock cost
+                            expr=sum(self.variable_operating_costs[0, i] for i in feedstock) / 12 * 0.25 * 0, # exclude feedstock cost
                             doc="Owner's costs - power plants don't include feedstock costs",
                         )
                     for i in feedstock:

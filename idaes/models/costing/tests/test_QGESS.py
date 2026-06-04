@@ -17,6 +17,8 @@ __version__ = "1.0.0"
 import pytest
 
 import pyomo.environ as pyo
+from pyomo.core.base.constraint import ScalarConstraint
+from pyomo.core.base.expression import ScalarExpression
 from pyomo.environ import units as pyunits
 
 from idaes.core import FlowsheetBlock
@@ -666,6 +668,7 @@ class TestQGESSConfigParameters(object):
                 str(m.fs.costing.param_dir["Units"][k]) == expected["Units"][k]
             ), f"Units mismatch for key {k}"
 
+
 class TestQGESSBuildProcessCosts(object):
 
     @pytest.mark.parametrize(
@@ -695,6 +698,19 @@ class TestQGESSBuildProcessCosts(object):
         )
 
         m.fs.costing.build_process_costs()
+        
+        for var in ['total_BEC', 'total_TPC', 'other_plant_costs']:
+            assert isinstance(getattr(m.fs.costing, var), pyo.Var)
+        for con in ['total_BEC_eq', 'total_TPC_eq']:
+            assert isinstance(getattr(m.fs.costing, con), pyo.Constraint)
+        for expr in ['land_cost', 'additional_chemicals_cost', 'additional_waste_cost', 'total_overnight_capital', 'total_as_spent_cost', 'annualized_cost']:
+            assert isinstance(getattr(m.fs.costing, expr), ScalarExpression)
+
+        if tech == 10:
+            assert isinstance(m.fs.costing.Lang_factor, ScalarExpression)
+        else:
+            assert isinstance(m.fs.costing.Lang_factor, pyo.Param)
+
 
     @pytest.mark.parametrize(
         "tech",
@@ -753,7 +769,6 @@ class TestQGESSBuildProcessCosts(object):
         
         m.fs.mixed_product = pyo.Var(m.fs.time, initialize=0.1, units=pyunits.kg/pyunits.s)
         m.fs.mixed_product.fix()
-        
 
         m.fs.costing.build_process_costs(
             # optional arguments that directly fix cost variables and bypass calculations
@@ -769,19 +784,51 @@ class TestQGESSBuildProcessCosts(object):
             mixed_product_output_rates={"main_product": 0.5 * m.fs.mixed_product[0], "byproduct": 0.5 * m.fs.mixed_product[0],},
             sale_prices={"main_product": 1 * pyunits.USD_2021/pyunits.kg, "byproduct": 0.25 * pyunits.USD_2021/pyunits.kg,},
             # required arguments for variable_OM calculations
-            resources={"coal": m.fs.coal, "natural_gas": m.fs.natural_gas, "water": m.fs.water, "chemicals":  m.fs.chemicals, "nonharzardous_waste_disposal": m.fs.nonharzardous_waste_disposal},  # for annual OPEX costs
-            resource_prices={"chemicals": 1 * pyunits.USD_2021/pyunits.kg},
+            resources={
+                "coal1": m.fs.coal,
+                "coal2": m.fs.coal,
+                "natural_gas1": m.fs.natural_gas,
+                "natural_gas2": m.fs.natural_gas,
+                "water": m.fs.water,
+                "chemicals1":  m.fs.chemicals,
+                "chemicals2":  m.fs.chemicals,
+                "waste1": m.fs.nonharzardous_waste_disposal,
+                "waste2": m.fs.nonharzardous_waste_disposal}
+            ,  # for annual OPEX costs
+            resource_prices={
+                "coal1": 1 * pyunits.USD_2021/pyunits.tonne,
+                "coal2": 1 * pyunits.USD_2021/pyunits.tonne,
+                "natural_gas1": 1 * pyunits.USD_2021/pyunits.MBtu,
+                "natural_gas2": 1 * pyunits.USD_2021/pyunits.MBtu,
+                "chemicals1": 1 * pyunits.USD_2021/pyunits.kg,
+                "chemicals2": 1 * pyunits.USD_2021/pyunits.kg,
+                "waste1": 1 * pyunits.USD_2021/pyunits.kg,
+                "waste2": 1 * pyunits.USD_2021/pyunits.kg}
+            ,
             # optional arguments related to overnight costs
             land_cost=0.30 * pyunits.USD_2021/pyunits.kg * 1 * pyunits.kg/pyunits.s,  # for startup and/or annual leasing costs
-            # TODO allow more than one fuel or feedstock resource
-            fuel=["natural_gas",],  # extra inventory required as part of overnight costs
-            feedstock=["coal",],  # extra inventory required as part of overnight costs
-            waste=["nonharzardous_waste_disposal",],  # extra storage required as part of overnight costs
+            # test two fuels
+            fuel=["coal1", "coal2"],  # extra inventory required as part of overnight costs
+            # test two feedstocks
+            feedstock=["natural_gas1", "natural_gas2",],  # extra inventory required as part of overnight costs
+            # test two waste streams
+            waste=["waste1", "waste2",],  # extra storage required as part of overnight costs
             additional_waste_cost=1 * pyunits.USD_2021/pyunits.d,
-            chemicals=["chemicals",],  # extra inventory required as part of overnight costs
+            # test two chemicals
+            chemicals=["chemicals1", "chemicals2",],  # extra inventory required as part of overnight costs
             additional_chemicals_cost=1 * pyunits.USD_2021/pyunits.d,
-            chemicals_inventory=["chemicals",],
+            chemicals_inventory=["chemicals1", "chemicals2",],
             transport_cost=10 * pyunits.USD_2021/pyunits.kg * 0.2 * pyunits.kg/pyunits.s,
             )
 
-    
+        for var in ['total_BEC', 'total_TPC', 'other_plant_costs', 'NOAK_factor', 'other_fixed_costs', 'custom_fixed_costs', 'total_sales_revenue', 'total_fixed_OM_cost', 'custom_variable_costs', 'net_tax_owed', 'income_tax', 'additional_tax_credit', 'additional_tax_owed', 'min_net_tax_owed', 'pv_capital_cost', 'loan_debt', 'pv_loan_interest', 'pv_operating_cost', 'pv_revenue', 'pv_taxes', 'pv_production_incentive', 'npv', 'additional_cost_of_production']:
+            assert isinstance(getattr(m.fs.costing, var), pyo.Var)
+        for con in ['total_BEC_eq', 'NOAK_eq', 'total_TPC_eq', 'sum_custom_fixed_costs', 'total_sales_revenue_eq', 'total_fixed_OM_cost_eq', 'sum_custom_variable_costs', 'income_tax_eq', 'net_tax_owed_eq', 'capital_expenditure_percentages_sum_to_100', 'pv_capital_cost_constraint', 'loan_debt_constraint', 'pv_loan_interest_constraint', 'pv_operating_cost_constraint', 'pv_revenue_constraint', 'pv_taxes_constraint', 'pv_production_incentive_constraint', 'npv_constraint']:
+            assert isinstance(getattr(m.fs.costing, con), pyo.Constraint)
+        for expr in ['learning_rate_exponent', 'land_cost', 'additional_chemicals_cost', 'additional_waste_cost', 'total_overnight_capital', 'total_as_spent_cost', 'annualized_cost', 'royalty_charge', 'mineral_depletion_charge', 'production_incentive_charge', 'capex', 'opex']:
+            assert isinstance(getattr(m.fs.costing, expr), ScalarExpression)
+        assert isinstance(m.fs.costing.Lang_factor, pyo.Param)
+
+        if tech != 10:
+            for expr in ['fuel_cost_OC', 'feedstock_cost_OC', 'waste_cost_OC', 'non_fuel_feedstock_waste_OC', 'chemicals_cost_OC', 'chemicals_inventory_cost_OC',]:
+                assert isinstance(getattr(m.fs.costing, expr), ScalarExpression)    
