@@ -111,7 +111,7 @@ class TestDiagnosticsToolbox:
         return m
 
     @pytest.mark.component
-    def test_with_grey_box(self):
+    def test_with_grey_box(self, caplog):
 
         class BasicGrayBox(ExternalGreyBoxModel):
             def input_names(self):
@@ -131,8 +131,22 @@ class TestDiagnosticsToolbox:
         m = ConcreteModel()
 
         m.gb = ExternalGreyBoxBlock(external_model=BasicGrayBox())
-        with pytest.raises(NotImplementedError):
-            DiagnosticsToolbox(model=m)
+
+        DiagnosticsToolbox(model=m)
+        assert (
+            "External Grey Box Models detected in model. If these were not constructed with "
+            "build_implicit_constraint_objects=True, then the implicit constraints "
+            "will not be detected by the Diagnostics Toolbox, which may lead to structural "
+            "issues being reported."
+        ) in caplog.text
+
+        # Test again with include_grey_box_blocks=False
+        DiagnosticsToolbox(model=m, include_grey_box_blocks=False)
+        assert (
+            "Grey Box Models detected in model and include_grey_box_blocks config option is set to False. "
+            "Grey Box blocks and their associated constraints will be ignored by the Diagnostics Toolbox, "
+            "which may lead to structural issues being reported."
+        ) in caplog.text
 
     @pytest.mark.component
     def test_display_external_variables(self, model):
@@ -497,7 +511,7 @@ Dulmage-Mendelsohn Over-Constrained Set
         model.c2 = Constraint(expr=model.v1 == 1e-8 * model.v3)
         model.c3 = Constraint(expr=1e8 * model.v1 + 1e10 * model.v2 == 1e-6 * model.v3)
 
-        dt = DiagnosticsToolbox(model=model)
+        dt = DiagnosticsToolbox(model=model, include_grey_box_blocks=False)
 
         stream = StringIO()
         dt.display_variables_with_extreme_jacobians(stream)
@@ -540,7 +554,7 @@ The following variable(s) correspond to Jacobian columns with extreme norms(<1.0
         model.c2 = Constraint(expr=model.v1 == 1e-8 * model.v3)
         model.c3 = Constraint(expr=1e8 * model.v1 + 1e10 * model.v2 == 1e-6 * model.v3)
 
-        dt = DiagnosticsToolbox(model=model)
+        dt = DiagnosticsToolbox(model=model, include_grey_box_blocks=False)
 
         stream = StringIO()
         dt.display_constraints_with_extreme_jacobians(stream)
@@ -580,7 +594,59 @@ The following constraint(s) correspond to Jacobian rows with extreme norms (<1.0
         model.c2 = Constraint(expr=model.v1 == 1e-8 * model.v3)
         model.c3 = Constraint(expr=1e8 * model.v1 + 1e10 * model.v2 == 1e-6 * model.v3)
 
-        dt = DiagnosticsToolbox(model=model)
+        dt = DiagnosticsToolbox(model=model, include_grey_box_blocks=False)
+
+        stream = StringIO()
+        dt.display_extreme_jacobian_entries(stream)
+
+        expected = """====================================================================================
+The following constraint(s) and variable(s) are associated with extreme Jacobian
+entries (<1.0E-04 or>1.0E+04):
+
+    c3, v2: 1.000E+10
+    c2, v3: 1.000E-08
+    c3, v1: 1.000E+08
+    c3, v3: 1.000E-06
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+        # Test to make sure scaled Jacobian is used
+        set_scaling_factor(model.c3, 1e-8)
+
+        stream = StringIO()
+        dt.display_extreme_jacobian_entries(stream)
+
+        expected = """====================================================================================
+The following constraint(s) and variable(s) are associated with extreme Jacobian
+entries (<1.0E-04 or>1.0E+04):
+
+    c3, v3: 1.000E-14
+    c2, v3: 1.000E-08
+
+====================================================================================
+"""
+
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
+    def test_display_extreme_jacobian_entries_w_include_grey_box(self):
+        # When adding grey box support, a bug was discovered in Pyomo that caused linear models
+        # to raise an Exception when using PyomoNLPWithGreyBoxBlocks.
+        # This test aims to confirm that remains fixed and that the include_grey_box_blocks option does
+        # not affect results for non-grey-box models.
+        model = ConcreteModel()
+        model.v1 = Var(initialize=1e-8)
+        model.v2 = Var(initialize=1)
+        model.v3 = Var(initialize=1)
+
+        model.c1 = Constraint(expr=model.v1 == model.v2)
+        model.c2 = Constraint(expr=model.v1 == 1e-8 * model.v3)
+        model.c3 = Constraint(expr=1e8 * model.v1 + 1e10 * model.v2 == 1e-6 * model.v3)
+
+        dt = DiagnosticsToolbox(model=model, include_grey_box_blocks=True)
 
         stream = StringIO()
         dt.display_extreme_jacobian_entries(stream)

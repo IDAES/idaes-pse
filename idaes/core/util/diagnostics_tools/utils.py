@@ -38,6 +38,7 @@ def check_parallel_jacobian(
     direction: str = "row",
     jac=None,
     nlp=None,
+    include_greybox: bool = False,
 ):
     """
     Check for near-parallel rows or columns in the Jacobian.
@@ -63,6 +64,7 @@ def check_parallel_jacobian(
         direction: 'row' (default, constraints) or 'column' (variables)
         jac: model Jacobian as a ``scipy.sparse.coo_matrix``, optional
         nlp: ``PyomoNLP`` of model, optional
+        include_greybox: whether to include grey-box components in the Jacobian
 
     Returns:
         list of 2-tuples containing parallel Pyomo components
@@ -78,7 +80,7 @@ def check_parallel_jacobian(
         )
 
     if jac is None or nlp is None:
-        jac, nlp = get_jacobian(model)
+        jac, nlp = get_jacobian(model, include_greybox=include_greybox)
 
     # Get vectors that we will check, and the Pyomo components
     # they correspond to.
@@ -109,7 +111,7 @@ def check_parallel_jacobian(
         )
         if nz in vectors_by_nz:
             # Store the index as well so we know what component this
-            # correrponds to.
+            # corresponds to.
             vectors_by_nz[nz].append((vec, vecidx))
         else:
             vectors_by_nz[nz] = [(vec, vecidx)]

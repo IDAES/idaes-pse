@@ -64,6 +64,13 @@ from pyomo.dae import DerivativeVar
 from pyomo.dae.flatten import slice_component_along_sets
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
 from pyomo.contrib.pynumero.asl import AmplInterface
+from pyomo.contrib.pynumero.interfaces.pyomo_grey_box_nlp import (
+    PyomoNLPWithGreyBoxBlocks,
+)
+from pyomo.contrib.pynumero.interfaces.external_grey_box import ExternalGreyBoxBlockData
+from pyomo.contrib.pynumero.interfaces.external_grey_box_constraint import (
+    ExternalGreyBoxConstraint,
+)
 
 from idaes.core.util.exceptions import BurntToast
 import idaes.logger as idaeslog
@@ -496,6 +503,10 @@ def get_scaling_factor(component, default: float = None, warning: bool = False):
         sfx_finder = SuffixFinder("scaling_factor")
     elif isinstance(component, ExpressionData):
         sfx_finder = SuffixFinder("scaling_hint")
+    elif isinstance(component, ExternalGreyBoxConstraint):
+        # External Grey Box Constraints cannot be given scaling factors, but we need them to behave as if
+        # they were Constraints, so we will return the default value here (or a value of 1.0 if no default)
+        return default if default is not None else 1.0
     else:
         raise TypeError(
             f"Can get scaling factors for only VarData, ConstraintData, and (hints from) ExpressionData. "
@@ -1137,6 +1148,97 @@ def get_jacobian(
     equality_constraints_only=False,
     max_grad=100,
     min_scale=1e-8,
+    include_greybox=False,
+):
+    """
+    Get the Jacobian matrix at the current model values. This function also
+    returns the Pynumero NLP which can be used to identify the constraints and
+    variables corresponding to the rows and columns.
+
+    Args:
+        m: model to get Jacobian from
+        include_scaling_factors: if True scale the rows and columns of the Jacobian
+            using the user-defined scaling factors in the scaling_factor suffix.
+        include_ipopt_autoscaling: if True, include the gradient-based autoscaling
+            step that IPOPT uses to scale the rows of the Jacobian
+        equality_constraints_only: Option to include only equality constraints
+            in the calculated Jacobian.
+        max_grad: The value of the norm of the constraint gradient above which
+            gradient-based autoscaling will be performed by IPOPT. This option
+            corresponds to the IPOPT option nlp_scaling_max_gradient. Used
+            only if include_ipopt_autoscaling is True.
+        min_scale: The smallest scaling factor that IPOPT gradient-based scaling
+            is allowed to produce. This option corresponds to the IPOPT option
+            nlp_scaling_min_value. Used only if include_ipopt_autoscaling is True.
+        include_greybox: if True, include grey-box variables and constraints in the Jacobian
+
+    Returns:
+        Jacobian matrix in Scipy CSR format, Pynumero nlp
+    """
+    # Pynumero requires an objective, but I don't, so let's see if we have one
+    has_obj = False
+    for _ in m.component_data_objects(Objective, active=True):
+        has_obj = True
+        break  # Do not need to keep looking after we find one
+
+    # Add an objective if there isn't one
+    if not has_obj:
+        dummy_objective_name = unique_component_name(m, "objective")
+        setattr(m, dummy_objective_name, Objective(expr=0))
+
+    # Create NLP and calculate the objective
+    if not AmplInterface.available():
+        raise RuntimeError("Pynumero not available.")
+
+    # Check to see if we should use legacy pathway or grey box pathway
+    if not include_greybox:
+        # Check to catch case where we have a grey box present but the
+        # user forgot to set include_greybox to True
+        try:
+            jac, nlp = _get_jacobian_legacy_pyomonlp(
+                m,
+                include_scaling_factors,
+                include_ipopt_autoscaling,
+                equality_constraints_only,
+                max_grad,
+                min_scale,
+            )
+        except ValueError as err:
+            # If we get a ValueError check to see if it is because of unrecognized components
+            if "contains the following active components that the NL writer " in str(
+                err
+            ):
+                raise ValueError(
+                    "The model contains components that are not supported by the Pyomo NL writer. "
+                    "This may be because the model contains a grey-box model. If you want to include "
+                    "grey-box variables and constraints in the Jacobian, set "
+                    "include_greybox=True when calling get_jacobian."
+                ) from err
+            # Otherwise, raise the original error
+            raise err
+    else:
+        jac, nlp = _get_jacobian_greybox_compatible(
+            m,
+            include_scaling_factors,
+            include_ipopt_autoscaling,
+            equality_constraints_only,
+            max_grad,
+            min_scale,
+        )
+
+    # delete dummy objective
+    if not has_obj:
+        delattr(m, dummy_objective_name)
+    return jac, nlp
+
+
+def _get_jacobian_legacy_pyomonlp(
+    m,
+    include_scaling_factors: bool = True,
+    include_ipopt_autoscaling: bool = False,
+    equality_constraints_only: bool = False,
+    max_grad: float = 100.0,
+    min_scale: float = 1e-8,
 ):
     """
     Get the Jacobian matrix at the current model values. This function also
@@ -1162,18 +1264,8 @@ def get_jacobian(
     Returns:
         Jacobian matrix in Scipy CSR format, Pynumero nlp
     """
-    # Pynumero requires an objective, but I don't, so let's see if we have one
-    n_obj = 0
-    for _ in m.component_data_objects(Objective, active=True):
-        n_obj += 1
-    # Add an objective if there isn't one
-    if n_obj == 0:
-        dummy_objective_name = unique_component_name(m, "objective")
-        setattr(m, dummy_objective_name, Objective(expr=0))
-    # Create NLP and calculate the objective
-    if not AmplInterface.available():
-        raise RuntimeError("Pynumero not available.")
     nlp = PyomoNLP(m)
+
     if equality_constraints_only:
         jac = nlp.evaluate_jacobian_eq().tocsr()
     else:
@@ -1213,15 +1305,155 @@ def get_jacobian(
 
         jac = diags(grad_scaling_factors) @ jac
 
-    # delete dummy objective
-    if n_obj == 0:
-        delattr(m, dummy_objective_name)
     return jac, nlp
+
+
+def _get_jacobian_greybox_compatible(
+    m,
+    include_scaling_factors: bool = True,
+    include_ipopt_autoscaling: bool = False,
+    equality_constraints_only: bool = False,
+    max_grad: float = 100.0,
+    min_scale: float = 1e-8,
+    eq_atol: float = 1e-12,
+    eq_rtol: float = 0.0,
+):
+    """
+    Grey-box compatible Jacobian utility using PyomoNLPWithGreyBoxBlocks only.
+
+    Key behaviors vs legacy:
+      - Numeric Jacobian comes from PyomoNLPWithGreyBoxBlocks (supports ExternalGreyBoxBlock).
+      - Equality-only supported via per-row classification (prefer constraint equality property/type).
+      - Scaling:
+          * Do NOT apply scaling to ExternalGreyBoxConstraint rows.
+          * Do NOT apply scaling to variables inside ExternalGreyBoxBlock columns.
+          * Apply legacy suffix scaling to normal Pyomo vars/cons.
+      - Works for models without any grey-box blocks and should match legacy results
+        *except* for any differences in ordering introduced by PyomoNLPWithGreyBoxBlocks
+        (your tests will reveal whether ordering is identical).
+
+
+    Args:
+        m: model to get Jacobian from
+        include_scaling_factors: if True scale the rows and columns of the Jacobian
+            using the user-defined scaling factors in the scaling_factor suffix.
+        include_ipopt_autoscaling: if True, include the gradient-based autoscaling
+            step that IPOPT uses to scale the rows of the Jacobian
+        equality_constraints_only: Option to include only equality constraints
+            in the calculated Jacobian. Equality constraints are identified using a robust
+            classification that checks for an explicit equality property/type on the constraint
+            as well as checks the bounds with tight tolerances to account for numerical issues.
+        max_grad: The value of the norm of the constraint gradient above which
+            gradient-based autoscaling will be performed by IPOPT. This option
+            corresponds to the IPOPT option nlp_scaling_max_gradient. Used
+            only if include_ipopt_autoscaling is True.
+        min_scale: The smallest scaling factor that IPOPT gradient-based scaling
+            is allowed to produce. This option corresponds to the IPOPT option
+            nlp_scaling_min_value. Used only if include_ipopt_autoscaling is True.
+        eq_atol: Absolute tolerance for classifying equality constraints based on bounds.
+        eq_rtol: Relative tolerance for classifying equality constraints based on bounds.
+    """
+    nlp = PyomoNLPWithGreyBoxBlocks(m)
+
+    # Full Jacobian in NLP row/col order
+    jac_full = nlp.evaluate_jacobian().tocsr()
+
+    # Lists in NLP order
+    vlist = nlp.vlist = list(nlp._pyomo_model_var_datas)
+    clist_all = list(nlp._constraint_datas)
+
+    def _is_var_in_external_greybox_block(var):
+        """
+        True if variable is declared under an ExternalGreyBoxBlock.
+        Conservative: check parent_block type name.
+        """
+        try:
+            pb = var.parent_block()
+        except Exception:
+            return False
+        if pb is None:
+            return False
+
+        if isinstance(pb, ExternalGreyBoxBlockData):
+            return True
+        return False
+
+    def _is_equality_constraint(con, lb, ub):
+        """
+        Classify equality constraints robustly.
+          - ExternalGreyBoxConstraint: always equality
+          - Otherwise, prefer con.equality if it exists and is boolean
+          - Otherwise use bounds test (finite & isclose)
+        """
+        eq_attr = getattr(con, "equality", None)
+        if isinstance(eq_attr, (bool, np.bool_)):
+            return bool(eq_attr)
+
+        finite = np.isfinite(lb) and np.isfinite(ub)
+        return bool(finite and np.isclose(lb, ub, atol=eq_atol, rtol=eq_rtol))
+
+    # --- Equality-only row selection ---
+    eq_rows = None
+    if equality_constraints_only:
+        lb_all = np.asarray(nlp.constraints_lb(), dtype=float)
+        ub_all = np.asarray(nlp.constraints_ub(), dtype=float)
+
+        eq_mask = np.zeros(len(clist_all), dtype=bool)
+        for i, con in enumerate(clist_all):
+            eq_mask[i] = _is_equality_constraint(con, lb_all[i], ub_all[i])
+
+        eq_rows = np.where(eq_mask)[0]
+        jac = jac_full[eq_rows, :]
+        nlp.clist = [clist_all[i] for i in eq_rows]
+    else:
+        jac = jac_full
+        nlp.clist = clist_all
+
+    # --- Scaling (suffix scaling for "normal" Pyomo parts; neutral for grey-box parts) ---
+    if include_scaling_factors:
+        var_sf = np.ones(len(vlist), dtype=float)
+        for j, var in enumerate(vlist):
+            if _is_var_in_external_greybox_block(var):
+                # Do NOT scale grey-box variables
+                var_sf[j] = 1.0
+            else:
+                # Legacy behavior
+                var_sf[j] = get_scaling_factor(var, default=1, warning=False)
+
+        con_sf_all = np.ones(len(clist_all), dtype=float)
+        for i, con in enumerate(clist_all):
+            if isinstance(con, tuple):
+                # Implicit Grey box constraints show up as tuples
+                # Do NOT scale grey-box constraints
+                con_sf_all[i] = 1.0
+            else:
+                # ExternalGreyBoxConstraints will go down this path and be handled
+                # by get_scaling_factor
+                con_sf_all[i] = get_scaling_factor(con, default=1, warning=False)
+
+        con_sf = con_sf_all if eq_rows is None else con_sf_all[eq_rows]
+
+        # Guard against zeros / NaNs
+        var_sf = np.where((~np.isfinite(var_sf)) | (var_sf == 0.0), 1.0, var_sf)
+        con_sf = np.where((~np.isfinite(con_sf)) | (con_sf == 0.0), 1.0, con_sf)
+
+        jac = diags(con_sf) @ (jac @ diags(1.0 / var_sf))
+
+    # --- IPOPT gradient-based autoscaling (row scaling) ---
+    if include_ipopt_autoscaling:
+        row_norms = spnorm(jac, ord=np.inf, axis=1)
+        grad_sf = np.ones(jac.shape[0], dtype=float)
+        for i in range(jac.shape[0]):
+            if row_norms[i] > max_grad:
+                grad_sf[i] = max(min_scale, max_grad / row_norms[i])
+        jac = diags(grad_sf) @ jac
+
+    return jac.tocsr(), nlp
 
 
 # TODO should we calculate the 2-norm condition number from the SVD
 # once #1566 is merged?
-def jacobian_cond(m=None, scaled=True, jac=None):
+def jacobian_cond(m=None, scaled=True, jac=None, include_greybox=False):
     """
     Get the Frobenius condition number of the scaled or unscaled Jacobian matrix
     of a model.
@@ -1230,6 +1462,7 @@ def jacobian_cond(m=None, scaled=True, jac=None):
         m: calculate the condition number of the Jacobian from this model.
         scaled: if True use scaled Jacobian, else use unscaled
         jac: (optional) previously calculated Jacobian
+        include_greybox: if True, include grey-box variables and constraints in the Jacobian and condition number calculation
 
     Returns:
         (float) Condition number
@@ -1240,7 +1473,7 @@ def jacobian_cond(m=None, scaled=True, jac=None):
                 "User must provide either a Pyomo model or a Jacobian "
                 "to calculate the condition number."
             )
-        jac, _ = get_jacobian(m, scaled)
+        jac, _ = get_jacobian(m, scaled, include_greybox=include_greybox)
     jac = jac.tocsc()
     if jac.shape[0] != jac.shape[1]:
         _log.info(

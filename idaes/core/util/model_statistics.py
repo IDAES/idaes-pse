@@ -26,6 +26,9 @@ from pyomo.core.expr import identify_variables
 from pyomo.common.collections import ComponentMap, ComponentSet
 from pyomo.common.deprecation import deprecation_warning
 from pyomo.contrib.pynumero.interfaces.external_grey_box import ExternalGreyBoxBlock
+from pyomo.contrib.pynumero.interfaces.external_grey_box_constraint import (
+    ExternalGreyBoxConstraint,
+)
 
 import idaes.logger as idaeslog
 from idaes.core.scaling import get_scaling_factor
@@ -272,20 +275,30 @@ def number_deactivated_blocks(block):
 
 # -------------------------------------------------------------------------
 # Basic Constraint methods
-def total_constraints_set(block):
+def total_constraints_set(block, include_greybox=True):
     """
     Method to return a ComponentSet of all Constraint components in a model.
 
     Args:
         block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
 
     Returns:
         A ComponentSet including all Constraint components in block
     """
-    return ComponentSet(activated_block_component_generator(block, ctype=Constraint))
+    if include_greybox:
+        ctypes = (Constraint, ExternalGreyBoxConstraint)
+    else:
+        ctypes = (Constraint,)
+    return ComponentSet(
+        activated_block_component_generator(
+            block, ctype=ctypes, include_greybox=include_greybox
+        )
+    )
 
 
-def number_total_constraints(block):
+def number_total_constraints(block, include_greybox=True):
     """
     Method to return the total number of Constraint components in a model.
     This will include the number of constraints provided by Greybox models using
@@ -293,108 +306,147 @@ def number_total_constraints(block):
 
     Args:
         block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
 
     Returns:
         Number of Constraint components in block
     """
-    number_standard_constraints = sum(
-        1 for _ in activated_block_component_generator(block, ctype=Constraint)
-    )
-    number_greybox_constraints = number_activated_greybox_equalities(block)
-    return number_standard_constraints + number_greybox_constraints
+    return sum(1 for _ in total_constraints_set(block, include_greybox=include_greybox))
 
 
-def activated_constraints_generator(block):
+def activated_constraints_generator(block, include_greybox=True):
     """
     Generator which returns all activated Constraint components in a model.
 
     Args:
         block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
 
     Returns:
         A generator which returns all activated Constraint components block
     """
-    for c in activated_block_component_generator(block, ctype=Constraint):
+    if include_greybox:
+        ctypes = (Constraint, ExternalGreyBoxConstraint)
+    else:
+        ctypes = (Constraint,)
+    for c in activated_block_component_generator(
+        block, ctype=ctypes, include_greybox=include_greybox
+    ):
         if c.active:
             yield c
 
 
-def activated_constraints_set(block):
+def activated_constraints_set(block, include_greybox=True):
     """
     Method to return a ComponentSet of all activated Constraint components in a
     model.
 
     Args:
         block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
 
     Returns:
         A ComponentSet including all activated Constraint components in block
     """
-    return ComponentSet(activated_constraints_generator(block))
+    return ComponentSet(
+        activated_constraints_generator(block, include_greybox=include_greybox)
+    )
 
 
-def number_activated_constraints(block):
+def number_activated_constraints(block, include_greybox=True):
     """
     Method to return the number of activated Constraint components in a model.
 
     Args:
         block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
 
     Returns:
         Number of activated Constraint components in block
     """
-    return sum(1 for _ in activated_constraints_generator(block))
+    return sum(
+        1
+        for _ in activated_constraints_generator(block, include_greybox=include_greybox)
+    )
 
 
-def deactivated_constraints_generator(block):
+def deactivated_constraints_generator(block, include_greybox=True):
     """
     Generator which returns all deactivated Constraint components in a model.
 
     Args:
         block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
 
     Returns:
         A generator which returns all deactivated Constraint components block
     """
+    # GreyBox constraints are a special case, as their activity depends on the ExternalGreyBoxBlock
+    # Using activated_block_component_generator will filter these out, so we need to handle them separately
     for c in activated_block_component_generator(block, ctype=Constraint):
         if not c.active:
             yield c
 
+    if include_greybox:
+        # we could potentially save time by looking only for deactivated greybox blocks here,
+        # but for robustness we will be thorough
+        for b in _iter_indexed_block_data_objects(
+            block, ctype=ExternalGreyBoxBlock, active=None, descend_into=True
+        ):
+            for c in b.component_data_objects(
+                ctype=ExternalGreyBoxConstraint, active=None, descend_into=False
+            ):
+                if not c.active:
+                    yield c
 
-def deactivated_constraints_set(block):
+
+def deactivated_constraints_set(block, include_greybox=True):
     """
     Method to return a ComponentSet of all deactivated Constraint components in
     a model.
 
     Args:
         block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
 
     Returns:
         A ComponentSet including all deactivated Constraint components in block
     """
-    return ComponentSet(deactivated_constraints_generator(block))
+    return ComponentSet(
+        deactivated_constraints_generator(block, include_greybox=include_greybox)
+    )
 
 
-def number_deactivated_constraints(block):
+def number_deactivated_constraints(block, include_greybox=True):
     """
     Method to return the number of deactivated Constraint components in a
-    model. This will include number of deactivated equalities in a Greybox models
-    using number_deactivated_greybox_equalities function.
+    model.
 
     Args:
         block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
 
     Returns:
         Number of deactivated Constraint components in block
     """
-    standard_equalities = sum(1 for _ in deactivated_constraints_generator(block))
-    greybox_equalities = number_deactivated_greybox_equalities(block)
-    return standard_equalities + greybox_equalities
+    return sum(
+        1
+        for _ in deactivated_constraints_generator(
+            block, include_greybox=include_greybox
+        )
+    )
 
 
 # -------------------------------------------------------------------------
 # Equality Constraints
-def total_equalities_generator(block):
+def total_equalities_generator(block, include_greybox=True):
     """
     Generator which returns all equality Constraint components in a model.
 
@@ -408,44 +460,62 @@ def total_equalities_generator(block):
         if c.upper is not None and c.lower is not None and c.upper == c.lower:
             yield c
 
+    # GreyBox constraints are a special case, as they are always equalities
+    if include_greybox:
+        for b in _iter_indexed_block_data_objects(
+            block, ctype=ExternalGreyBoxBlock, active=None, descend_into=True
+        ):
+            for c in b.component_data_objects(
+                ctype=ExternalGreyBoxConstraint, active=None, descend_into=False
+            ):
+                yield c
 
-def total_equalities_set(block):
+
+def total_equalities_set(block, include_greybox=True):
     """
     Method to return a ComponentSet of all equality Constraint components in a
     model.
 
     Args:
         block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
 
     Returns:
         A ComponentSet including all equality Constraint components in block
     """
-    return ComponentSet(total_equalities_generator(block))
+    return ComponentSet(
+        total_equalities_generator(block, include_greybox=include_greybox)
+    )
 
 
-def number_total_equalities(block):
+def number_total_equalities(block, include_greybox=True):
     """
     Method to return the total number of equality Constraint components in a
-    model. This will include the number of activated equalities Greybox using the number_activated_greybox_equalities function.
+    model.
 
     Args:
         block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
 
     Returns:
         Number of equality Constraint components in block
     """
-    standard_equalities = sum(1 for _ in total_equalities_generator(block))
-    greybox_equalities = number_activated_greybox_equalities(block)
-    return standard_equalities + greybox_equalities
+    return sum(
+        1 for _ in total_equalities_generator(block, include_greybox=include_greybox)
+    )
 
 
-def activated_equalities_generator(block):
+def activated_equalities_generator(block, include_greybox=True):
     """
     Generator which returns all activated equality Constraint components in a
     model.
 
     Args:
         block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
 
     Returns:
         A generator which returns all activated equality Constraint components
@@ -461,46 +531,58 @@ def activated_equalities_generator(block):
         ):
             yield c
 
+    # GreyBox constraints are a special case, as they are always equalities
+    if include_greybox:
+        for b in _iter_indexed_block_data_objects(
+            block, ctype=ExternalGreyBoxBlock, active=True, descend_into=True
+        ):
+            for c in b.component_data_objects(
+                ctype=ExternalGreyBoxConstraint, active=True, descend_into=False
+            ):
+                yield c
 
-def activated_equalities_set(block):
+
+def activated_equalities_set(block, include_greybox=True):
     """
     Method to return a ComponentSet of all activated equality Constraint
     components in a model.
 
     Args:
         block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
 
     Returns:
         A ComponentSet including all activated equality Constraint components
         in block
     """
-    return ComponentSet(activated_equalities_generator(block))
+    return ComponentSet(
+        activated_equalities_generator(block, include_greybox=include_greybox)
+    )
 
 
-def number_activated_equalities(block):
+def number_activated_equalities(block, include_greybox=True):
     """
     Method to return the number of activated equality Constraint components in
-    a model. This will include number of equalities in Greybox model using number_activated_greybox_equalities function.
+    a model.
 
     Args:
         block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
 
     Returns:
         Number of activated equality Constraint components in block
     """
     return sum(
-        1 for _ in activated_equalities_generator(block)
-    ) + number_activated_greybox_equalities(block)
+        1
+        for _ in activated_equalities_generator(block, include_greybox=include_greybox)
+    )
 
 
 def number_activated_greybox_equalities(block) -> int:
     """
     Function to compute total number of equality constraints for all GreyBox objects in this block.
-
-    A GreyBox model is always assumed to be 0DOFs where each output[i]==f(inputs)
-    where f is GreyBox model, this should be true regardless if
-    GreyBox model is doing internal optimization or not, as every output
-    is calculated through the GreyBox internal model using provided inputs.
 
     Args:
         block : pyomo concrete model or pyomo block
@@ -510,19 +592,16 @@ def number_activated_greybox_equalities(block) -> int:
     """
     equalities = 0
     for grey_box in activated_greybox_block_set(block):
-        equalities += len(grey_box.outputs)
-        equalities += grey_box.get_external_model().n_equality_constraints()
+        for _ in grey_box.component_data_objects(
+            ctype=ExternalGreyBoxConstraint, active=None, descend_into=False
+        ):
+            equalities += 1
     return equalities
 
 
 def number_deactivated_greybox_equalities(block) -> int:
     """
     Function to compute total number of equality constraints for all GreyBox objects in this block.
-
-    A GreyBox model is always assumed to be 0DOFs where each output[i]==f(inputs)
-    where f is GreyBox model, this should be true regardless if
-    GreyBox model is doing internal optimization or not, as every output
-    is calculated through a the GreyBox internal model using provided inputs.
 
     Args:
         block : pyomo concrete model or pyomo block
@@ -532,57 +611,70 @@ def number_deactivated_greybox_equalities(block) -> int:
     """
     equalities = 0
     for grey_box in deactivated_greybox_block_set(block):
-        equalities += len(grey_box.outputs)
-        equalities += grey_box.get_external_model().n_equality_constraints()
+        for _ in grey_box.component_data_objects(
+            ctype=ExternalGreyBoxConstraint, active=None, descend_into=False
+        ):
+            equalities += 1
     return equalities
 
 
-def deactivated_equalities_generator(block):
+def deactivated_equalities_generator(block, include_greybox=True):
     """
     Generator which returns all deactivated equality Constraint components in a
     model.
 
     Args:
         block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
 
     Returns:
         A generator which returns all deactivated equality Constraint
         components block
     """
-    for c in total_equalities_generator(block):
+    for c in total_equalities_generator(block, include_greybox=include_greybox):
         if not c.active:
             yield c
 
 
-def deactivated_equalities_set(block):
+def deactivated_equalities_set(block, include_greybox=True):
     """
     Method to return a ComponentSet of all deactivated equality Constraint
     components in a model.
 
     Args:
         block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
 
     Returns:
         A ComponentSet including all deactivated equality Constraint components
         in block
     """
-    return ComponentSet(deactivated_equalities_generator(block))
+    return ComponentSet(
+        deactivated_equalities_generator(block, include_greybox=include_greybox)
+    )
 
 
-def number_deactivated_equalities(block):
+def number_deactivated_equalities(block, include_greybox=True):
     """
     Method to return the number of deactivated equality Constraint components
     in a model. This will include the number of deactivated equality constraints in Greybox models.
 
     Args:
         block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
 
     Returns:
         Number of deactivated equality Constraint components in block
     """
-    standard_equalities = sum(1 for _ in deactivated_equalities_generator(block))
-    greybox_equalities = number_deactivated_greybox_equalities(block)
-    return standard_equalities + greybox_equalities
+    return sum(
+        1
+        for _ in deactivated_equalities_generator(
+            block, include_greybox=include_greybox
+        )
+    )
 
 
 # -------------------------------------------------------------------------
@@ -729,127 +821,158 @@ def number_deactivated_inequalities(block):
 # Basic Variable Methods
 # Always use ComponentSets for Vars to avoid duplication of References
 # i.e. number methods should always use the ComponentSet, not a generator
-def variables_set(block):
+def variables_generator(block, include_greybox=True, active=True):
+    """
+    Generator which returns all Var components in a model.
+
+    Args:
+        block : model to be studied
+        include_greybox : whether to include greybox variables
+        active : whether to include only active sub-blocks (default = True)
+
+    Returns:
+        A generator which returns all Var components in block
+    """
+    for var in _iter_indexed_block_data_objects(
+        block, ctype=Var, active=active, descend_into=True
+    ):
+        yield var
+
+    if include_greybox:
+        for egb in _iter_indexed_block_data_objects(
+            block, ctype=ExternalGreyBoxBlock, active=None, descend_into=True
+        ):
+            for v in egb.component_data_objects(
+                ctype=Var, active=None, descend_into=False
+            ):
+                yield v
+
+
+def variables_set(block, include_greybox=True, active=True):
     """
     Method to return a ComponentSet of all Var components in a model.
 
     Args:
         block : model to be studied
+        include_greybox : whether to include greybox variables
+        active : whether to include only active sub-blocks (default = True)
 
     Returns:
         A ComponentSet including all Var components in block
     """
     var_set = ComponentSet()
-    for var in _iter_indexed_block_data_objects(
-        block, ctype=Var, active=True, descend_into=True
+    for var in variables_generator(
+        block, include_greybox=include_greybox, active=active
     ):
-        var_set.add(var)
-    for var in greybox_variables(block):
         var_set.add(var)
     return var_set
 
 
-def number_variables(block):
+def number_variables(block, include_greybox=True, active=True):
     """
     Method to return the number of Var components in a model.
 
     Args:
         block : model to be studied
+        include_greybox : whether to include greybox variables
+        active : whether to include only active sub-blocks (default = True)
 
     Returns:
         Number of Var components in block
     """
-    return len(variables_set(block))
+    return len(variables_set(block, include_greybox=include_greybox, active=active))
 
 
-def fixed_variables_generator(block):
+def fixed_variables_generator(block, include_greybox=True):
     """
     Generator which returns all fixed Var components in a model.
 
     Args:
         block : model to be studied
+        include_greybox : whether to include greybox variables
 
     Returns:
         A generator which returns all fixed Var components block
     """
-    for v in _iter_indexed_block_data_objects(
-        block, ctype=Var, active=True, descend_into=True
-    ):
-        if v.fixed:
-            yield v
-    # include greybox variables in set
-    for v in greybox_variables(block):
+    for v in variables_generator(block, include_greybox=include_greybox):
         if v.fixed:
             yield v
 
 
-def fixed_variables_set(block):
+def fixed_variables_set(block, include_greybox=True):
     """
     Method to return a ComponentSet of all fixed Var components in a model.
 
     Args:
         block : model to be studied
+        include_greybox : whether to include greybox variables
 
     Returns:
         A ComponentSet including all fixed Var components in block
     """
-    return ComponentSet(fixed_variables_generator(block))
+    return ComponentSet(
+        fixed_variables_generator(block, include_greybox=include_greybox)
+    )
 
 
-def number_fixed_variables(block):
+def number_fixed_variables(block, include_greybox=True):
     """
     Method to return the number of fixed Var components in a model.
 
     Args:
         block : model to be studied
+        include_greybox : whether to include greybox variables
 
     Returns:
         Number of fixed Var components in block
     """
-    return len(fixed_variables_set(block))
+    return len(fixed_variables_set(block, include_greybox=include_greybox))
 
 
-def unfixed_variables_generator(block):
+def unfixed_variables_generator(block, include_greybox=True):
     """
     Generator which returns all unfixed Var components in a model.
 
     Args:
         block : model to be studied
+        include_greybox : whether to include greybox variables
 
     Returns:
         A generator which returns all unfixed Var components block
     """
-    for v in _iter_indexed_block_data_objects(
-        block, ctype=Var, active=True, descend_into=True
-    ):
+    for v in variables_generator(block, include_greybox=include_greybox):
         if not v.fixed:
             yield v
 
 
-def unfixed_variables_set(block):
+def unfixed_variables_set(block, include_greybox=True):
     """
     Method to return a ComponentSet of all unfixed Var components in a model.
 
     Args:
         block : model to be studied
+        include_greybox : whether to include greybox variables
 
     Returns:
         A ComponentSet including all unfixed Var components in block
     """
-    return ComponentSet(unfixed_variables_generator(block))
+    return ComponentSet(
+        unfixed_variables_generator(block, include_greybox=include_greybox)
+    )
 
 
-def number_unfixed_variables(block):
+def number_unfixed_variables(block, include_greybox=True):
     """
     Method to return the number of unfixed Var components in a model.
 
     Args:
         block : model to be studied
+        include_greybox : whether to include greybox variables
 
     Returns:
         Number of unfixed Var components in block
     """
-    return len(unfixed_variables_set(block))
+    return len(unfixed_variables_set(block, include_greybox=include_greybox))
 
 
 def variables_near_bounds_generator(
@@ -860,6 +983,8 @@ def variables_near_bounds_generator(
     skip_ub=False,
     abs_tol=1e-4,
     rel_tol=1e-4,
+    include_greybox=True,
+    apply_scaling=True,
 ):
     """
     Generator which returns all Var components in a model which have a value
@@ -871,6 +996,8 @@ def variables_near_bounds_generator(
         rel_tol : relative tolerance for inclusion in generator (default = 1e-4)
         skip_lb: Boolean to skip lower bound (default = False)
         skip_ub: Boolean to skip upper bound (default = False)
+        include_greybox : whether to include greybox variables (default = True)
+        apply_scaling: whether to apply scaling factors to the variable when determining if it is near a bound (default = True)
 
     Returns:
         A generator which returns all Var components block that are close to a
@@ -893,13 +1020,11 @@ def variables_near_bounds_generator(
         abs_tol = tol
         rel_tol = tol
 
-    for v in _iter_indexed_block_data_objects(
-        block, ctype=Var, active=True, descend_into=True
-    ):
+    for v in variables_generator(block, include_greybox=include_greybox):
         # To avoid errors, check that v has a value
         if v.value is None:
             continue
-        sf = get_scaling_factor(v, default=1, warning=False)
+        sf = get_scaling_factor(v, default=1, warning=False) if apply_scaling else 1
         # First, magnitude of variable
         if v.ub is not None and v.lb is not None:
             # Both upper and lower bounds, apply tol to (upper - lower)
@@ -930,6 +1055,8 @@ def variables_near_bounds_set(
     skip_ub=False,
     abs_tol=1e-4,
     rel_tol=1e-4,
+    include_greybox=True,
+    apply_scaling=True,
 ):
     """
     Method to return a ComponentSet of all Var components in a model which have
@@ -941,6 +1068,9 @@ def variables_near_bounds_set(
         rel_tol : relative tolerance for inclusion in generator (default = 1e-4)
         skip_lb: Boolean to skip lower bound (default = False)
         skip_ub: Boolean to skip upper bound (default = False)
+        include_greybox : whether to include greybox variables (default = True)
+        apply_scaling: whether to apply scaling factors to the variable when determining
+        if it is near a bound (default = True)
 
     Returns:
         A ComponentSet including all Var components block that are close to a
@@ -948,12 +1078,22 @@ def variables_near_bounds_set(
     """
     return ComponentSet(
         variables_near_bounds_generator(
-            block, tol, relative, skip_lb, skip_ub, abs_tol, rel_tol
+            block,
+            tol,
+            relative,
+            skip_lb,
+            skip_ub,
+            abs_tol,
+            rel_tol,
+            include_greybox=include_greybox,
+            apply_scaling=apply_scaling,
         )
     )
 
 
-def number_variables_near_bounds(block, tol=None, abs_tol=1e-4, rel_tol=1e-4):
+def number_variables_near_bounds(
+    block, tol=None, abs_tol=1e-4, rel_tol=1e-4, include_greybox=True
+):
     """
     Method to return the number of all Var components in a model which have
     a value within tol (relative) of a bound.
@@ -962,24 +1102,128 @@ def number_variables_near_bounds(block, tol=None, abs_tol=1e-4, rel_tol=1e-4):
         block : model to be studied
         abs_tol : absolute tolerance for inclusion in generator (default = 1e-4)
         rel_tol : relative tolerance for inclusion in generator (default = 1e-4)
+        include_greybox : whether to include greybox variables (default = True)
 
     Returns:
         Number of components block that are close to a bound
     """
     return len(
-        variables_near_bounds_set(block, tol=tol, abs_tol=abs_tol, rel_tol=rel_tol)
+        variables_near_bounds_set(
+            block,
+            tol=tol,
+            abs_tol=abs_tol,
+            rel_tol=rel_tol,
+            include_greybox=include_greybox,
+        )
+    )
+
+
+def variables_violating_bounds_generator(
+    block: Block,
+    abs_tol: float = 1e-4,
+    rel_tol: float = 1e-4,
+    include_greybox: bool = True,
+    apply_scaling: bool = True,
+):
+    """
+    Generator which returns all Var components in a model which have a value
+    that violates their bounds.
+
+    Args:
+        block : model to be studied
+        abs_tol : absolute tolerance for violation of bounds
+        rel_tol : relative tolerance for violation of bounds
+        include_greybox : whether to include greybox variables (default = True)
+        apply_scaling: whether to apply scaling factors to the variable when determining if it is violating bounds (default = True)
+
+    Returns:
+        A generator which returns all Var components block that are violating
+        their bounds
+    """
+    for v in variables_generator(block, include_greybox=include_greybox):
+        if v.value is not None:
+            sf = get_scaling_factor(v, default=1, warning=False) if apply_scaling else 1
+            tolerance = max(abs_tol, abs(value(v)) * rel_tol)
+            if v.lb is not None and sf * value(v) <= sf * v.lb - tolerance:
+                yield v
+            elif v.ub is not None and sf * value(v) >= sf * v.ub + tolerance:
+                yield v
+
+
+def variables_violating_bounds_set(
+    block: Block,
+    abs_tol: float = 1e-4,
+    rel_tol: float = 1e-4,
+    include_greybox: bool = True,
+    apply_scaling: bool = True,
+):
+    """
+    Method to return a ComponentSet of all Var components in a model which have
+    a value that violates their bounds.
+
+    Args:
+        block : model to be studied
+        abs_tol : absolute tolerance for violation of bounds
+        rel_tol : relative tolerance for violation of bounds
+        include_greybox : whether to include greybox variables (default = True)
+        apply_scaling: whether to apply scaling factors to the variable when determining if it is violating bounds (default = True)
+    Returns:
+        A ComponentSet including all Var components block that are violating
+        their bounds
+    """
+    return ComponentSet(
+        variables_violating_bounds_generator(
+            block,
+            abs_tol=abs_tol,
+            rel_tol=rel_tol,
+            include_greybox=include_greybox,
+            apply_scaling=apply_scaling,
+        )
+    )
+
+
+def number_variables_violating_bounds(
+    block: Block,
+    abs_tol: float = 1e-4,
+    rel_tol: float = 1e-4,
+    include_greybox: bool = True,
+    apply_scaling: bool = True,
+):
+    """
+    Method to return the number of all Var components in a model which have
+    a value that violates their bounds.
+
+    Args:
+        block : model to be studied
+        abs_tol : absolute tolerance for violation of bounds
+        rel_tol : relative tolerance for violation of bounds
+        include_greybox : whether to include greybox variables (default = True)
+        apply_scaling: whether to apply scaling factors to the variable when determining if it is violating bounds (default = True)
+    Returns:
+        Number of components block that are violating their bounds
+    """
+    return len(
+        variables_violating_bounds_set(
+            block,
+            abs_tol=abs_tol,
+            rel_tol=rel_tol,
+            include_greybox=include_greybox,
+            apply_scaling=apply_scaling,
+        )
     )
 
 
 # -------------------------------------------------------------------------
 # Variables in Constraints
-def variables_in_activated_constraints_set(block):
+def variables_in_activated_constraints_set(block, include_greybox=True):
     """
     Method to return a ComponentSet of all Var components which appear within a
     Constraint in a model.
 
     Args:
         block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
 
     Returns:
         A ComponentSet including all Var components which appear within
@@ -991,101 +1235,139 @@ def variables_in_activated_constraints_set(block):
     ):
         for v in identify_variables(c.body):
             var_set.add(v)
-    # include any vars in greyboxes
-    for v in greybox_variables(block):
-        var_set.add(v)
+
+    if include_greybox:
+        for egb in _iter_indexed_block_data_objects(
+            block, ctype=ExternalGreyBoxBlock, active=True, descend_into=True
+        ):
+            # For simplicity and efficiency, we will assume all variables in greybox blocks are included
+            # For this to be False, the grey box itself would have to have a dangling variable
+            for v in egb.component_data_objects(
+                ctype=Var, active=None, descend_into=False
+            ):
+                var_set.add(v)
     return var_set
 
 
-def number_variables_in_activated_constraints(block):
+def number_variables_in_activated_constraints(block, include_greybox=True):
     """
     Method to return the number of Var components that appear within active
     Constraints in a model.
 
     Args:
         block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
 
     Returns:
         Number of Var components which appear within active Constraints in
         block
     """
-    return len(variables_in_activated_constraints_set(block))
+    return len(
+        variables_in_activated_constraints_set(block, include_greybox=include_greybox)
+    )
 
 
-def variables_not_in_activated_constraints_set(block):
+def variables_not_in_activated_constraints_set(block, include_greybox=True):
     """
     Method to return a ComponentSet of all Var components which do not appear within a
     Constraint in a model.
 
     Args:
         block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
 
     Returns:
         A ComponentSet including all Var components which do not appear within
         activated Constraints in block
     """
+    all_vars = variables_set(block, include_greybox=include_greybox)
+    active_vars = variables_in_activated_constraints_set(
+        block, include_greybox=include_greybox
+    )
+
     var_set = ComponentSet()
-
-    active_vars = variables_in_activated_constraints_set(block)
-
-    for v in _iter_indexed_block_data_objects(
-        block, ctype=Var, active=True, descend_into=True
-    ):
+    for v in all_vars:
         if v not in active_vars:
             var_set.add(v)
     return var_set
 
 
-def number_variables_not_in_activated_constraints(block):
+def number_variables_not_in_activated_constraints(block, include_greybox=True):
     """
     Method to return the number of Var components that do not appear within active
     Constraints in a model.
 
     Args:
         block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
 
     Returns:
         Number of Var components which do not appear within active Constraints in
         block
     """
-    return len(variables_not_in_activated_constraints_set(block))
+    return len(
+        variables_not_in_activated_constraints_set(
+            block, include_greybox=include_greybox
+        )
+    )
 
 
-def variables_in_activated_equalities_set(block):
+def variables_in_activated_equalities_set(block, include_greybox=True):
     """
     Method to return a ComponentSet of all Var components which appear within
     an equality Constraint in a model.
 
     Args:
         block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
 
     Returns:
         A ComponentSet including all Var components which appear within
         activated equality Constraints in block
     """
     var_set = ComponentSet()
-    for c in activated_equalities_generator(block):
+    # identify_variables does not work on ExternalGreyBoxConstraints, so we need to handle these separately
+    for c in activated_equalities_generator(block, include_greybox=False):
         for v in identify_variables(c.body):
             var_set.add(v)
-    # include any vars in greyboxes
-    for v in greybox_variables(block):
-        var_set.add(v)
+
+    if include_greybox:
+        for egb in _iter_indexed_block_data_objects(
+            block, ctype=ExternalGreyBoxBlock, active=True, descend_into=True
+        ):
+            # For simplicity and efficiency, we will assume all variables in greybox blocks are included
+            # For this to be False, the grey box itself would have to have a dangling variable
+            # All grey box constraints are equalities, so we do not need to check for inequality constraints here
+            for v in egb.component_data_objects(
+                ctype=Var, active=None, descend_into=False
+            ):
+                var_set.add(v)
     return var_set
 
 
-def number_variables_in_activated_equalities(block):
+def number_variables_in_activated_equalities(block, include_greybox=True):
     """
     Method to return the number of Var components which appear within activated
     equality Constraints in a model.
 
     Args:
         block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
+
+        block : model to be studied
 
     Returns:
         Number of Var components which appear within activated equality
         Constraints in block
     """
-    return len(variables_in_activated_equalities_set(block))
+    return len(
+        variables_in_activated_equalities_set(block, include_greybox=include_greybox)
+    )
 
 
 def variables_in_activated_inequalities_set(block):
@@ -1100,6 +1382,7 @@ def variables_in_activated_inequalities_set(block):
         A ComponentSet including all Var components which appear within
         activated inequality Constraints in block
     """
+    # GreyBox constraints are all equalities, so we do not need to check for them here
     var_set = ComponentSet()
     for c in activated_inequalities_generator(block):
         for v in identify_variables(c.body):
@@ -1156,54 +1439,68 @@ def number_variables_only_in_inequalities(block):
 
 # -------------------------------------------------------------------------
 # Fixed Variables in Constraints
-def fixed_variables_in_activated_equalities_set(block):
+def fixed_variables_in_activated_equalities_set(block, include_greybox=True):
     """
     Method to return a ComponentSet of all fixed Var components which appear
     within an equality Constraint in a model.
 
     Args:
         block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
 
     Returns:
         A ComponentSet including all fixed Var components which appear within
         activated equality Constraints in block
     """
     var_set = ComponentSet()
-    for v in variables_in_activated_equalities_set(block):
+    for v in variables_in_activated_equalities_set(
+        block, include_greybox=include_greybox
+    ):
         if v.fixed:
             var_set.add(v)
     return var_set
 
 
-def number_fixed_variables_in_activated_equalities(block):
+def number_fixed_variables_in_activated_equalities(block, include_greybox=True):
     """
     Method to return the number of fixed Var components which appear within
     activated equality Constraints in a model.
 
     Args:
         block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
 
     Returns:
         Number of fixed Var components which appear within activated equality
         Constraints in block
     """
-    return len(fixed_variables_in_activated_equalities_set(block))
+    return len(
+        fixed_variables_in_activated_equalities_set(
+            block, include_greybox=include_greybox
+        )
+    )
 
 
-def unfixed_variables_in_activated_equalities_set(block):
+def unfixed_variables_in_activated_equalities_set(block, include_greybox=True):
     """
     Method to return a ComponentSet of all unfixed Var components which appear
     within an activated equality Constraint in a model.
 
     Args:
         block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
 
     Returns:
         A ComponentSet of all unfixed Var components which appear within
         activated equality Constraints in block
     """
     var_set = ComponentSet()
-    for v in variables_in_activated_equalities_set(block):
+    for v in variables_in_activated_equalities_set(
+        block, include_greybox=include_greybox
+    ):
         if not v.fixed:
             var_set.add(v)
     return var_set
@@ -1219,6 +1516,7 @@ def unfixed_greybox_variables(block):
     Returns:
         A ComponentSet of all unfixed Var components which appear in Greybox models
     """
+    # GreyBox variable should never be fixed - this function is useful to confirm that
     var_set = ComponentSet()
     for var in greybox_variables(block):
         if not var.fixed:
@@ -1239,10 +1537,10 @@ def greybox_variables(block):
     """
     var_set = ComponentSet()
     for grey_box in activated_greybox_block_set(block):
-        for in_var in grey_box.inputs:
-            var_set.add(grey_box.inputs[in_var])
-        for out_var in grey_box.outputs:
-            var_set.add(grey_box.outputs[out_var])
+        for v in grey_box.component_data_objects(
+            ctype=Var, active=None, descend_into=False
+        ):
+            var_set.add(v)
     return var_set
 
 
@@ -1272,19 +1570,25 @@ def number_of_greybox_variables(block):
     return len(greybox_variables(block))
 
 
-def number_unfixed_variables_in_activated_equalities(block):
+def number_unfixed_variables_in_activated_equalities(block, include_greybox=True):
     """
     Method to return the number of unfixed Var components which appear within
     activated equality Constraints in a model.
 
     Args:
         block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
 
     Returns:
         Number of unfixed Var components which appear within activated equality
         Constraints in block
     """
-    return len(unfixed_variables_in_activated_equalities_set(block))
+    return len(
+        unfixed_variables_in_activated_equalities_set(
+            block, include_greybox=include_greybox
+        )
+    )
 
 
 def fixed_variables_only_in_inequalities(block):
@@ -1321,70 +1625,316 @@ def number_fixed_variables_only_in_inequalities(block):
     return len(fixed_variables_only_in_inequalities(block))
 
 
+def external_variables_set(block: Block, include_greybox: bool = True) -> ComponentSet:
+    """
+    Method to return a ComponentSet of all Var components which appear within a
+    Constraint in a model, but do not appear in the variables_set of the model.
+
+    Args:
+        block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
+
+    Returns:
+        A ComponentSet including all Var components which appear within
+        activated Constraints in block, but do not appear in the variables_set of
+        the model
+    """
+    ext_vars = ComponentSet()
+    local_var_set = variables_set(block, include_greybox=include_greybox, active=None)
+    conc_var_set = variables_in_activated_constraints_set(
+        block, include_greybox=include_greybox
+    )
+    for v in conc_var_set:
+        if v not in local_var_set:
+            ext_vars.add(v)
+    return ext_vars
+
+
+def number_external_variables(block: Block, include_greybox: bool = True) -> int:
+    """
+    Method to return the number of Var components which appear within a
+    Constraint in a model, but do not appear in the variables_set of the model.
+
+    Args:
+        block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
+
+    Returns:
+        Number of Var components which appear within activated Constraints in block,
+        but do not appear in the variables_set of the model
+    """
+    return len(external_variables_set(block, include_greybox=include_greybox))
+
+
+def variables_fixed_to_zero_set(
+    block: Block, include_greybox: bool = True
+) -> ComponentSet:
+    """
+    Method to return a ComponentSet of all Var components which are fixed to zero in a model.
+
+    Args:
+        block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
+
+    Returns:
+        A ComponentSet including all Var components which are fixed to zero in block
+    """
+    var_set = ComponentSet()
+    for v in variables_set(block, include_greybox=include_greybox, active=None):
+        if v.fixed and value(v) == 0:
+            var_set.add(v)
+    return var_set
+
+
+def number_variables_fixed_to_zero(block: Block, include_greybox: bool = True) -> int:
+    """
+    Method to return the number of Var components which are fixed to zero in a model.
+
+    Args:
+        block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
+
+    Returns:
+        Number of Var components which are fixed to zero in block
+    """
+    return len(variables_fixed_to_zero_set(block, include_greybox=include_greybox))
+
+
+def variables_near_zero_set(
+    block: Block,
+    tol: float = 1e-4,
+    include_greybox: bool = True,
+    scale_variables: bool = True,
+) -> ComponentSet:
+    """
+    Method to return a ComponentSet of all Var components which have a value within tol of zero in a model.
+
+    Args:
+        block : model to be studied
+        tol: Tolerance for inclusion in generator (default = 1e-4)
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
+        scale_variables: Boolean to scale variables by their scaling factor when determining if they are near zero (default = True)
+
+    Returns:
+        A ComponentSet including all Var components which have a value within tol of zero in block
+    """
+    var_set = ComponentSet()
+    for v in variables_generator(block, include_greybox=include_greybox, active=None):
+        sf = get_scaling_factor(v, default=1, warning=False) if scale_variables else 1
+        if v.value is not None and abs(value(v) * sf) <= tol:
+            var_set.add(v)
+    return var_set
+
+
+def number_variables_near_zero(
+    block: Block,
+    tol: float = 1e-4,
+    include_greybox: bool = True,
+    scale_variables: bool = True,
+) -> int:
+    """
+    Method to return the number of Var components which have a value within tol of zero in a model.
+
+    Args:
+        block : model to be studied
+        tol: Tolerance for inclusion in generator (default = 1e-4)
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
+        scale_variables: Boolean to scale variables by their scaling factor when determining if they are near zero (default = True)
+
+    Returns:
+        Number of Var components which have a value within tol of zero in block
+    """
+    return len(
+        variables_near_zero_set(
+            block,
+            tol=tol,
+            include_greybox=include_greybox,
+            scale_variables=scale_variables,
+        )
+    )
+
+
+def variables_with_none_value_set(block, include_greybox=True):
+    """
+    Method to return a ComponentSet of all Var components which have a value of None in a model.
+
+    Args:
+        block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
+
+    Returns:
+        A ComponentSet including all Var components which have a value of None in block
+    """
+    var_set = ComponentSet()
+    for v in variables_generator(block, include_greybox=include_greybox, active=None):
+        if v.value is None:
+            var_set.add(v)
+    return var_set
+
+
+def number_variables_with_none_value(block, include_greybox=True):
+    """
+    Method to return the number of Var components which have a value of None in a model.
+
+    Args:
+        block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
+
+    Returns:
+        Number of Var components which have a value of None in block
+    """
+    return len(variables_with_none_value_set(block, include_greybox=include_greybox))
+
+
+def variables_with_extreme_values_set(
+    block: Block,
+    large: float,
+    small: float,
+    zero: float,
+    include_greybox: bool = True,
+    apply_scaling: bool = True,
+):
+    """Method to return a ComponentSet of all Var components which have a value with magnitude larger than large or smaller than small (but larger than zero) in a model.
+
+    Args:
+        block : model to be studied
+        large: Threshold for large values
+        small: Threshold for small values
+        zero: Threshold for zero values (small values must be larger than this value to be included)
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
+        apply_scaling: Boolean to apply scaling factors to the variable when determining if it has an extreme value (default = True)
+    Returns:
+        A ComponentSet including all Var components which have a value with magnitude larger than large or smaller than small (but larger than zero) in block
+    """
+    extreme_vars = ComponentSet()
+    for v in variables_generator(block, include_greybox=include_greybox, active=None):
+        sf = get_scaling_factor(v, default=1, warning=False) if apply_scaling else 1
+        if v.value is not None:
+            mag = sf * abs(value(v))
+            if mag > abs(large):
+                extreme_vars.add(v)
+            elif mag < abs(small) and mag > abs(zero):
+                extreme_vars.add(v)
+
+    return extreme_vars
+
+
+def number_variables_with_extreme_values(
+    block: Block,
+    large: float,
+    small: float,
+    zero: float,
+    include_greybox: bool = True,
+    apply_scaling: bool = True,
+):
+    """Method to return the number of Var components which have a value with magnitude larger than large or smaller than small (but larger than zero) in a model.
+
+    Args:
+        block : model to be studied
+        large: Threshold for large values
+        small: Threshold for small values
+        zero: Threshold for zero values (small values must be larger than this value to be included)
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
+        apply_scaling: Boolean to apply scaling factors to the variable when determining if it has an extreme value (default = True)
+    Returns:
+        Number of Var components which have a value with magnitude larger than large or smaller than small (but larger than zero) in block
+    """
+    return len(
+        variables_with_extreme_values_set(
+            block,
+            large,
+            small,
+            zero,
+            include_greybox=include_greybox,
+            apply_scaling=apply_scaling,
+        )
+    )
+
+
 # -------------------------------------------------------------------------
 # Unused and un-Transformed Variables
-def unused_variables_set(block):
+def unused_variables_set(block, include_greybox=True):
     """
     Method to return a ComponentSet of all Var components which do not appear
     within any activated Constraint in a model.
 
     Args:
         block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
 
     Returns:
         A ComponentSet including all Var components which do not appear within
         any Constraints in block
     """
-    return variables_set(block) - variables_in_activated_constraints_set(block)
+    return variables_set(
+        block, include_greybox=include_greybox
+    ) - variables_in_activated_constraints_set(block, include_greybox=include_greybox)
 
 
-def number_unused_variables(block):
+def number_unused_variables(block, include_greybox=True):
     """
     Method to return the number of Var components which do not appear within
     any activated Constraint in a model.
 
     Args:
         block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
 
     Returns:
         Number of Var components which do not appear within any activated
         Constraints in block
     """
-    return len(unused_variables_set(block))
+    return len(unused_variables_set(block, include_greybox=include_greybox))
 
 
-def fixed_unused_variables_set(block):
+def fixed_unused_variables_set(block, include_greybox=True):
     """
     Method to return a ComponentSet of all fixed Var components which do not
     appear within any activated Constraint in a model.
 
     Args:
         block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
 
     Returns:
         A ComponentSet including all fixed Var components which do not appear
         within any Constraints in block
     """
     var_set = ComponentSet()
-    for v in unused_variables_set(block):
+    for v in unused_variables_set(block, include_greybox=include_greybox):
         if v.fixed:
             var_set.add(v)
     return var_set
 
 
-def number_fixed_unused_variables(block):
+def number_fixed_unused_variables(block, include_greybox=True):
     """
     Method to return the number of fixed Var components which do not appear
     within any activated Constraint in a model.
 
     Args:
         block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
 
     Returns:
         Number of fixed Var components which do not appear within any activated
         Constraints in block
     """
-    return len(fixed_unused_variables_set(block))
+    return len(fixed_unused_variables_set(block, include_greybox=include_greybox))
 
 
 def derivative_variables_set(block):
@@ -1593,22 +2143,29 @@ def number_expressions(block):
 
 # -------------------------------------------------------------------------
 # Other model statistics
-def degrees_of_freedom(block):
+def degrees_of_freedom(block, include_greybox=True):
     """
     Method to return the degrees of freedom of a model.
 
     Args:
         block : model to be studied
+        include_greybox: Boolean to include GreyBox models (default = True)
 
     Returns:
         Number of degrees of freedom in block.
     """
     return number_unfixed_variables_in_activated_equalities(
-        block
-    ) - number_activated_equalities(block)
+        block, include_greybox=include_greybox
+    ) - number_activated_equalities(block, include_greybox=include_greybox)
 
 
-def large_residuals_set(block, tol=1e-5, return_residual_values=False):
+def large_residuals_set(
+    block,
+    tol=1e-5,
+    return_residual_values=False,
+    include_greybox=True,
+    apply_scaling=True,
+):
     """
     Method to return a ComponentSet of all Constraint components with a
     residual greater than a given threshold which appear in a model.
@@ -1618,6 +2175,9 @@ def large_residuals_set(block, tol=1e-5, return_residual_values=False):
         tol : residual threshold for inclusion in ComponentSet
         return_residual_values: boolean, if true return dictionary with
             residual values
+        include_greybox: boolean, if true include GreyBox constraints (default = True)
+        apply_scaling: boolean, if true apply scaling factors to the residuals when determining
+        if they are large (default = True)
 
     Returns:
         large_residual_set: A ComponentSet including all Constraint components
@@ -1627,12 +2187,14 @@ def large_residuals_set(block, tol=1e-5, return_residual_values=False):
         return_residual_values is true)
     """
     large_residuals_set = ComponentSet()
-    if return_residual_values:
-        residual_values = ComponentMap()
-    for c in _iter_indexed_block_data_objects(
-        block, ctype=Constraint, active=True, descend_into=True
-    ):
-        sf = get_scaling_factor(c, default=1, warning=False)
+    residual_values = ComponentMap()
+
+    for c in activated_constraints_generator(block, include_greybox=include_greybox):
+        # Grey Box constraints cannot be scaled in the normal fashion
+        sf = 1
+        if apply_scaling and not isinstance(c, ExternalGreyBoxConstraint):
+            sf = get_scaling_factor(c, default=1, warning=False)
+
         try:
             val = value(c.body)
         except ValueError:
@@ -1662,7 +2224,7 @@ def large_residuals_set(block, tol=1e-5, return_residual_values=False):
         return large_residuals_set
 
 
-def number_large_residuals(block, tol=1e-5):
+def number_large_residuals(block, tol=1e-5, include_greybox=True):
     """
     Method to return the number Constraint components with a residual greater
     than a given threshold which appear in a model.
@@ -1670,94 +2232,115 @@ def number_large_residuals(block, tol=1e-5):
     Args:
         block : model to be studied
         tol : residual threshold for inclusion in ComponentSet
+        include_greybox: boolean, if true include GreyBox constraints (default = True)
 
     Returns:
         Number of Constraint components with a residual greater than tol which
         appear in block
     """
-    lr = 0
-    for c in _iter_indexed_block_data_objects(
-        block, ctype=Constraint, active=True, descend_into=True
-    ):
-        if c.active and value(c.lower - c.body()) > tol:
-            lr += 1
-        elif c.active and value(c.body() - c.upper) > tol:
-            lr += 1
-    return lr
+    return len(large_residuals_set(block, tol=tol, include_greybox=include_greybox))
 
 
-def active_variables_in_deactivated_blocks_set(block):
+def active_variables_in_deactivated_blocks_set(block, include_greybox=True):
     """
     Method to return a ComponentSet of any Var components which appear within
     an active Constraint but belong to a deactivated Block in a model.
 
     Args:
         block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
 
     Returns:
         A ComponentSet including any Var components which belong to a
         deactivated Block but appear in an activate Constraint in block
     """
     var_set = ComponentSet()
+
     block_set = activated_blocks_set(block)
-    for v in variables_in_activated_constraints_set(block):
+    if include_greybox:
+        for c in activated_greybox_block_set(block):
+            block_set.add(c)
+
+    for v in variables_in_activated_constraints_set(
+        block, include_greybox=include_greybox
+    ):
         if v.parent_block() not in block_set:
             var_set.add(v)
     return var_set
 
 
-def number_active_variables_in_deactivated_blocks(block):
+def number_active_variables_in_deactivated_blocks(block, include_greybox=True):
     """
     Method to return the number of Var components which appear within an active
     Constraint but belong to a deactivated Block in a model.
 
     Args:
         block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
 
     Returns:
         Number of Var components which belong to a deactivated Block but appear
         in an activate Constraint in block
     """
-    return len(active_variables_in_deactivated_blocks_set(block))
+    return len(
+        active_variables_in_deactivated_blocks_set(
+            block, include_greybox=include_greybox
+        )
+    )
 
 
-def variables_with_none_value_in_activated_equalities_set(block):
+def variables_with_none_value_in_activated_equalities_set(block, include_greybox=True):
     """
     Method to return a ComponentSet of all Var components which
     have a value of None in the set of activated constraints.
 
     Args:
         block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
 
     Returns:
         A ComponentSet including all Var components which
         have a value of None in the set of activated constraints.
     """
     var_set = ComponentSet()
-    for v in variables_in_activated_equalities_set(block):
+    for v in variables_in_activated_equalities_set(
+        block, include_greybox=include_greybox
+    ):
         if v.value is None:
             var_set.add(v)
     return var_set
 
 
-def number_variables_with_none_value_in_activated_equalities(block):
+def number_variables_with_none_value_in_activated_equalities(
+    block, include_greybox=True
+):
     """
     Method to return the number of Var components which
     have a value of None in the set of activated constraints.
 
     Args:
         block : model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+        models (default = True)
 
     Returns:
         Number of Var components which
         have a value of None in the set of activated constraints.
     """
 
-    return len(variables_with_none_value_in_activated_equalities_set(block))
+    return len(
+        variables_with_none_value_in_activated_equalities_set(
+            block, include_greybox=include_greybox
+        )
+    )
 
 
 # -------------------------------------------------------------------------
 # Reporting methods
+# TODO: This appears to be duplicated in the diagnostics module - we should consider whether to merge these or keep them separate
 def report_statistics(block, ostream=None):
     """
     Method to print a report of the model statistics for a Pyomo Block
@@ -1851,7 +2434,7 @@ def report_statistics(block, ostream=None):
 
 # -------------------------------------------------------------------------
 # Common sub-methods
-def activated_block_component_generator(block, ctype):
+def activated_block_component_generator(block, ctype, include_greybox=False):
     """
     Generator which returns all the components of a given ctype which exist in
     activated Blocks within a model.
@@ -1859,6 +2442,7 @@ def activated_block_component_generator(block, ctype):
     Args:
         block : model to be studied
         ctype : type of Pyomo component to be returned by generator.
+        include_greybox : whether to include greybox components
 
     Returns:
         A generator which returns all components of ctype which appear in
@@ -1876,3 +2460,13 @@ def activated_block_component_generator(block, ctype):
     ):
         for c in b.component_data_objects(ctype=ctype, active=None, descend_into=False):
             yield c
+
+    # If include_greybox is True, also yield components in active greybox sub-blocks
+    if include_greybox:
+        for b in _iter_indexed_block_data_objects(
+            block, ctype=ExternalGreyBoxBlock, active=True, descend_into=True
+        ):
+            for c in b.component_data_objects(
+                ctype=ctype, active=None, descend_into=False
+            ):
+                yield c

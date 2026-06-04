@@ -15,10 +15,6 @@ This module contains tests for the SVD Toolbox.
 """
 
 from io import StringIO
-from pyomo.contrib.pynumero.interfaces.external_grey_box import (
-    ExternalGreyBoxBlock,
-    ExternalGreyBoxModel,
-)
 import re
 
 import numpy as np
@@ -32,12 +28,18 @@ from pyomo.environ import (
 )
 from pyomo.contrib.pynumero.asl import AmplInterface
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
+from pyomo.contrib.pynumero.interfaces.external_grey_box import (
+    ExternalGreyBoxBlock,
+    ExternalGreyBoxModel,
+)
 
 from idaes.core.util.diagnostics_tools.svd_toolbox import (
     SVDToolbox,
     svd_dense,
     svd_sparse,
 )
+
+# dummy_problem is used as a fixture the tests, but is not picked up by static analysis
 from idaes.core.util.diagnostics_tools.tests.utils import (
     dummy_problem,
 )

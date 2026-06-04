@@ -128,7 +128,7 @@ class DegeneracyHunter:
             )
         if len(greybox_block_set(model)) != 0:
             raise NotImplementedError(
-                "Model contains Greybox models, which are not supported by Diagnostics toolbox at the moment"
+                "Model contains Greybox models, which are not supported by Degeneracy Hunter at the moment"
             )
         self._model = model
         self.config = DHCONFIG(kwargs)

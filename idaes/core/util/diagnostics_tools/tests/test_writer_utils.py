@@ -229,8 +229,12 @@ class TestStatsWriter:
 
         m = ConcreteModel()
 
-        m.gb = ExternalGreyBoxBlock(external_model=BasicGrayBox())
-        m.gb_inactive = ExternalGreyBoxBlock(external_model=BasicGrayBox())
+        m.gb = ExternalGreyBoxBlock(
+            external_model=BasicGrayBox(), build_implicit_constraint_objects=True
+        )
+        m.gb_inactive = ExternalGreyBoxBlock(
+            external_model=BasicGrayBox(), build_implicit_constraint_objects=True
+        )
         m.gb_inactive.deactivate()
         m.a1 = Var(initialize=1)
         m.a1.fix()
@@ -240,7 +244,7 @@ class TestStatsWriter:
         m.o1 = Var(initialize=1)
         m.o1_eq = Constraint(expr=m.o1 == m.gb.outputs["o1"])
         m.o1.fix()
-        stats = collect_model_statistics(m)
+        stats = collect_model_statistics(m, include_greybox=True)
         for k in stats:
             print(k)
         print(stats, len(stats))

@@ -37,6 +37,9 @@ from pyomo.common.fileutils import this_file_dir
 from pyomo.common.tempfiles import TempfileManager
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.contrib.pynumero.asl import AmplInterface
+from pyomo.contrib.pynumero.interfaces.external_grey_box import (
+    ExternalGreyBoxBlock,
+)
 
 from idaes.core.scaling.util import (
     get_jacobian,
@@ -65,6 +68,10 @@ from idaes.core.solvers.tests.test_petsc import dae_with_non_time_indexed_constr
 from idaes.core.util.model_statistics import number_activated_objectives
 from idaes.core.util.scaling import get_constraint_transform_applied_scaling_factor
 import idaes.logger as idaeslog
+
+from idaes.core.util.diagnostics_tools.tests.test_diagnostics_toolbox_greybox import (
+    ResidualGrayBox,
+)
 
 currdir = this_file_dir()
 
@@ -1779,6 +1786,19 @@ class TestGetScalingFactor:
         m.scaling_factor.deactivate()
         assert get_scaling_factor(m.v) is None
 
+    @pytest.mark.unit
+    def test_get_scaling_factor_egb_constraint(self):
+        m = ConcreteModel()
+
+        m.gb = ExternalGreyBoxBlock(
+            external_model=ResidualGrayBox(), build_implicit_constraint_objects=True
+        )
+
+        assert get_scaling_factor(m.gb.c1) == 1.0
+
+        # Test with default value
+        assert get_scaling_factor(m.gb.c1, default=42.0) == 42.0
+
 
 class TestSetScalingFactor:
     @pytest.mark.unit
@@ -2398,6 +2418,7 @@ def test_find_unscaled_vars_and_constraints():
 @pytest.mark.skipif(
     not AmplInterface.available(), reason="pynumero_ASL is not available"
 )
+@pytest.mark.parametrize("include_greybox", [True, False])
 class TestJacobianMethods:
     @pytest.fixture
     def model(self):
@@ -2411,7 +2432,7 @@ class TestJacobianMethods:
         return m
 
     @pytest.mark.unit
-    def test_jacobian(self, model):
+    def test_jacobian(self, model, include_greybox):
         """Make sure the Jacobian from Pynumero matches expectation.  This is
         mostly to ensure we understand the interface and catch if things change.
         """
@@ -2444,13 +2465,15 @@ class TestJacobianMethods:
         set_scaling_factor(m.x, 1e-3)
         set_scaling_factor(m.y, 1e-6)
         set_scaling_factor(m.z, 1e-4)
-        jac, _ = get_jacobian(m, include_scaling_factors=False)
+        jac, _ = get_jacobian(
+            m, include_scaling_factors=False, include_greybox=include_greybox
+        )
         assert len(m.scaling_factor) == 4
         assert not hasattr(m, "scaling_hint")
         assert jac[c1_row, x_col] == pytest.approx(-1e6)
 
         # Check the scaled jacobian calculation
-        jac_scaled, _ = get_jacobian(m)
+        jac_scaled, _ = get_jacobian(m, include_greybox=include_greybox)
         assert len(m.scaling_factor) == 4
         assert not hasattr(m, "scaling_hint")
         assert jac_scaled[c1_row, x_col] == pytest.approx(-1000)
@@ -2458,24 +2481,25 @@ class TestJacobianMethods:
         assert jac_scaled[c1_row, z_col] == pytest.approx(0.01)
 
     @pytest.mark.unit
-    def test_scale_no_var_scale(self, model):
+    def test_scale_no_var_scale(self, model, include_greybox):
         m = model
         jac_scaled, nlp = get_jacobian(
             m,
             include_scaling_factors=False,
             include_ipopt_autoscaling=True,
             min_scale=1e-6,
+            include_greybox=include_greybox,
         )
         # get_scaling_factor isn't called here so the suffix shouldn't exist
         assert not hasattr(m, "scaling_factor")
         assert not hasattr(m, "scaling_hint")
 
-        c1_row = nlp._condata_to_idx[m.c1]
-        c2_row = nlp._condata_to_idx[m.c2]
-        c3_row = nlp._condata_to_idx[m.c3]
-        x_col = nlp._vardata_to_idx[m.x]
-        y_col = nlp._vardata_to_idx[m.y]
-        z_col = nlp._vardata_to_idx[m.z]
+        c1_row = nlp.constraint_names().index(m.c1.name)
+        c2_row = nlp.constraint_names().index(m.c2.name)
+        c3_row = nlp.constraint_names().index(m.c3.name)
+        x_col = nlp.primals_names().index(m.x.name)
+        y_col = nlp.primals_names().index(m.y.name)
+        z_col = nlp.primals_names().index(m.z.name)
 
         assert jac_scaled[c1_row, x_col] == pytest.approx(-100)
         assert jac_scaled[c1_row, y_col] == pytest.approx(-0.1)
@@ -2488,7 +2512,7 @@ class TestJacobianMethods:
         assert jac_scaled[c3_row, z_col] == pytest.approx(3e2)
 
     @pytest.mark.unit
-    def test_scale_with_var_scale(self, model):
+    def test_scale_with_var_scale(self, model, include_greybox):
         m = model
         m.scaling_factor = Suffix(direction=Suffix.EXPORT)
         m.scaling_factor[m.x] = 1e-3
@@ -2504,16 +2528,17 @@ class TestJacobianMethods:
             include_scaling_factors=True,
             include_ipopt_autoscaling=True,
             min_scale=1e-6,
+            include_greybox=include_greybox,
         )
         assert len(m.scaling_factor) == 3
         assert not hasattr(m, "scaling_hint")
 
-        c1_row = nlp._condata_to_idx[m.c1]
-        c2_row = nlp._condata_to_idx[m.c2]
-        c3_row = nlp._condata_to_idx[m.c3]
-        x_col = nlp._vardata_to_idx[m.x]
-        y_col = nlp._vardata_to_idx[m.y]
-        z_col = nlp._vardata_to_idx[m.z]
+        c1_row = nlp.constraint_names().index(m.c1.name)
+        c2_row = nlp.constraint_names().index(m.c2.name)
+        c3_row = nlp.constraint_names().index(m.c3.name)
+        x_col = nlp.primals_names().index(m.x.name)
+        y_col = nlp.primals_names().index(m.y.name)
+        z_col = nlp.primals_names().index(m.z.name)
 
         assert jac_scaled[c1_row, x_col] == pytest.approx(-1000)
         assert jac_scaled[c1_row, y_col] == pytest.approx(-1000)
@@ -2526,7 +2551,7 @@ class TestJacobianMethods:
         assert jac_scaled[c3_row, z_col] == pytest.approx(3e6)
 
     @pytest.mark.unit
-    def test_exclude_scaling_factors_variables(self, model):
+    def test_exclude_scaling_factors_variables(self, model, include_greybox):
         m = model
         m.scaling_factor = Suffix(direction=Suffix.EXPORT)
         m.scaling_factor[m.x] = 1e-3
@@ -2537,17 +2562,18 @@ class TestJacobianMethods:
             m,
             include_scaling_factors=False,
             include_ipopt_autoscaling=True,
+            include_greybox=include_greybox,
             min_scale=1e-6,
         )
         assert len(m.scaling_factor) == 3
         assert not hasattr(m, "scaling_hint")
 
-        c1_row = nlp._condata_to_idx[m.c1]
-        c2_row = nlp._condata_to_idx[m.c2]
-        c3_row = nlp._condata_to_idx[m.c3]
-        x_col = nlp._vardata_to_idx[m.x]
-        y_col = nlp._vardata_to_idx[m.y]
-        z_col = nlp._vardata_to_idx[m.z]
+        c1_row = nlp.constraint_names().index(m.c1.name)
+        c2_row = nlp.constraint_names().index(m.c2.name)
+        c3_row = nlp.constraint_names().index(m.c3.name)
+        x_col = nlp.primals_names().index(m.x.name)
+        y_col = nlp.primals_names().index(m.y.name)
+        z_col = nlp.primals_names().index(m.z.name)
 
         assert jac_scaled[c1_row, x_col] == pytest.approx(-100)
         assert jac_scaled[c1_row, y_col] == pytest.approx(-0.1)
@@ -2560,7 +2586,7 @@ class TestJacobianMethods:
         assert jac_scaled[c3_row, z_col] == pytest.approx(3e2)
 
     @pytest.mark.unit
-    def test_condition_number(self, model, caplog):
+    def test_condition_number(self, model, caplog, include_greybox):
         """Calculate the condition number of the Jacobian"""
         m = model
         m.scaling_factor = Suffix(direction=Suffix.EXPORT)
@@ -2571,9 +2597,9 @@ class TestJacobianMethods:
         m.scaling_factor[m.c2] = 1e-6
         m.scaling_factor[m.c3] = 1e-12
 
-        n = jacobian_cond(m, scaled=True)
+        n = jacobian_cond(m, scaled=True, include_greybox=include_greybox)
         assert n == pytest.approx(687.47, rel=1e-3)
-        n = jacobian_cond(m, scaled=False)
+        n = jacobian_cond(m, scaled=False, include_greybox=include_greybox)
         assert n == pytest.approx(7.50567e7, rel=1e-3)
 
         # Nonsquare condition number
@@ -2581,7 +2607,7 @@ class TestJacobianMethods:
 
         # Scaled
         with caplog.at_level(idaeslog.INFO):
-            n = jacobian_cond(m, scaled=True)
+            n = jacobian_cond(m, scaled=True, include_greybox=include_greybox)
         assert (
             "Nonsquare Jacobian. Using pseudoinverse to calculate Frobenius norm."
         ) in caplog.text
@@ -2589,14 +2615,14 @@ class TestJacobianMethods:
 
         # Unscaled
         with caplog.at_level(idaeslog.INFO):
-            n = jacobian_cond(m, scaled=False)
+            n = jacobian_cond(m, scaled=False, include_greybox=include_greybox)
         assert (
             "Nonsquare Jacobian. Using pseudoinverse to calculate Frobenius norm."
         ) in caplog.text
         assert n == pytest.approx(2.23741e5, rel=1e-3)
 
     @pytest.mark.unit
-    def test_condition_number_none(self, model):
+    def test_condition_number_none(self, model, include_greybox):
         with pytest.raises(
             RuntimeError,
             match=re.escape(
@@ -2604,7 +2630,7 @@ class TestJacobianMethods:
                 "to calculate the condition number."
             ),
         ):
-            _ = jacobian_cond()
+            _ = jacobian_cond(include_greybox=include_greybox)
 
 
 def discretization_tester(transformation_method, scheme, t_skip, continuity_eqns=False):
@@ -2741,3 +2767,176 @@ def test_correct_set_identification():
         assert get_scaling_factor(m.xdot_disc_eq[0, i]) == approx(0.2)
         assert get_scaling_factor(m.xdot_disc_eq[1, i]) == approx(0.3)
         assert get_scaling_factor(m.xdot_disc_eq[2, i]) == approx(0.5)
+
+
+class TestJacobianMethodsGreyBox:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+
+        m.gb = ExternalGreyBoxBlock(
+            external_model=ResidualGrayBox(), build_implicit_constraint_objects=True
+        )
+
+        m.v1 = Var(initialize=5.0)
+        m.v2 = Var(initialize=5.0)
+        m.v3 = Var(initialize=-2.0)
+        m.v4 = Var(initialize=-4.0)
+        m.v5 = Var(initialize=2.0)
+        m.v6 = Var(initialize=0.0)
+        m.v7 = Var(initialize=1e-7)
+
+        m.gb_link_v1 = Constraint(expr=m.gb.inputs["v1"] == m.v1)
+        m.gb_link_v2 = Constraint(expr=m.gb.inputs["v2"] == m.v2)
+        m.gb_link_v3 = Constraint(expr=m.gb.inputs["v3"] == m.v3)
+        m.gb_link_v4 = Constraint(expr=m.gb.inputs["v4"] == m.v4)
+        m.gb_link_v5 = Constraint(expr=m.gb.inputs["v5"] == m.v5)
+        m.gb_link_v6 = Constraint(expr=m.gb.inputs["v6"] == m.v6)
+        m.gb_link_v7 = Constraint(expr=m.gb.inputs["v7"] == m.v7)
+
+        return m
+
+    @pytest.mark.unit
+    def test_get_jacobian_include_greybox_false(self, model):
+        with pytest.raises(
+            ValueError,
+            match="The model contains components that are not supported by the Pyomo NL writer. "
+            "This may be because the model contains a grey-box model. If you want to include "
+            "grey-box variables and constraints in the Jacobian, set "
+            "include_greybox=True when calling get_jacobian.",
+        ):
+            get_jacobian(model, include_greybox=False)
+
+    @pytest.mark.unit
+    def test_get_jacobian(self, model):
+        jac, nlp = get_jacobian(model, include_greybox=True)
+
+        assert jac.shape == (11, 14)
+
+        expected = {
+            ("gb_link_v1", "v1"): 1.0,
+            ("gb_link_v1", "gb.inputs[v1]"): -1.0,
+            ("gb_link_v2", "v2"): 1.0,
+            ("gb_link_v2", "gb.inputs[v2]"): -1.0,
+            ("gb_link_v3", "v3"): 1.0,
+            ("gb_link_v3", "gb.inputs[v3]"): -1.0,
+            ("gb_link_v4", "v4"): 1.0,
+            ("gb_link_v4", "gb.inputs[v4]"): -1.0,
+            ("gb_link_v5", "v5"): 1.0,
+            ("gb_link_v5", "gb.inputs[v5]"): -1.0,
+            ("gb_link_v6", "v6"): 1.0,
+            ("gb_link_v6", "gb.inputs[v6]"): -1.0,
+            ("gb_link_v7", "v7"): 1.0,
+            ("gb_link_v7", "gb.inputs[v7]"): -1.0,
+            ("gb.c1", "gb.inputs[v1]"): 1.0,
+            ("gb.c1", "gb.inputs[v2]"): 1.0,
+            ("gb.c2", "gb.inputs[v3]"): 1.0,
+            ("gb.c2", "gb.inputs[v4]"): -1.0,
+            ("gb.c2", "gb.inputs[v5]"): -1.0,
+            ("gb.c3", "gb.inputs[v3]"): 2.0,
+            ("gb.c3", "gb.inputs[v4]"): -3.0,
+            ("gb.c3", "gb.inputs[v5]"): -4.0,
+            ("gb.c3", "gb.inputs[v6]"): -1.0,
+            ("gb.c4", "gb.inputs[v1]"): -2e-08,
+            ("gb.c4", "gb.inputs[v7]"): 1.0,
+        }
+
+        for i in range(11):
+            for j in range(14):
+                col = nlp.primals_names()[j]
+                row = nlp.constraint_names()[i]
+                assert jac[i, j] == pytest.approx(
+                    expected.get((row, col), 0.0), rel=1e-6, abs=1e-12
+                )
+
+    @pytest.mark.unit
+    def test_get_jacobian_w_scaling(self, model):
+        model.scaling_factor = Suffix(direction=Suffix.EXPORT)
+        model.scaling_factor[model.v7] = 1e7
+
+        jac, nlp = get_jacobian(
+            model, include_greybox=True, include_scaling_factors=True
+        )
+
+        assert jac.shape == (11, 14)
+
+        expected = {
+            ("gb_link_v1", "v1"): 1.0,
+            ("gb_link_v1", "gb.inputs[v1]"): -1.0,
+            ("gb_link_v2", "v2"): 1.0,
+            ("gb_link_v2", "gb.inputs[v2]"): -1.0,
+            ("gb_link_v3", "v3"): 1.0,
+            ("gb_link_v3", "gb.inputs[v3]"): -1.0,
+            ("gb_link_v4", "v4"): 1.0,
+            ("gb_link_v4", "gb.inputs[v4]"): -1.0,
+            ("gb_link_v5", "v5"): 1.0,
+            ("gb_link_v5", "gb.inputs[v5]"): -1.0,
+            ("gb_link_v6", "v6"): 1.0,
+            ("gb_link_v6", "gb.inputs[v6]"): -1.0,
+            ("gb_link_v7", "v7"): 1e-07,
+            ("gb_link_v7", "gb.inputs[v7]"): -1.0,
+            ("gb.c1", "gb.inputs[v1]"): 1.0,
+            ("gb.c1", "gb.inputs[v2]"): 1.0,
+            ("gb.c2", "gb.inputs[v3]"): 1.0,
+            ("gb.c2", "gb.inputs[v4]"): -1.0,
+            ("gb.c2", "gb.inputs[v5]"): -1.0,
+            ("gb.c3", "gb.inputs[v3]"): 2.0,
+            ("gb.c3", "gb.inputs[v4]"): -3.0,
+            ("gb.c3", "gb.inputs[v5]"): -4.0,
+            ("gb.c3", "gb.inputs[v6]"): -1.0,
+            ("gb.c4", "gb.inputs[v1]"): -2e-08,
+            ("gb.c4", "gb.inputs[v7]"): 1.0,
+        }
+
+        for i in range(11):
+            for j in range(14):
+                col = nlp.primals_names()[j]
+                row = nlp.constraint_names()[i]
+                print(row, col, jac[i, j])
+                assert jac[i, j] == pytest.approx(
+                    expected.get((row, col), 0.0), rel=1e-6, abs=1e-12
+                )
+
+    @pytest.mark.unit
+    def test_get_jacobian_include_ipopt_autoscaling(self, model):
+        jac, nlp = get_jacobian(
+            model, include_greybox=True, include_ipopt_autoscaling=True
+        )
+
+        assert jac.shape == (11, 14)
+
+        expected = {
+            ("gb_link_v1", "v1"): 1.0,
+            ("gb_link_v1", "gb.inputs[v1]"): -1.0,
+            ("gb_link_v2", "v2"): 1.0,
+            ("gb_link_v2", "gb.inputs[v2]"): -1.0,
+            ("gb_link_v3", "v3"): 1.0,
+            ("gb_link_v3", "gb.inputs[v3]"): -1.0,
+            ("gb_link_v4", "v4"): 1.0,
+            ("gb_link_v4", "gb.inputs[v4]"): -1.0,
+            ("gb_link_v5", "v5"): 1.0,
+            ("gb_link_v5", "gb.inputs[v5]"): -1.0,
+            ("gb_link_v6", "v6"): 1.0,
+            ("gb_link_v6", "gb.inputs[v6]"): -1.0,
+            ("gb_link_v7", "v7"): 1.0,
+            ("gb_link_v7", "gb.inputs[v7]"): -1.0,
+            ("gb.c1", "gb.inputs[v1]"): 1.0,
+            ("gb.c1", "gb.inputs[v2]"): 1.0,
+            ("gb.c2", "gb.inputs[v3]"): 1.0,
+            ("gb.c2", "gb.inputs[v4]"): -1.0,
+            ("gb.c2", "gb.inputs[v5]"): -1.0,
+            ("gb.c3", "gb.inputs[v3]"): 2.0,
+            ("gb.c3", "gb.inputs[v4]"): -3.0,
+            ("gb.c3", "gb.inputs[v5]"): -4.0,
+            ("gb.c3", "gb.inputs[v6]"): -1.0,
+            ("gb.c4", "gb.inputs[v1]"): -2e-08,
+            ("gb.c4", "gb.inputs[v7]"): 1.0,
+        }
+
+        for i in range(11):
+            for j in range(14):
+                col = nlp.primals_names()[j]
+                row = nlp.constraint_names()[i]
+                assert jac[i, j] == pytest.approx(
+                    expected.get((row, col), 0.0), rel=1e-6, abs=1e-12
+                )

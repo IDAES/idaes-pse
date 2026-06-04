@@ -17,6 +17,8 @@ This module contains utility functions for reporting model diagnostics.
 
 __author__ = "Alexander Dowling, Douglas Allan, Andrew Lee, Robby Parker, Ben Knueven"
 
+from sys import stdout
+
 from pyomo.common.collections import ComponentSet
 
 from idaes.core.util.model_statistics import (
@@ -37,19 +39,37 @@ from idaes.core.util.model_statistics import (
     unfixed_greybox_variables,
     greybox_variables,
 )
-from idaes.core.util.diagnostics_tools.utils import (
-    var_in_block,
-)
 
 MAX_STR_LENGTH = 84
 TAB = " " * 4
 
 
-def collect_model_statistics(model):
+def _var_in_block(var, block):
+    parent = var.parent_block()
+    while parent is not None:
+        if parent is block:
+            return True
+        parent = parent.parent_block()
+    return False
+
+
+# TODO: This appears to duplicate much of the functionality in
+# model_statistics.report_statistics
+def collect_model_statistics(model, include_greybox=True):
     """
-    Collects statistics about the model that are relevant for diagnostics tools.
+    Collect general statistics about the model, and format into a readable report.
+
+    Args:
+        model: Pyomo model to be studied
+        include_greybox: Boolean to include implicit constraints from GreyBox
+            models (default = True)
+
+    Returns:
+        List of strings containing model statistics, formatted for display
     """
-    vars_in_constraints = variables_in_activated_constraints_set(model)
+    vars_in_constraints = variables_in_activated_constraints_set(
+        model, include_greybox=include_greybox
+    )
     fixed_vars_in_constraints = ComponentSet()
     free_vars_in_constraints = ComponentSet()
     free_vars_lb = ComponentSet()
@@ -60,11 +80,11 @@ def collect_model_statistics(model):
     for v in vars_in_constraints:
         if v.fixed:
             fixed_vars_in_constraints.add(v)
-            if not var_in_block(v, model):
+            if not _var_in_block(v, model):
                 ext_fixed_vars_in_constraints.add(v)
         else:
             free_vars_in_constraints.add(v)
-            if not var_in_block(v, model):
+            if not _var_in_block(v, model):
                 ext_free_vars_in_constraints.add(v)
             if v.lb is not None:
                 if v.ub is not None:
@@ -98,8 +118,8 @@ def collect_model_statistics(model):
         f"(External: {len(ext_fixed_vars_in_constraints)})"
     )
     stats.append(
-        f"{TAB}Activated Equality Constraints: {len(activated_equalities_set(model))+number_activated_greybox_equalities(model)} "
-        f"(Deactivated: {len(deactivated_equalities_set(model))+number_deactivated_greybox_equalities(model)})"
+        f"{TAB}Activated Equality Constraints: {len(activated_equalities_set(model, include_greybox=include_greybox))} "
+        f"(Deactivated: {len(deactivated_equalities_set(model, include_greybox=include_greybox))})"
     )
     stats.append(
         f"{TAB}Activated Inequality Constraints: {len(activated_inequalities_set(model))} "
@@ -153,6 +173,9 @@ def write_report_section(
         None
 
     """
+    if stream is None:
+        stream = stdout
+
     stream.write(f"{header * MAX_STR_LENGTH}\n")
     if title is not None:
         stream.write(f"{title}\n\n")

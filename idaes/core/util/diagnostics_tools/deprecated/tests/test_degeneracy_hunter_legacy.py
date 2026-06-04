@@ -31,6 +31,8 @@ import idaes.core.util.scaling as iscale
 from idaes.core.util.diagnostics_tools.deprecated.degeneracy_hunter_legacy import (
     DegeneracyHunter,
 )
+
+# dummy_problem is used as a fixture the tests, but is not picked up by static analysis
 from idaes.core.util.diagnostics_tools.tests.utils import (
     dummy_problem,
 )
