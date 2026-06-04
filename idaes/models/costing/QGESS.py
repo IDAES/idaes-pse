@@ -78,6 +78,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
     """
     Costing class for building QGESS methods.
     """
+
     # Register currency and conversion rates based on CE Index
 
     if (
@@ -972,7 +973,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         )
                     )
                     self.land_cost_reoccurrence = "annual"
-    
+
                 except UnitsError:
                     raise ValueError(
                         f"Expression land_cost units {expr_units} are not compatible with "
@@ -1058,7 +1059,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         )
                     )
                     self.additional_waste_reoccurrence = "annual"
-    
+
                 except UnitsError:
                     raise ValueError(
                         f"Expression additional_waste_cost units {expr_units} are not compatible with "
@@ -1097,9 +1098,21 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             self.total_overnight_capital = Expression(
                 expr=(
                     self.total_TPC
-                    + (self.land_cost if self.land_cost_reoccurrence == "one_time" else 0 * self.CE_index_units / pyunits.year)
-                    + (self.additional_chemicals_cost if self.additional_chemicals_reoccurrence == "one_time" else 0 * self.CE_index_units / pyunits.year)
-                    + (self.additional_waste_cost if self.additional_waste_reoccurrence == "one_time" else 0 * self.CE_index_units / pyunits.year)
+                    + (
+                        self.land_cost
+                        if self.land_cost_reoccurrence == "one_time"
+                        else 0 * self.CE_index_units / pyunits.year
+                    )
+                    + (
+                        self.additional_chemicals_cost
+                        if self.additional_chemicals_reoccurrence == "one_time"
+                        else 0 * self.CE_index_units / pyunits.year
+                    )
+                    + (
+                        self.additional_waste_cost
+                        if self.additional_waste_reoccurrence == "one_time"
+                        else 0 * self.CE_index_units / pyunits.year
+                    )
                 )
             )
         else:
@@ -1118,7 +1131,6 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
             # some components relate to variable operating costs
             if self.config.has_variable_OM:
-                # TODO allow for more than one fuel and more than one feedstock
 
                 non_fuel_feedstock_waste_resources = {}
                 for i in resources:
@@ -1136,18 +1148,24 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         )
                     else:  # at operating capacity, 2.25 months
                         self.fuel_cost_OC = Expression(
-                            expr=sum(self.variable_operating_costs[0, i] for i in fuel) / 12 * 2.25,
+                            expr=sum(self.variable_operating_costs[0, i] for i in fuel)
+                            / 12
+                            * 2.25,
                             doc="Owner's costs - 2.25 months of fuel costs",
                         )
                     for i in fuel:
-                        del non_fuel_feedstock_waste_resources[i] # remove fuel from the list
+                        del non_fuel_feedstock_waste_resources[
+                            i
+                        ]  # remove fuel from the list
 
                 if feedstock is not None:
                     if (
                         self.config.tech == 8 or self.config.tech == 9
                     ):  # at 100% capacity, 25% of a month
                         self.feedstock_cost_OC = Expression(
-                            expr=sum(self.variable_operating_costs[0, i] for i in feedstock)
+                            expr=sum(
+                                self.variable_operating_costs[0, i] for i in feedstock
+                            )
                             / 12
                             * 0.25
                             / self.capacity_factor,
@@ -1155,11 +1173,18 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         )
                     else:  # at operating capacity, 2.25 months
                         self.feedstock_cost_OC = Expression(
-                            expr=sum(self.variable_operating_costs[0, i] for i in feedstock) / 12 * 0.25 * 0, # exclude feedstock cost
+                            expr=sum(
+                                self.variable_operating_costs[0, i] for i in feedstock
+                            )
+                            / 12
+                            * 0.25
+                            * 0,  # exclude feedstock cost
                             doc="Owner's costs - power plants don't include feedstock costs",
                         )
                     for i in feedstock:
-                        del non_fuel_feedstock_waste_resources[i] # remove feedstock from the list
+                        del non_fuel_feedstock_waste_resources[
+                            i
+                        ]  # remove feedstock from the list
 
                 if waste is not None:
                     if (
@@ -1180,7 +1205,9 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                             )
                         )
                     for i in waste:
-                        del non_fuel_feedstock_waste_resources[i] # remove waste from the list
+                        del non_fuel_feedstock_waste_resources[
+                            i
+                        ]  # remove waste from the list
 
                 if self.config.tech == 8 or self.config.tech == 9:  # at 100% capacity
                     self.non_fuel_feedstock_waste_OC = Expression(
@@ -1246,30 +1273,79 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
             # define overnight cost
             # if fixed OM is not defined or user defines as a lumped value, no way of knowing the labor cost so skip it
-            include_labor_components = (self.config.has_fixed_OM and annual_fixed_operating_cost is None)
+            include_labor_components = (
+                self.config.has_fixed_OM and annual_fixed_operating_cost is None
+            )
             self.total_overnight_capital = Expression(
                 expr=self.total_TPC
                 # include labor costs if present
-                + (self.six_month_labor if include_labor_components else 0 * self.CE_index_units)
+                + (
+                    self.six_month_labor
+                    if include_labor_components
+                    else 0 * self.CE_index_units
+                )
                 + (  # include material and resource costs if present
                     (
-                        (self.maintenance_material_cost / 12 / self.capacity_factor
-                        if self.config.tech == 8 or self.config.tech == 9 else self.maintenance_material_cost / 12
-                        ) if include_labor_components else 0 * self.CE_index_units / pyunits.year
+                        (
+                            self.maintenance_material_cost / 12 / self.capacity_factor
+                            if self.config.tech == 8 or self.config.tech == 9
+                            else self.maintenance_material_cost / 12
+                        )
+                        if include_labor_components
+                        else 0 * self.CE_index_units / pyunits.year
                     )  # 1 month materials
-                    + (self.non_fuel_feedstock_waste_OC if self.config.has_variable_OM else 0 * self.CE_index_units / pyunits.year)  # 1 month nonfuel consumables
-                    + (self.waste_cost_OC if waste is not None else 0 * self.CE_index_units / pyunits.year) # 1 month waste
+                    + (
+                        self.non_fuel_feedstock_waste_OC
+                        if self.config.has_variable_OM
+                        else 0 * self.CE_index_units / pyunits.year
+                    )  # 1 month nonfuel consumables
+                    + (
+                        self.waste_cost_OC
+                        if waste is not None
+                        else 0 * self.CE_index_units / pyunits.year
+                    )  # 1 month waste
                     # inventory capital costs
-                    + (self.fuel_cost_OC if fuel is not None else 0 * self.CE_index_units / pyunits.year) # initial fuel supply
-                    + (self.feedstock_cost_OC if feedstock is not None else 0 * self.CE_index_units / pyunits.year) # initial feedstock supply
+                    + (
+                        self.fuel_cost_OC
+                        if fuel is not None
+                        else 0 * self.CE_index_units / pyunits.year
+                    )  # initial fuel supply
+                    + (
+                        self.feedstock_cost_OC
+                        if feedstock is not None
+                        else 0 * self.CE_index_units / pyunits.year
+                    )  # initial feedstock supply
                     # Other costs
-                    + (self.chemicals_cost_OC if chemicals is not None else 0 * self.CE_index_units / pyunits.year) # Initial Cost for Catalyst and Chemicals
-                    + (self.chemicals_inventory_cost_OC if chemicals_inventory is not None else 0 * self.CE_index_units) # Initial Cost for Catalyst and Chemicals Inventory
-                ) * 1 * pyunits.year  # overhead costs for 1 year
-                + (self.land_cost if self.land_cost_reoccurrence == "one_time" else 0 * self.CE_index_units)
-                + (self.additional_chemicals_cost if self.additional_chemicals_reoccurrence == "one_time" else 0 * self.CE_index_units)
-                + (self.additional_waste_cost if self.additional_waste_reoccurrence == "one_time" else 0 * self.CE_index_units)
-                + self.total_TPC * self.pct_TPC  # other owners costs (other + spare parts + financing + other pre-production)
+                    + (
+                        self.chemicals_cost_OC
+                        if chemicals is not None
+                        else 0 * self.CE_index_units / pyunits.year
+                    )  # Initial Cost for Catalyst and Chemicals
+                    + (
+                        self.chemicals_inventory_cost_OC
+                        if chemicals_inventory is not None
+                        else 0 * self.CE_index_units
+                    )  # Initial Cost for Catalyst and Chemicals Inventory
+                )
+                * 1
+                * pyunits.year  # overhead costs for 1 year
+                + (
+                    self.land_cost
+                    if self.land_cost_reoccurrence == "one_time"
+                    else 0 * self.CE_index_units
+                )
+                + (
+                    self.additional_chemicals_cost
+                    if self.additional_chemicals_reoccurrence == "one_time"
+                    else 0 * self.CE_index_units
+                )
+                + (
+                    self.additional_waste_cost
+                    if self.additional_waste_reoccurrence == "one_time"
+                    else 0 * self.CE_index_units
+                )
+                + self.total_TPC
+                * self.pct_TPC  # other owners costs (other + spare parts + financing + other pre-production)
             )
 
         # build expressions - factors are defined as global params based on tech
@@ -1296,15 +1372,21 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         #     we should generalize these and let users define what their production rate is
         #     could also include transport costs
         if production_rate is not None:
-            # TODO add tests, should pass with kg/s, kg**2/s, MW/ MW-h/year but not kg, kg**2, MW-h, MW/year
+
             dim = pyunits.get_units(production_rate)._pint_unit.dimensionality
 
-            allowed_production_units = True  # check if production units are compatible with LCOP
+            allowed_production_units = (
+                True  # check if production units are compatible with LCOP
+            )
 
-            if '[time]' not in dim or dim['[time]'] != -1: # units not in form production/time
+            if (
+                "[time]" not in dim or dim["[time]"] != -1
+            ):  # units not in form production/time
                 allowed_production_units = False
 
-            if dim == pyunits.get_units(pyunits.MW)._pint_unit.dimensionality:  # implied power units are allowed
+            if (
+                dim == pyunits.get_units(pyunits.MW)._pint_unit.dimensionality
+            ):  # implied power units are allowed
                 allowed_production_units = True
 
             if not allowed_production_units:
@@ -1313,13 +1395,13 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     f"Please ensure that the production rate has units of production/time or implied units of power "
                     f"such as MW or MW-h/year."
                 )
-            
 
             self.additional_cost_of_production = Var(
                 initialize=0,
                 doc="Additional cost to be added to the LCOP calculations; use 70.9 for NGCC baseline "
                 + "report and 43.3 for NGCC without carbon capture, both for production rate in MWh/[time]",
-                units=self.base_currency / pyunits.get_units(production_rate * pyunits.year),
+                units=self.base_currency
+                / pyunits.get_units(production_rate * pyunits.year),
             )
             self.additional_cost_of_production.fix()
 
@@ -2021,7 +2103,9 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
         if total_purchase_cost is not None:
             b.total_BEC = Var(
-                initialize=pyunits.convert(total_purchase_cost, to_units=b.CE_index_units),
+                initialize=pyunits.convert(
+                    total_purchase_cost, to_units=b.CE_index_units
+                ),
                 units=b.CE_index_units,
             )
             b.total_BEC.fix()
@@ -2705,14 +2789,33 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         c.total_fixed_OM_cost
                         + (
                             c.variable_operating_costs[0, "power"]
-                            if (0, "power") in b.variable_operating_costs.id_index_map().values()
+                            if (0, "power")
+                            in b.variable_operating_costs.id_index_map().values()
                             else 0 * c.CE_index_units / pyunits.year
                         )
-                        + sum(c.variable_operating_costs[0, chemical] for chemical in c.chemicals_list)
-                        + sum(c.variable_operating_costs[0, waste] for waste in c.waste_list)
-                        + (c.land_cost if c.land_cost_reoccurrence == "annual" else 0 * c.CE_index_units / pyunits.year)
-                        + (c.additional_chemicals_cost if c.additional_chemicals_reoccurrence == "annual" else 0 * c.CE_index_units / pyunits.year)
-                        + (c.additional_waste_cost if c.additional_waste_reoccurrence == "annual" else 0 * c.CE_index_units / pyunits.year)
+                        + sum(
+                            c.variable_operating_costs[0, chemical]
+                            for chemical in c.chemicals_list
+                        )
+                        + sum(
+                            c.variable_operating_costs[0, waste]
+                            for waste in c.waste_list
+                        )
+                        + (
+                            c.land_cost
+                            if c.land_cost_reoccurrence == "annual"
+                            else 0 * c.CE_index_units / pyunits.year
+                        )
+                        + (
+                            c.additional_chemicals_cost
+                            if c.additional_chemicals_reoccurrence == "annual"
+                            else 0 * c.CE_index_units / pyunits.year
+                        )
+                        + (
+                            c.additional_waste_cost
+                            if c.additional_waste_reoccurrence == "annual"
+                            else 0 * c.CE_index_units / pyunits.year
+                        )
                         + c.custom_variable_costs
                     )
 
@@ -2722,12 +2825,32 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 c.total_variable_OM_cost[t]
                 == sum(c.variable_operating_costs[t, r] for r in resources)
                 + c.other_variable_costs[t]
-                + (c.plant_overhead_cost[t] if hasattr(c, "plant_overhead_cost") else 0 * c.CE_index_units / pyunits.year)
-                + (c.land_cost if c.land_cost_reoccurrence == "annual" else 0 * c.CE_index_units / pyunits.year)
-                + (c.additional_chemicals_cost if c.additional_chemicals_reoccurrence == "annual" else 0 * c.CE_index_units / pyunits.year)
-                + (c.additional_waste_cost if c.additional_waste_reoccurrence == "annual" else 0 * c.CE_index_units / pyunits.year)
+                + (
+                    c.plant_overhead_cost[t]
+                    if hasattr(c, "plant_overhead_cost")
+                    else 0 * c.CE_index_units / pyunits.year
+                )
+                + (
+                    c.land_cost
+                    if c.land_cost_reoccurrence == "annual"
+                    else 0 * c.CE_index_units / pyunits.year
+                )
+                + (
+                    c.additional_chemicals_cost
+                    if c.additional_chemicals_reoccurrence == "annual"
+                    else 0 * c.CE_index_units / pyunits.year
+                )
+                + (
+                    c.additional_waste_cost
+                    if c.additional_waste_reoccurrence == "annual"
+                    else 0 * c.CE_index_units / pyunits.year
+                )
                 # for power plants, include maintenance material costs here if defined
-                + (c.maintenance_material_cost if hasattr(c, "maintenance_material_cost") else 0 * c.CE_index_units / pyunits.year)
+                + (
+                    c.maintenance_material_cost
+                    if hasattr(c, "maintenance_material_cost")
+                    else 0 * c.CE_index_units / pyunits.year
+                )
             )
 
     def calculate_taxes(b):
@@ -2791,8 +2914,14 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     to_units=pyunits.dimensionless,
                 )
                 * b.phaseout_factor
-                * ((b.total_variable_OM_cost[0] if b.config.has_variable_OM else 0 * b.CE_index_units/pyunits.year)
-                   + b.total_fixed_OM_cost)
+                * (
+                    (
+                        b.total_variable_OM_cost[0]
+                        if b.config.has_variable_OM
+                        else 0 * b.CE_index_units / pyunits.year
+                    )
+                    + b.total_fixed_OM_cost
+                )
             )
         else:
             b.production_incentive_charge = Expression(
@@ -2800,8 +2929,14 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     b.production_incentive_percentage,
                     to_units=pyunits.dimensionless,
                 )
-                * ((b.total_variable_OM_cost[0] if b.config.has_variable_OM else 0 * b.CE_index_units/pyunits.year)
-                   + b.total_fixed_OM_cost)
+                * (
+                    (
+                        b.total_variable_OM_cost[0]
+                        if b.config.has_variable_OM
+                        else 0 * b.CE_index_units / pyunits.year
+                    )
+                    + b.total_fixed_OM_cost
+                )
             )
 
         # build constraints
@@ -2813,7 +2948,11 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             ) * (
                 b.total_sales_revenue
                 - (
-                    (b.total_variable_OM_cost[0] if b.config.has_variable_OM else 0 * b.CE_index_units/pyunits.year)
+                    (
+                        b.total_variable_OM_cost[0]
+                        if b.config.has_variable_OM
+                        else 0 * b.CE_index_units / pyunits.year
+                    )
                     + b.total_fixed_OM_cost
                     + b.annualized_cost / pyunits.year
                 )
@@ -3139,15 +3278,31 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 expr=(
                     b.total_TPC
                     + b.other_plant_costs
-                    + (b.land_cost if b.land_cost_reoccurrence == "one_time" else 0 * b.CE_index_units)
+                    + (
+                        b.land_cost
+                        if b.land_cost_reoccurrence == "one_time"
+                        else 0 * b.CE_index_units
+                    )
                 )
             )
             b.opex = Expression(
                 expr=(
                     (
-                        (b.total_fixed_OM_cost if b.config.has_fixed_OM else 0 * b.CE_index_units/pyunits.year)
-                        + (b.total_variable_OM_cost[0] if b.config.has_variable_OM else 0 * b.CE_index_units/pyunits.year)
-                        + (b.land_cost if b.land_cost_reoccurrence == "annual" else 0 * b.CE_index_units / pyunits.year)
+                        (
+                            b.total_fixed_OM_cost
+                            if b.config.has_fixed_OM
+                            else 0 * b.CE_index_units / pyunits.year
+                        )
+                        + (
+                            b.total_variable_OM_cost[0]
+                            if b.config.has_variable_OM
+                            else 0 * b.CE_index_units / pyunits.year
+                        )
+                        + (
+                            b.land_cost
+                            if b.land_cost_reoccurrence == "annual"
+                            else 0 * b.CE_index_units / pyunits.year
+                        )
                     )
                 )
             )
@@ -3241,8 +3396,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             if b.config.has_production_credit_phaseout:
 
                 b.pv_production_incentive = Var(
-                    initialize=b.production_incentive_charge
-                    * b.plant_lifetime,
+                    initialize=b.production_incentive_charge * b.plant_lifetime,
                     bounds=(0, None),
                     doc="Present value of total lifetime production incentive",
                     units=b.CE_index_units,
@@ -3256,7 +3410,14 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 )
 
                 full_credit_years = int(
-                    value(smooth_max(0, min([int(y) for y in b.phaseout_fractions.keys()]) - current_year, eps=EPS))
+                    value(
+                        smooth_max(
+                            0,
+                            min([int(y) for y in b.phaseout_fractions.keys()])
+                            - current_year,
+                            eps=EPS,
+                        )
+                    )
                 )
 
                 b.production_incentive_charge_percent_list = []
@@ -3283,8 +3444,12 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                             )
                         )
 
-                if value(b.plant_end_year) > max([int(y) for y in b.phaseout_fractions.keys()]):
-                    zero_credit_years = value(b.plant_end_year) - max([int(y) for y in b.phaseout_fractions.keys()])
+                if value(b.plant_end_year) > max(
+                    [int(y) for y in b.phaseout_fractions.keys()]
+                ):
+                    zero_credit_years = value(b.plant_end_year) - max(
+                        [int(y) for y in b.phaseout_fractions.keys()]
+                    )
 
                     for i in range(value(zero_credit_years)):
                         b.production_incentive_charge_percent_list.append(0.0)
@@ -3298,7 +3463,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
         # define series present worth factor as a method so it can be called
 
-        def series_present_worth_factor(r, g, N): # TODO fix this
+        def series_present_worth_factor(r, g, N):
             """
             Returns expression for series present worth factor where r is the discount rate
             expressed as a decimal, N is the project lifetime, and g is the escalation rate
@@ -3437,7 +3602,8 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             # PV_Operating_Cost = - OPEX * [ P/A(r, g, OPEX_end_year) - P/A(r, g, CAPEX_end_year) ]
 
             return c.pv_operating_cost == -pyunits.convert(
-                c.opex * pyunits.year
+                c.opex
+                * pyunits.year
                 * (
                     series_present_worth_factor(
                         pyunits.convert(
@@ -3470,7 +3636,8 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             # PV_Revenue = REVENUE * [ P/A(r, g, Revenue_end_year) - P/A(r, g, CAPEX_end_year) ]
 
             return c.pv_revenue == pyunits.convert(
-                c.total_sales_revenue * pyunits.year
+                c.total_sales_revenue
+                * pyunits.year
                 * (
                     series_present_worth_factor(
                         pyunits.convert(
@@ -3555,7 +3722,8 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 return c.pv_production_incentive == pyunits.convert(
                     sum(
                         b.production_incentive_charge_percent_list[idx]
-                        * c.opex * pyunits.year
+                        * c.opex
+                        * pyunits.year
                         * (
                             series_present_worth_factor(
                                 pyunits.convert(
@@ -3595,8 +3763,16 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 + c.pv_capital_cost
                 + c.pv_loan_interest
                 + c.pv_operating_cost
-                + (c.pv_taxes if b.config.has_taxes_and_credits else 0 * c.CE_index_units)
-                + (c.pv_production_incentive if b.config.has_production_credit_phaseout else 0 * c.CE_index_units),
+                + (
+                    c.pv_taxes
+                    if b.config.has_taxes_and_credits
+                    else 0 * c.CE_index_units
+                )
+                + (
+                    c.pv_production_incentive
+                    if b.config.has_production_credit_phaseout
+                    else 0 * c.CE_index_units
+                ),
                 to_units=c.CE_index_units,
             )
 
