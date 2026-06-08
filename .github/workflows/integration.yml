@@ -193,8 +193,8 @@ jobs:
       - name: Fetch and run examples
         uses: ./.github/actions/run-examples
         with:
-          examples-repository: IDAES/examples
-          examples-ref: main
+          examples-repository: sufikaur/examples
+          examples-ref: idaes-1802-fix
           reinstall-target: -r requirements-dev.txt
           notebook-cell-exec-timeout: '600'
           working-dir: ${{ runner.temp }}
