@@ -1415,9 +1415,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
         if production_rate is not None:
             # TODO look into protected access issue with pint
-            # pylint: disable=protected-access
-
-            dim = pyunits.get_units(production_rate)._pint_unit.dimensionality
+            dim = pyunits.get_units(production_rate)._pint_unit.dimensionality  # pylint: disable=protected-access
 
             allowed_production_units = (
                 True  # check if production units are compatible with LCOP
@@ -1429,7 +1427,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 allowed_production_units = False
 
             if (
-                dim == pyunits.get_units(pyunits.MW)._pint_unit.dimensionality
+                dim == pyunits.get_units(pyunits.MW)._pint_unit.dimensionality  # pylint: disable=protected-access
             ):  # implied power units are allowed
                 allowed_production_units = True
 
@@ -1484,8 +1482,9 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         # levelized cost per unit feedstock
 
         if feedstock_rate is not None:
-
-            dim = pyunits.get_units(feedstock_rate)._pint_unit.dimensionality
+            # TODO look into protected access issue with pint
+            # pylint: disable=protected-access
+            dim = pyunits.get_units(feedstock_rate)._pint_unit.dimensionality  # pylint: disable=protected-access
 
             allowed_feedstock_units = (
                 True  # check if production units are compatible with LCOP
@@ -2249,7 +2248,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
             for o in b.parent_block().component_objects(descend_into=True):
                 # look for costing blocks
-                if o.name in [block.name for block in b._registered_unit_costing]:
+                if o.name in [block.name for block in b._registered_unit_costing]:  # pylint: disable=protected-access
                     if hasattr(
                         o, "total_plant_cost"
                     ):  # block that should not be multiplied by Lang factor
@@ -3114,7 +3113,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         # b is the flowsheet-level costing block
         for o in b.parent_block().component_objects(descend_into=True):
             # look for costing blocks
-            if o.name in b._registered_unit_costing:
+            if o.name in b._registered_unit_costing:  # pylint: disable=protected-access
                 if hasattr(o, "library"):
                     if o.library == "sCO2":
                         if o.equipment in [
@@ -3916,7 +3915,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         for o in b.parent_block().component_objects(descend_into=True):
             # look for costing blocks
             if o.name in [
-                block.name for block in b._registered_unit_costing
+                block.name for block in b._registered_unit_costing  # pylint: disable=protected-access
             ] and hasattr(o, "total_plant_cost"):
                 print(
                     "%s: %.2f"
@@ -3933,7 +3932,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         for o in b.parent_block().component_objects(descend_into=True):
             # look for costing blocks
             if o.name in [
-                block.name for block in b._registered_unit_costing
+                block.name for block in b._registered_unit_costing  # pylint: disable=protected-access
             ] and hasattr(o, "bare_erected_cost"):
                 print(
                     "%s: %.5f"
