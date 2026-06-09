@@ -39,7 +39,7 @@ from sys import stdout
 
 from pyomo.common.config import ConfigValue, ListOf
 from pyomo.core.base.units_container import InconsistentUnitsError, UnitsError
-from pyomo.environ import Expression, Param, Reference, Var, log10
+from pyomo.environ import Expression, Param, Var, log10
 from pyomo.environ import units as pyunits
 from pyomo.environ import value
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
@@ -1410,6 +1410,8 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         # levelized cost per unit production
 
         if production_rate is not None:
+            # TODO look into protected access issue with pint
+            # pylint: disable=protected-access
 
             dim = pyunits.get_units(production_rate)._pint_unit.dimensionality
 
@@ -3555,17 +3557,16 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         )
                     )
 
-                for year in b.phaseout_fractions.keys():
+                for year, fraction in b.phaseout_fractions.items():
                     if value(b.plant_end_year) >= int(year):
                         b.production_incentive_charge_percent_list.append(
-                            value(b.phaseout_fractions[year])
-                            * value(
+                            fraction * value(
                                 pyunits.convert(
                                     b.production_incentive_percentage,
                                     to_units=pyunits.dimensionless,
+                                    )
                                 )
                             )
-                        )
 
                 if value(b.plant_end_year) > max(
                     [int(y) for y in b.phaseout_fractions.keys()]
