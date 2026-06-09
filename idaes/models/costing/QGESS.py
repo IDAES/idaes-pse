@@ -37,35 +37,29 @@ __version__ = "1.0.0"
 import textwrap
 from sys import stdout
 
+import idaes.core.util.scaling as iscale
+import idaes.logger as idaeslog
+from idaes.core import FlowsheetCostingBlockData, declare_process_block_class
+from idaes.core.util.exceptions import BurntToast, ConfigurationError
+from idaes.core.util.math import smooth_max
+from idaes.core.util.tables import stream_table_dataframe_to_string
+from idaes.models_extra.power_generation.costing.generic_ccs_capcost_custom_dict import (
+    load_generic_ccs_costing_dictionary,
+)
+from idaes.models_extra.power_generation.costing.power_plant_costing_dictionaries import (
+    define_preloaded_accounts,
+    load_BB_costing_dictionary,
+    load_default_resource_prices,
+    load_fixed_OM_data,
+    register_power_plant_currency_units,
+)
+from pandas import DataFrame
 from pyomo.common.config import ConfigValue, ListOf
 from pyomo.core.base.units_container import InconsistentUnitsError, UnitsError
 from pyomo.environ import Expression, Param, Var, log10
 from pyomo.environ import units as pyunits
 from pyomo.environ import value
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
-
-from pandas import DataFrame
-
-import idaes.core.util.scaling as iscale
-from idaes.core.util.exceptions import ConfigurationError, BurntToast
-import idaes.logger as idaeslog
-from idaes.core import (
-    FlowsheetCostingBlockData,
-    declare_process_block_class,
-)
-from idaes.core.util.math import smooth_max
-from idaes.core.util.tables import stream_table_dataframe_to_string
-
-from idaes.models_extra.power_generation.costing.power_plant_costing_dictionaries import (
-    register_power_plant_currency_units,
-    load_BB_costing_dictionary,
-    define_preloaded_accounts,
-    load_default_resource_prices,
-    load_fixed_OM_data,
-)
-from idaes.models_extra.power_generation.costing.generic_ccs_capcost_custom_dict import (
-    load_generic_ccs_costing_dictionary,
-)
 
 _log = idaeslog.getLogger(__name__)
 
@@ -1373,7 +1367,10 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
         # transport cost of production and feedstock
 
-        if transport_per_unit_production_cost is not None and production_rate is not None:
+        if (
+            transport_per_unit_production_cost is not None
+            and production_rate is not None
+        ):
             try:
                 self.transport_production_cost = Expression(
                     expr=pyunits.convert(
@@ -1385,12 +1382,17 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 raise InconsistentUnitsError(
                     "production_rate",
                     "transport_per_unit_production_cost",
-                    f"Expression transport_production_cost failed to build with error: {e} "
-                    )
+                    f"Expression transport_production_cost failed to build with error: {e} ",
+                )
         else:
-            self.transport_production_cost = Expression(expr=0 * self.CE_index_units / pyunits.year)
+            self.transport_production_cost = Expression(
+                expr=0 * self.CE_index_units / pyunits.year
+            )
 
-        if transport_per_unit_feedstock_cost is not None and production_rate is not None:
+        if (
+            transport_per_unit_feedstock_cost is not None
+            and production_rate is not None
+        ):
             try:
                 self.transport_feedstock_cost = Expression(
                     expr=pyunits.convert(
@@ -1398,14 +1400,16 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         to_units=self.CE_index_units / pyunits.year,
                     )
                 )
-            except UnitsError as e:       
+            except UnitsError as e:
                 raise InconsistentUnitsError(
                     "feedstock_rate",
                     "transport_per_unit_feedstock_cost",
-                    f"Expression transport_feedstock_cost failed to build with error: {e} "
-                    )
+                    f"Expression transport_feedstock_cost failed to build with error: {e} ",
+                )
         else:
-            self.transport_feedstock_cost = Expression(expr=0 * self.CE_index_units / pyunits.year)
+            self.transport_feedstock_cost = Expression(
+                expr=0 * self.CE_index_units / pyunits.year
+            )
 
         # levelized cost per unit production
 
@@ -1440,7 +1444,8 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 initialize=0,
                 doc="Additional cost to be added to the LCOP calculations; use 70.9 for NGCC baseline "
                 + "report and 43.3 for NGCC without carbon capture, both for production rate in MWh/[time]",
-                units=self.base_currency / pyunits.get_units(production_rate * pyunits.year),
+                units=self.base_currency
+                / pyunits.get_units(production_rate * pyunits.year),
             )
             self.additional_cost_of_production.fix()
 
@@ -1458,7 +1463,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                                 self.total_variable_OM_cost[0] * self.capacity_factor
                                 if self.config.has_variable_OM
                                 else 0 * self.CE_index_units / pyunits.year
-                                )
+                            )
                             + (
                                 self.net_tax_owed
                                 if self.config.has_taxes_and_credits
@@ -1466,9 +1471,11 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                             )
                             + self.transport_production_cost
                             + self.transport_feedstock_cost
-                        ) * pyunits.year
+                        )
+                        * pyunits.year
                         / (production_rate * pyunits.year * self.capacity_factor),
-                        to_units=self.base_currency / pyunits.get_units(production_rate * pyunits.year),
+                        to_units=self.base_currency
+                        / pyunits.get_units(production_rate * pyunits.year),
                     )
                     + self.additional_cost_of_production
                 )
@@ -1498,7 +1505,8 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             self.additional_cost_of_feedstock = Var(
                 initialize=0,
                 doc="Additional cost to be added to the LCOF calculations",
-                units=self.base_currency / pyunits.get_units(feedstock_rate * pyunits.year),
+                units=self.base_currency
+                / pyunits.get_units(feedstock_rate * pyunits.year),
             )
             self.additional_cost_of_feedstock.fix()
 
@@ -1516,7 +1524,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                                 self.total_variable_OM_cost[0] * self.capacity_factor
                                 if self.config.has_variable_OM
                                 else 0 * self.CE_index_units / pyunits.year
-                                )
+                            )
                             + (
                                 self.net_tax_owed
                                 if self.config.has_taxes_and_credits
@@ -1524,9 +1532,11 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                             )
                             + self.transport_production_cost
                             + self.transport_feedstock_cost
-                        ) * pyunits.year
+                        )
+                        * pyunits.year
                         / (feedstock_rate * pyunits.year * self.capacity_factor),
-                        to_units=self.base_currency / pyunits.get_units(feedstock_rate * pyunits.year),
+                        to_units=self.base_currency
+                        / pyunits.get_units(feedstock_rate * pyunits.year),
                     )
                     + self.additional_cost_of_feedstock
                 )
@@ -3560,13 +3570,14 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 for year, fraction in b.phaseout_fractions.items():
                     if value(b.plant_end_year) >= int(year):
                         b.production_incentive_charge_percent_list.append(
-                            fraction * value(
+                            fraction
+                            * value(
                                 pyunits.convert(
                                     b.production_incentive_percentage,
                                     to_units=pyunits.dimensionless,
-                                    )
                                 )
                             )
+                        )
 
                 if value(b.plant_end_year) > max(
                     [int(y) for y in b.phaseout_fractions.keys()]

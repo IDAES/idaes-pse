@@ -14,22 +14,16 @@
 __author__ = "Costing Team (B. Paul, L. Deng, A. Fritz, A. Ojo, A. Dasgupta, A. Noring, A. Deshpande, D. Caballero, and M. Zamarripa)"
 __version__ = "1.0.0"
 
-import pytest
-
 import pyomo.environ as pyo
-from pyomo.core.base.expression import ScalarExpression
-from pyomo.environ import units as pyunits
-
+import pytest
 from idaes.core import FlowsheetBlock
 from idaes.core.util.exceptions import ConfigurationError
-
-from idaes.models.costing.QGESS import (
-    QGESSCosting,
-)
-
+from idaes.models.costing.QGESS import QGESSCosting
 from idaes.models_extra.power_generation.costing.power_plant_costing_dictionaries import (
     load_fixed_OM_data,
 )
+from pyomo.core.base.expression import ScalarExpression
+from pyomo.environ import units as pyunits
 
 
 class TestQGESSConfigParameters(object):
