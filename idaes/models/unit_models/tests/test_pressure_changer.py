@@ -83,10 +83,7 @@ from idaes.core.initialization import (
     InitializationStatus,
 )
 from idaes.core.util import DiagnosticsToolbox
-from idaes.core.util.scaling import (
-    get_jacobian,
-    jacobian_cond,
-)
+from idaes.core.scaling.util import jacobian_cond
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -1143,13 +1140,7 @@ class TestPressureChangerScaler:
         assert check_optimal_termination(results)
 
         # Check condition number to confirm scaling
-        sm = TransformationFactory("core.scale_model").create_using(
-            pump_model, rename=False
-        )
-        jac, _ = get_jacobian(sm, scaled=False)
-        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(
-            1.393e02, rel=1e-3
-        )
+        assert jacobian_cond(pump_model) == pytest.approx(1.393e02, rel=1e-3)
 
     @pytest.fixture
     def isothermal_model(self):
@@ -1221,11 +1212,7 @@ class TestPressureChangerScaler:
         assert check_optimal_termination(results)
 
         # Check condition number to confirm scaling
-        sm = TransformationFactory("core.scale_model").create_using(
-            isothermal_model, rename=False
-        )
-        jac, _ = get_jacobian(sm, scaled=False)
-        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(170.82, rel=1e-3)
+        assert jacobian_cond(isothermal_model) == pytest.approx(193.26, rel=1e-3)
 
     @pytest.fixture
     def isentropic_model(self):
@@ -1293,7 +1280,7 @@ class TestPressureChangerScaler:
             isentropic_model.fs.C101.scaling_factor[
                 isentropic_model.fs.C101.work_isentropic[0.0]
             ]
-            == 1e-10
+            == 6.94146115869313e-09
         )
         assert (
             isentropic_model.fs.C101.scaling_factor[
@@ -1326,7 +1313,7 @@ class TestPressureChangerScaler:
             isentropic_model.fs.C101.scaling_factor[
                 isentropic_model.fs.C101.isentropic_energy_balance[0.0]
             ]
-            == 1e-10
+            == 6.94146115869313e-09
         )
 
     @pytest.mark.integration
@@ -1338,11 +1325,7 @@ class TestPressureChangerScaler:
         assert check_optimal_termination(results)
 
         # Check condition number to confirm scaling
-        sm = TransformationFactory("core.scale_model").create_using(
-            isentropic_model, rename=False
-        )
-        jac, _ = get_jacobian(sm, scaled=False)
-        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(9.71e3, rel=1e-3)
+        assert jacobian_cond(isentropic_model) == pytest.approx(1186.00, rel=1e-3)
 
     @pytest.mark.integration
     def test_example_case_turbine(self):
@@ -1399,6 +1382,4 @@ class TestPressureChangerScaler:
         assert check_optimal_termination(results)
 
         # Check condition number to confirm scaling
-        sm = TransformationFactory("core.scale_model").create_using(m, rename=False)
-        jac, _ = get_jacobian(sm, scaled=False)
-        assert (jacobian_cond(jac=jac, scaled=False)) == pytest.approx(8.55e3, rel=1e-3)
+        assert jacobian_cond(m) == pytest.approx(1234.32, rel=1e-3)

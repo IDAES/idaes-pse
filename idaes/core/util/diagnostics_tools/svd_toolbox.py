@@ -47,6 +47,7 @@ from idaes.core.util.diagnostics_tools.writer_utils import (
     MAX_STR_LENGTH,
     TAB,
 )
+from idaes.core.util.misc import make_ordinal
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
@@ -327,14 +328,16 @@ class SVDToolbox:
             # First, make sure values are feasible
             if e > len(self.s):
                 raise ValueError(
-                    f"Cannot display the {e}-th smallest singular value. "
+                    f"Cannot display the {make_ordinal(e)} smallest singular value. "
                     f"Only {len(self.s)} small singular values have been "
                     "calculated. You can set the number_of_smallest_singular_values "
                     "config argument and call run_svd_analysis again to get more "
                     "singular values."
                 )
 
-            stream.write(f"{TAB}Smallest Singular Value {e}:\n\n")
+            stream.write(
+                f"{TAB}{make_ordinal(e)} Smallest Singular Value: {self.s[e - 1]:.3e}\n\n"
+            )
             stream.write(f"{2 * TAB}Variables:\n\n")
             for v in np.where(abs(self.v[:, e - 1]) > tol)[0]:
                 stream.write(f"{3 * TAB}{self._var_list[v].name}\n")

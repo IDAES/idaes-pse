@@ -17,7 +17,6 @@ Interface for importing ONNX models into IDAES
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring
-# TODO: Importing protected  _ACTIVATION_OP_TYPES as not exposed in distributed version
 # pylint: disable=W0123
 from enum import Enum
 import json
@@ -40,7 +39,6 @@ if omlt_available:
         ReluBigMFormulation,
         ReluComplementarityFormulation,
     )
-    import omlt.io as omltio
 
     if onnx_available:
         from omlt.io import load_onnx_neural_network, write_onnx_model_with_bounds
@@ -120,16 +118,6 @@ class ONNXSurrogate(OMLTSurrogate):
         input_bounds = dict(enumerate(self.input_bounds().values()))
         scaled_input_bounds = omlt_scaling.get_scaled_input_expressions(input_bounds)
         scaled_input_bounds = {i: tuple(bnd) for i, bnd in scaled_input_bounds.items()}
-
-        # TODO: remove this once new OMLT 1.2 is made available and includes tanh support
-        # overrides default available activation functions for ONNX, tanh is not listed in 1.1 but is supported
-
-        omltio.onnx_parser._ACTIVATION_OP_TYPES = [  # pylint: disable=protected-access
-            "Relu",
-            "Sigmoid",
-            "LogSoftmax",
-            "Tanh",
-        ]
 
         # pylint: disable-next=used-before-assignment
         net = load_onnx_neural_network(
