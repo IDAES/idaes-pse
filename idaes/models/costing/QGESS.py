@@ -815,7 +815,8 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         chemicals=None,  # extra inventory required as part of overnight costs
         additional_chemicals_cost=None,
         chemicals_inventory=None,
-        transport_cost=None,
+        transport_per_unit_feedstock_cost=None,
+        transport_per_unit_production_cost=None,
     ):
         """
         This method builds process-wide costing, including fixed and variable
@@ -909,7 +910,9 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 If this argument has any other units or no units, an error will be returned.
             chemicals_inventory: list of strings to define which resources are
                 chemicals that require inventory stock.
-            transport_cost: Expression, Var or Param to calculate transport costs of product
+            transport_per_unit_feedstock_cost: Expression, Var or Param to calculate transport costs of feedstock
+                per unit of feedstock.
+            transport_per_unit_ production_cost: Expression, Var or Param to calculate transport costs of product
                 per unit of product.
 
         """
@@ -1004,7 +1007,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         additional_chemicals_cost, to_units=self.CE_index_units
                     )
                 )
-                self.additional_chemicals_reoccurrence = "one_time"
+                self.additional_chemicals_cost_reoccurrence = "one_time"
 
             except UnitsError:
                 try:
@@ -1015,7 +1018,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                             to_units=self.CE_index_units / pyunits.year,
                         )
                     )
-                    self.additional_chemicals_reoccurrence = "annual"
+                    self.additional_chemicals_cost_reoccurrence = "annual"
 
                 except UnitsError:
                     raise ValueError(
@@ -1026,7 +1029,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         f"total variable operating cost."
                     )
         else:
-            self.additional_chemicals_reoccurrence = "one_time"
+            self.additional_chemicals_cost_reoccurrence = "one_time"
             self.additional_chemicals_cost = Expression(expr=0 * self.CE_index_units)
 
         # define waste cost, if passed
@@ -1047,7 +1050,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         additional_waste_cost, to_units=self.CE_index_units
                     )
                 )
-                self.additional_waste_reoccurrence = "one_time"
+                self.additional_waste_cost_reoccurrence = "one_time"
 
             except UnitsError:
                 try:
@@ -1058,7 +1061,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                             to_units=self.CE_index_units / pyunits.year,
                         )
                     )
-                    self.additional_waste_reoccurrence = "annual"
+                    self.additional_waste_cost_reoccurrence = "annual"
 
                 except UnitsError:
                     raise ValueError(
@@ -1069,7 +1072,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         f"total variable operating cost."
                     )
         else:
-            self.additional_waste_reoccurrence = "one_time"
+            self.additional_waste_cost_reoccurrence = "one_time"
             self.additional_waste_cost = Expression(expr=0 * self.CE_index_units)
 
         # call fixed OM method
@@ -1101,17 +1104,17 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     + (
                         self.land_cost
                         if self.land_cost_reoccurrence == "one_time"
-                        else 0 * self.CE_index_units / pyunits.year
+                        else 0 * self.CE_index_units
                     )
                     + (
                         self.additional_chemicals_cost
-                        if self.additional_chemicals_reoccurrence == "one_time"
-                        else 0 * self.CE_index_units / pyunits.year
+                        if self.additional_chemicals_cost_reoccurrence == "one_time"
+                        else 0 * self.CE_index_units
                     )
                     + (
                         self.additional_waste_cost
-                        if self.additional_waste_reoccurrence == "one_time"
-                        else 0 * self.CE_index_units / pyunits.year
+                        if self.additional_waste_cost_reoccurrence == "one_time"
+                        else 0 * self.CE_index_units
                     )
                 )
             )
@@ -1276,6 +1279,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             include_labor_components = (
                 self.config.has_fixed_OM and annual_fixed_operating_cost is None
             )
+
             self.total_overnight_capital = Expression(
                 expr=self.total_TPC
                 # include labor costs if present
@@ -1322,9 +1326,9 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         else 0 * self.CE_index_units / pyunits.year
                     )  # Initial Cost for Catalyst and Chemicals
                     + (
-                        self.chemicals_inventory_cost_OC
+                        self.chemicals_inventory_cost_OC / pyunits.year
                         if chemicals_inventory is not None
-                        else 0 * self.CE_index_units
+                        else 0 * self.CE_index_units / pyunits.year
                     )  # Initial Cost for Catalyst and Chemicals Inventory
                 )
                 * 1
@@ -1336,12 +1340,12 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 )
                 + (
                     self.additional_chemicals_cost
-                    if self.additional_chemicals_reoccurrence == "one_time"
+                    if self.additional_chemicals_cost_reoccurrence == "one_time"
                     else 0 * self.CE_index_units
                 )
                 + (
                     self.additional_waste_cost
-                    if self.additional_waste_reoccurrence == "one_time"
+                    if self.additional_waste_cost_reoccurrence == "one_time"
                     else 0 * self.CE_index_units
                 )
                 + self.total_TPC
@@ -1367,10 +1371,44 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         if self.config.has_net_present_value:
             self.calculate_net_present_value(debt_expression)
 
-        # levelized cost
-        #     PP has cost of electricity, PL/S&C have cost of production, REE has cost of recovery
-        #     we should generalize these and let users define what their production rate is
-        #     could also include transport costs
+        # transport cost of production and feedstock
+
+        if transport_per_unit_production_cost is not None and production_rate is not None:
+            try:
+                self.transport_production_cost = Expression(
+                    expr=pyunits.convert(
+                        transport_per_unit_production_cost * production_rate,
+                        to_units=self.CE_index_units / pyunits.year,
+                    )
+                )
+            except UnitsError as e:
+                raise InconsistentUnitsError(
+                    "production_rate",
+                    "transport_per_unit_production_cost",
+                    f"Expression transport_production_cost failed to build with error: {e} "
+                    )
+        else:
+            self.transport_production_cost = Expression(expr=0 * self.CE_index_units / pyunits.year)
+
+        if transport_per_unit_feedstock_cost is not None and production_rate is not None:
+            try:
+                self.transport_feedstock_cost = Expression(
+                    expr=pyunits.convert(
+                        transport_per_unit_feedstock_cost * feedstock_rate,
+                        to_units=self.CE_index_units / pyunits.year,
+                    )
+                )
+            except UnitsError as e:       
+                raise InconsistentUnitsError(
+                    "feedstock_rate",
+                    "transport_per_unit_feedstock_cost",
+                    f"Expression transport_feedstock_cost failed to build with error: {e} "
+                    )
+        else:
+            self.transport_feedstock_cost = Expression(expr=0 * self.CE_index_units / pyunits.year)
+
+        # levelized cost per unit production
+
         if production_rate is not None:
 
             dim = pyunits.get_units(production_rate)._pint_unit.dimensionality
@@ -1400,12 +1438,97 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 initialize=0,
                 doc="Additional cost to be added to the LCOP calculations; use 70.9 for NGCC baseline "
                 + "report and 43.3 for NGCC without carbon capture, both for production rate in MWh/[time]",
-                units=self.base_currency
-                / pyunits.get_units(production_rate * pyunits.year),
+                units=self.base_currency / pyunits.get_units(production_rate * pyunits.year),
             )
             self.additional_cost_of_production.fix()
 
-        # TODO add cost per unit feedstock and cost of production
+            self.cost_of_production = Expression(
+                expr=(
+                    pyunits.convert(
+                        (
+                            self.annualized_cost / pyunits.year
+                            + (
+                                self.total_fixed_OM_cost
+                                if self.config.has_fixed_OM
+                                else 0 * self.CE_index_units / pyunits.year
+                            )
+                            + (
+                                self.total_variable_OM_cost[0] * self.capacity_factor
+                                if self.config.has_variable_OM
+                                else 0 * self.CE_index_units / pyunits.year
+                                )
+                            + (
+                                self.net_tax_owed
+                                if self.config.has_taxes_and_credits
+                                else 0 * self.CE_index_units / pyunits.year
+                            )
+                            + self.transport_production_cost
+                            + self.transport_feedstock_cost
+                        ) * pyunits.year
+                        / (production_rate * pyunits.year * self.capacity_factor),
+                        to_units=self.base_currency / pyunits.get_units(production_rate * pyunits.year),
+                    )
+                    + self.additional_cost_of_production
+                )
+            )
+
+        # levelized cost per unit feedstock
+
+        if feedstock_rate is not None:
+
+            dim = pyunits.get_units(feedstock_rate)._pint_unit.dimensionality
+
+            allowed_feedstock_units = (
+                True  # check if production units are compatible with LCOP
+            )
+
+            if (
+                "[time]" not in dim or dim["[time]"] != -1
+            ):  # units not in form production/time
+                allowed_feedstock_units = False
+
+            if not allowed_feedstock_units:
+                raise UnitsError(
+                    f"The argument feedstock_rate was passed with the units {pyunits.get_units(feedstock_rate)}. "
+                    f"Please ensure that the feedstock rate has units of feedstock/time."
+                )
+
+            self.additional_cost_of_feedstock = Var(
+                initialize=0,
+                doc="Additional cost to be added to the LCOF calculations",
+                units=self.base_currency / pyunits.get_units(feedstock_rate * pyunits.year),
+            )
+            self.additional_cost_of_feedstock.fix()
+
+            self.cost_of_feedstock = Expression(
+                expr=(
+                    pyunits.convert(
+                        (
+                            self.annualized_cost / pyunits.year
+                            + (
+                                self.total_fixed_OM_cost
+                                if self.config.has_fixed_OM
+                                else 0 * self.CE_index_units / pyunits.year
+                            )
+                            + (
+                                self.total_variable_OM_cost[0] * self.capacity_factor
+                                if self.config.has_variable_OM
+                                else 0 * self.CE_index_units / pyunits.year
+                                )
+                            + (
+                                self.net_tax_owed
+                                if self.config.has_taxes_and_credits
+                                else 0 * self.CE_index_units / pyunits.year
+                            )
+                            + self.transport_production_cost
+                            + self.transport_feedstock_cost
+                        ) * pyunits.year
+                        / (feedstock_rate * pyunits.year * self.capacity_factor),
+                        to_units=self.base_currency / pyunits.get_units(feedstock_rate * pyunits.year),
+                    )
+                    + self.additional_cost_of_feedstock
+                )
+            )
 
     def get_equipment_costing(
         blk,
@@ -2808,12 +2931,12 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         )
                         + (
                             c.additional_chemicals_cost
-                            if c.additional_chemicals_reoccurrence == "annual"
+                            if c.additional_chemicals_cost_reoccurrence == "annual"
                             else 0 * c.CE_index_units / pyunits.year
                         )
                         + (
                             c.additional_waste_cost
-                            if c.additional_waste_reoccurrence == "annual"
+                            if c.additional_waste_cost_reoccurrence == "annual"
                             else 0 * c.CE_index_units / pyunits.year
                         )
                         + c.custom_variable_costs
@@ -2837,12 +2960,12 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 )
                 + (
                     c.additional_chemicals_cost
-                    if c.additional_chemicals_reoccurrence == "annual"
+                    if c.additional_chemicals_cost_reoccurrence == "annual"
                     else 0 * c.CE_index_units / pyunits.year
                 )
                 + (
                     c.additional_waste_cost
-                    if c.additional_waste_reoccurrence == "annual"
+                    if c.additional_waste_cost_reoccurrence == "annual"
                     else 0 * c.CE_index_units / pyunits.year
                 )
                 # for power plants, include maintenance material costs here if defined

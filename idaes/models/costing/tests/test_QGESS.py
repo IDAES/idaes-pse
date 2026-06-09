@@ -717,6 +717,8 @@ class TestQGESSBuildProcessCosts(object):
             "total_overnight_capital",
             "total_as_spent_cost",
             "annualized_cost",
+            "transport_feedstock_cost",
+            "transport_production_cost",
         ]:
             assert isinstance(getattr(m.fs.costing, expr), ScalarExpression)
 
@@ -798,7 +800,7 @@ class TestQGESSBuildProcessCosts(object):
             annual_revenue=15 * pyunits.MUSD_2021 / pyunits.year,
             debt_expression=50 * pyunits.MUSD_2021,  # for NPV method
             # optional arguments for additional calculations and reporting
-            feedstock_rate=m.fs.coal,
+            feedstock_rate=m.fs.coal[0],
             production_rate=m.fs.pure_product[0]
             + m.fs.mixed_product[0],  # this could be power, total REE, water, CO2
             # required arguments for fixed_OM calculations
@@ -842,13 +844,13 @@ class TestQGESSBuildProcessCosts(object):
             / pyunits.s,  # for startup and/or annual leasing costs
             # test two fuels
             fuel=[
-                "coal1",
-                "coal2",
+                "natural_gas1",
+                "natural_gas2",
             ],  # extra inventory required as part of overnight costs
             # test two feedstocks
             feedstock=[
-                "natural_gas1",
-                "natural_gas2",
+                "coal1",
+                "coal2",
             ],  # extra inventory required as part of overnight costs
             # test two waste streams
             waste=[
@@ -866,12 +868,8 @@ class TestQGESSBuildProcessCosts(object):
                 "chemicals1",
                 "chemicals2",
             ],
-            transport_cost=10
-            * pyunits.USD_2021
-            / pyunits.kg
-            * 0.2
-            * pyunits.kg
-            / pyunits.s,
+            transport_per_unit_feedstock_cost=10 * pyunits.USD_2021 / pyunits.kg,
+            transport_per_unit_production_cost=10 * pyunits.USD_2021 / pyunits.kg,
         )
 
         for var in [
@@ -934,6 +932,8 @@ class TestQGESSBuildProcessCosts(object):
             "production_incentive_charge",
             "capex",
             "opex",
+            "transport_feedstock_cost",
+            "transport_production_cost",
         ]:
             assert isinstance(getattr(m.fs.costing, expr), ScalarExpression)
         assert isinstance(m.fs.costing.Lang_factor, pyo.Param)
