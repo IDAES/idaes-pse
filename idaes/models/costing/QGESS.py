@@ -37,6 +37,15 @@ __version__ = "1.0.0"
 import textwrap
 from sys import stdout
 
+from pandas import DataFrame
+from pint.errors import UndefinedUnitError
+from pyomo.common.config import ConfigValue, ListOf
+from pyomo.core.base.units_container import InconsistentUnitsError, UnitsError
+from pyomo.environ import Expression, Param, Var, log10
+from pyomo.environ import units as pyunits
+from pyomo.environ import value
+from pyomo.util.calc_var_value import calculate_variable_from_constraint
+
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core import FlowsheetCostingBlockData, declare_process_block_class
@@ -53,14 +62,6 @@ from idaes.models_extra.power_generation.costing.power_plant_costing_dictionarie
     load_fixed_OM_data,
     register_power_plant_currency_units,
 )
-from pandas import DataFrame
-from pint.errors import UndefinedUnitError
-from pyomo.common.config import ConfigValue, ListOf
-from pyomo.core.base.units_container import InconsistentUnitsError, UnitsError
-from pyomo.environ import Expression, Param, Var, log10
-from pyomo.environ import units as pyunits
-from pyomo.environ import value
-from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 _log = idaeslog.getLogger(__name__)
 
@@ -1419,11 +1420,17 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 expr=0 * self.CE_index_units / pyunits.year
             )
 
+        # TODO look into protected access issue with pint
+
         # levelized cost per unit production
         # store valid units to check production, feedstock rates against
-        ureg = pyunits.get_units(pyunits.kg)._pint_unit._REGISTRY  # pylint: disable=protected-access
+        # pylint: disable-next=protected-access
+        ureg = pyunits.get_units(pyunits.kg)._pint_unit
+        # pylint: disable-next=protected-access
+        reg = ureg._REGISTRY
+
         valid_units = {}
-        for name in ureg._units.keys():  # pylint: disable=protected-access
+        for name in reg._units.keys():  # pylint: disable=protected-access
             try:
                 dim = (1 * ureg.parse_units(name)).dimensionality
                 valid_units.setdefault(dim, []).append(name)
@@ -1431,12 +1438,18 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 pass
 
         if production_rate is not None:
-            # TODO look into protected access issue with pint
-            # check that production rate units are valid_units/time
-            dim = pyunits.get_units(production_rate)._pint_unit.dimensionality  # pylint: disable=protected-access
-            dim_numerator = pyunits.get_units(production_rate * pyunits.s)._pint_unit.dimensionality  # pylint: disable=protected-access
 
-            allowed_production_units = True  # check if production units are compatible with LCOP
+            # check that production rate units are valid_units/time
+            # pylint: disable-next=protected-access
+            dim = pyunits.get_units(production_rate)._pint_unit.dimensionality
+            # pylint: disable-next=protected-access
+            dim_numerator = pyunits.get_units(
+                production_rate * pyunits.s
+            )._pint_unit.dimensionality
+
+            allowed_production_units = (
+                True  # check if production units are compatible with LCOP
+            )
 
             if (
                 "[time]" not in dim
@@ -1495,12 +1508,18 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         # levelized cost per unit feedstock
 
         if feedstock_rate is not None:
-            # TODO look into protected access issue with pint
-            # check that feedstock rate units are valid_units/time
-            dim = pyunits.get_units(feedstock_rate)._pint_unit.dimensionality  # pylint: disable=protected-access
-            dim_numerator = pyunits.get_units(feedstock_rate * pyunits.s)._pint_unit.dimensionality  # pylint: disable=protected-access
 
-            allowed_feedstock_units = True  # check if feedstock units are compatible with LCOP
+            # check that feedstock rate units are valid_units/time
+            # pylint: disable-next=protected-access
+            dim = pyunits.get_units(feedstock_rate)._pint_unit.dimensionality
+            # pylint: disable-next=protected-access
+            dim_numerator = pyunits.get_units(
+                feedstock_rate * pyunits.s
+            )._pint_unit.dimensionality
+
+            allowed_feedstock_units = (
+                True  # check if feedstock units are compatible with LCOP
+            )
 
             if (
                 "[time]" not in dim
@@ -2253,8 +2272,9 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             for o in b.parent_block().component_objects(descend_into=True):
                 # look for costing blocks
                 if o.name in [
-                    block.name for block in b._registered_unit_costing
-                ]:  # pylint: disable=protected-access
+                    block.name
+                    for block in b._registered_unit_costing  # pylint: disable=protected-access
+                ]:
                     if hasattr(
                         o, "total_plant_cost"
                     ):  # block that should not be multiplied by Lang factor
