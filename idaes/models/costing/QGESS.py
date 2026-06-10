@@ -1432,7 +1432,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         valid_units = {}
         for name in reg._units.keys():  # pylint: disable=protected-access
             try:
-                dim = (1 * ureg.parse_units(name)).dimensionality
+                dim = (1 * reg.parse_units(name)).dimensionality
                 valid_units.setdefault(dim, []).append(name)
             except UndefinedUnitError:
                 pass
@@ -3633,15 +3633,17 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
                 b.production_incentive_charge_percent_list = []
 
-                for i in range(full_credit_years):
-                    b.production_incentive_charge_percent_list.append(
+                b.production_incentive_charge_percent_list.extend(
+                    [
                         value(
                             pyunits.convert(
                                 b.production_incentive_percentage,
                                 to_units=pyunits.dimensionless,
                             )
                         )
-                    )
+                    ]
+                    * full_credit_years
+                )
 
                 for year, fraction in b.phaseout_fractions.items():
                     if value(b.plant_end_year) >= int(year):
