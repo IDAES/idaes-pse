@@ -16,20 +16,17 @@ __author__ = (
 )
 __version__ = "1.0.0"
 
-import pytest
-
 import pyomo.environ as pyo
-from pyomo.environ import units as pyunits
-from idaes.core.util.model_diagnostics import DiagnosticsToolbox
-
+import pytest
 from idaes.core import FlowsheetBlock, UnitModelBlock, UnitModelCostingBlock
 from idaes.core.solvers import get_solver
+from idaes.core.util.model_diagnostics import DiagnosticsToolbox
 from idaes.core.util.model_statistics import degrees_of_freedom
-
 from idaes.models_extra.power_generation.costing.power_plant_costing import (
     PowerPlantCosting,
     PowerPlantCostingData,
 )
+from pyomo.environ import units as pyunits
 
 
 @pytest.mark.parametrize(
@@ -67,7 +64,7 @@ def test_PP_costing_with_all_methods(tech):
         has_economy_of_numbers=True,
         CE_index_year="2021",
         tech=tech,
-        )
+    )
 
     # check that the model solved properly and has 0 degrees of freedom
     assert degrees_of_freedom(m) == 0
@@ -230,11 +227,19 @@ def test_PP_costing_with_all_methods(tech):
         production_rate=m.fs.net_power[0],
         resources=dict(zip(resources, rates)),
         resource_prices=prices,
-        fuel=["natural_gas",],
-        feedstock=["natural_gas",],
+        fuel=[
+            "natural_gas",
+        ],
+        feedstock=[
+            "natural_gas",
+        ],
         feedstock_rate=m.fs.NG_rate[0],
-        chemicals=["solvent",],
-        chemicals_inventory=["solvent",],        
+        chemicals=[
+            "solvent",
+        ],
+        chemicals_inventory=[
+            "solvent",
+        ],
     )
 
     # add initialize
