@@ -54,8 +54,8 @@ from idaes.models_extra.power_generation.costing.power_plant_costing_dictionarie
     register_power_plant_currency_units,
 )
 from pandas import DataFrame
+from pint.errors import UndefinedUnitError
 from pyomo.common.config import ConfigValue, ListOf
-from pyomo.core.base.check import BuildCheck
 from pyomo.core.base.units_container import InconsistentUnitsError, UnitsError
 from pyomo.environ import Expression, Param, Var, log10
 from pyomo.environ import units as pyunits
@@ -1421,30 +1421,22 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
         # levelized cost per unit production
         # store valid units to check production, feedstock rates against
-        ureg = pyunits.get_units(
-            pyunits.kg
-        )._pint_unit._REGISTRY  # pylint: disable=protected-access
+        ureg = pyunits.get_units(pyunits.kg)._pint_unit._REGISTRY  # pylint: disable=protected-access
         valid_units = {}
-        for name, unit in ureg._units.items():  # pylint: disable=protected-access
+        for name in ureg._units.keys():  # pylint: disable=protected-access
             try:
                 dim = (1 * ureg.parse_units(name)).dimensionality
                 valid_units.setdefault(dim, []).append(name)
-            except Exception:
+            except UndefinedUnitError:
                 pass
 
         if production_rate is not None:
             # TODO look into protected access issue with pint
             # check that production rate units are valid_units/time
-            dim = pyunits.get_units(
-                production_rate
-            )._pint_unit.dimensionality  # pylint: disable=protected-access
-            dim_numerator = pyunits.get_units(
-                production_rate * pyunits.s
-            )._pint_unit.dimensionality  # pylint: disable=protected-access
+            dim = pyunits.get_units(production_rate)._pint_unit.dimensionality  # pylint: disable=protected-access
+            dim_numerator = pyunits.get_units(production_rate * pyunits.s)._pint_unit.dimensionality  # pylint: disable=protected-access
 
-            allowed_production_units = (
-                True  # check if production units are compatible with LCOP
-            )
+            allowed_production_units = True  # check if production units are compatible with LCOP
 
             if (
                 "[time]" not in dim
@@ -1452,14 +1444,6 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 or dim_numerator not in valid_units
             ):  # units not in form valid_units/time
                 allowed_production_units = False
-
-            if (
-                dim
-                == pyunits.get_units(
-                    pyunits.MW
-                )._pint_unit.dimensionality  # pylint: disable=protected-access
-            ):  # objects has UOM production/time, but production is not a valid Pyomo UOM container
-                allowed_production_units = True
 
             if not allowed_production_units:
                 raise UnitsError(
@@ -1513,16 +1497,10 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         if feedstock_rate is not None:
             # TODO look into protected access issue with pint
             # check that feedstock rate units are valid_units/time
-            dim = pyunits.get_units(
-                feedstock_rate
-            )._pint_unit.dimensionality  # pylint: disable=protected-access
-            dim_numerator = pyunits.get_units(
-                feedstock_rate * pyunits.s
-            )._pint_unit.dimensionality  # pylint: disable=protected-access
+            dim = pyunits.get_units(feedstock_rate)._pint_unit.dimensionality  # pylint: disable=protected-access
+            dim_numerator = pyunits.get_units(feedstock_rate * pyunits.s)._pint_unit.dimensionality  # pylint: disable=protected-access
 
-            allowed_feedstock_units = (
-                True  # check if feedstock units are compatible with LCOP
-            )
+            allowed_feedstock_units = True  # check if feedstock units are compatible with LCOP
 
             if (
                 "[time]" not in dim
@@ -1530,14 +1508,6 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 or dim_numerator not in valid_units
             ):  # units not in form valid_units/time
                 allowed_feedstock_units = False
-
-            if (
-                dim
-                == pyunits.get_units(
-                    pyunits.MW
-                )._pint_unit.dimensionality  # pylint: disable=protected-access
-            ):  # objects has UOM feedstock/time, but feedstock is not a valid Pyomo UOM container
-                allowed_feedstock_units = True
 
             if not allowed_feedstock_units:
                 raise UnitsError(
@@ -3550,16 +3520,6 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 "Please confirm that b is a FlowsheetCostingBlockData object "
                 "and that all expected attributes exist."
             )
-
-        # TODO add sum to 100 check on capital expenditure percentages in case user changes from default values
-        # if b.config.has_capital_expenditure_period:
-
-        # @b.BuildCheck()
-        # def capital_expenditure_percentages_sum_to_100(b, tol=EPS):
-        #     total = sum(b.capital_expenditure_percentages[i] for i in b.capital_expenditure_percentages)
-        #     return abs(total - 100) < tol
-
-        # b.capital_expenditure_percentages_sum_to_100 = capital_expenditure_percentages_sum_to_100.__get__(b)
 
         # check debt expression, if defined
         if debt_expression is not None:
