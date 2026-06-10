@@ -44,7 +44,6 @@ from pyomo.environ import (
 )
 
 import idaes.core.util.scaling as iscale
-from idaes.core import FlowsheetCostingBlockData
 from idaes.models_extra.power_generation.costing.power_plant_costing_dictionaries import (
     load_sCO2_costing_dictionary,
     register_power_plant_currency_units,
@@ -52,6 +51,8 @@ from idaes.models_extra.power_generation.costing.power_plant_costing_dictionarie
 
 import idaes.logger as idaeslog
 from idaes.core import declare_process_block_class
+
+from idaes.models.costing.QGESS import QGESSCostingData
 
 _log = idaeslog.getLogger(__name__)
 
@@ -61,15 +62,9 @@ _log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("PowerPlantCosting")
-class PowerPlantCostingData(FlowsheetCostingBlockData):
+class PowerPlantCostingData(QGESSCostingData):
     # Register currency and conversion rates based on CE Index
-    # register_idaes_currency_units()
-    if (
-        not hasattr(pyunits, "USD_2008_Nov")
-        and not hasattr(pyunits, "USD_2019_Sep")
-        and not hasattr(pyunits, "USD_2018_Dec")
-    ):
-        register_power_plant_currency_units()
+    register_power_plant_currency_units()
 
     def build_global_params(self):
         """
@@ -80,6 +75,8 @@ class PowerPlantCostingData(FlowsheetCostingBlockData):
         You can do what you want here, so you could have e.g. sub-Blocks
         for each costing method to separate the parameters for each method.
         """
+        super().build_global_params()
+
         # Set the base year for all costs
         self.base_currency = pyunits.USD_2018
         # Set a base period for all operating costs

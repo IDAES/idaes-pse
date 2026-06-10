@@ -17,7 +17,9 @@ __version__ = "1.0.0"
 import pyomo.environ as pyo
 import pytest
 from idaes.core import FlowsheetBlock
+from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.model_diagnostics import DiagnosticsToolbox
 from idaes.models.costing.QGESS import QGESSCosting
 from idaes.models_extra.power_generation.costing.power_plant_costing_dictionaries import (
     load_fixed_OM_data,
@@ -721,6 +723,16 @@ class TestQGESSBuildProcessCosts(object):
         else:
             assert isinstance(m.fs.costing.Lang_factor, pyo.Param)
 
+        # check diagnostics
+        dt = DiagnosticsToolbox(m)
+        dt.assert_no_structural_warnings()
+
+        # try solving
+        solver = get_solver()
+        results = solver.solve(m, tee=True)
+        pyo.assert_optimal_termination(results)
+        dt.assert_no_numerical_warnings()
+
     @pytest.mark.parametrize(
         "tech",
         [
@@ -902,7 +914,6 @@ class TestQGESSBuildProcessCosts(object):
             "sum_custom_variable_costs",
             "income_tax_eq",
             "net_tax_owed_eq",
-            "capital_expenditure_percentages_sum_to_100",
             "pv_capital_cost_constraint",
             "loan_debt_constraint",
             "pv_loan_interest_constraint",
@@ -942,3 +953,13 @@ class TestQGESSBuildProcessCosts(object):
                 "chemicals_inventory_cost_OC",
             ]:
                 assert isinstance(getattr(m.fs.costing, expr), ScalarExpression)
+
+        # check diagnostics
+        dt = DiagnosticsToolbox(m)
+        dt.assert_no_structural_warnings()
+
+        # try solving
+        solver = get_solver()
+        results = solver.solve(m, tee=True)
+        pyo.assert_optimal_termination(results)
+        dt.assert_no_numerical_warnings()
