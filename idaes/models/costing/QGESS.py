@@ -3664,8 +3664,9 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         [int(y) for y in b.phaseout_fractions.keys()]
                     )
 
-                    for i in range(value(zero_credit_years)):
-                        b.production_incentive_charge_percent_list.append(0.0)
+                    b.production_incentive_charge_percent_list.extend(
+                        [0] * zero_credit_years
+                    )
 
         b.npv = Var(
             initialize=(-b.capex + (b.total_sales_revenue - b.opex) * b.plant_lifetime),
