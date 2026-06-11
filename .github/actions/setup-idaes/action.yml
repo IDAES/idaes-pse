@@ -40,6 +40,11 @@ runs:
         pip show pyomo idaes-pse
         echo '::endgroup::'
         # idaes --version
+    - name: Debug SSL context
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        python -c "import ssl; print('creating context'); ssl.create_default_context(); print('ok')"
     - name: Install extensions
       shell: bash -l {0}
       run: |
