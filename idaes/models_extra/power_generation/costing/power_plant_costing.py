@@ -34,6 +34,10 @@ __author__ = (
 )
 __version__ = "1.0.0"
 
+from pyomo.environ import Constraint, Expr_if, Param, Var
+from pyomo.environ import units as pyunits
+from pyomo.environ import value
+
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core import declare_process_block_class
@@ -42,9 +46,6 @@ from idaes.models_extra.power_generation.costing.power_plant_costing_dictionarie
     load_sCO2_costing_dictionary,
     register_power_plant_currency_units,
 )
-from pyomo.environ import Constraint, Expr_if, Param, Var
-from pyomo.environ import units as pyunits
-from pyomo.environ import value
 
 _log = idaeslog.getLogger(__name__)
 
