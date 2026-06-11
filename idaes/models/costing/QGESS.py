@@ -209,9 +209,9 @@ class QGESSCostingData(FlowsheetCostingBlockData):
     )
 
     # Categories:
-    #     1. Supercritical PC, air-fired, with and without CO2 capture,
+    #     1. Supercritical Pulverized Coal, air-fired, with and without CO2 capture,
     #     Illinois No. 6 coal
-    #     2. Subcritical PC, air-fired, with and without CO2 capture,
+    #     2. Subcritical Pulverized Coal, air-fired, with and without CO2 capture,
     #     Illinois No. 6 coal
     #     3. Two-stage, slurry-feed, oxygen-blown gasifier with and without
     #     CO2 capture, Illinois No. 6 coal
@@ -220,7 +220,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
     #     5. Single-stage, dry-feed, oxygen-blown, up-flow gasifier with
     #     and without CO2 capture, Illinois No. 6 coal
     #     6. Natural gas, air-fired, with and without CO2 capture
-    #     7. Advanced Ultrasupercritical PC
+    #     7. Advanced Ultrasupercritical Pulverized Coal
     #     8. Polymer Layers accounts
     #     9. Sensors & Controls accounts
     #     10. University of Kentucky Fire Clay Seam (Hazard No. 4) Rejects
@@ -248,13 +248,13 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         if self.config.tech is None:
             raise ValueError(
                 "Must set a technology type. Valid options include: \n"
-                "1. Supercritical PC, air-fired, with and without CO2 capture, Illinois No. 6 coal \n"
-                "2. Subcritical PC, air-fired, with and without CO2 capture, Illinois No. 6 coal \n"
+                "1. Supercritical Pulverized Coal, air-fired, with and without CO2 capture, Illinois No. 6 coal \n"
+                "2. Subcritical Pulverized Coal, air-fired, with and without CO2 capture, Illinois No. 6 coal \n"
                 "3. Two-stage, slurry-feed, oxygen-blown gasifier with and without CO2 capture, Illinois No. 6 coal \n"
                 "4. Single-stage, slurry-feed, oxygen-blown gasifier with and without CO2 capture, Illinois No. 6 coal \n"
                 "5. Single-stage, dry-feed, oxygen-blown, up-flow gasifier with and without CO2 capture, Illinois No. 6 coal \n"
                 "6. Natural gas, air-fired, with and without CO2 capture \n"
-                "7. Advanced Ultrasupercritical PC \n"
+                "7. Advanced Ultrasupercritical Pulverized Coal \n"
                 "8. Polymer Layers accounts \n"
                 "9. Sensors & Controls accounts \n"
                 "10. University of Kentucky Fire Clay Seam (Hazard No. 4) Rejects \n"
@@ -1000,7 +1000,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 )
 
             try:
-                # flag to include land cost in overnight cost
+                # flag to include additional chemicals cost in overnight cost
                 self.additional_chemicals_cost = Expression(
                     expr=pyunits.convert(
                         additional_chemicals_cost, to_units=self.CE_index_units
@@ -1010,7 +1010,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
             except UnitsError:
                 try:
-                    # flag to include land cost in total variable OM cost
+                    # flag to include additional chemicals cost in total variable OM cost
                     self.additional_chemicals_cost = Expression(
                         expr=pyunits.convert(
                             additional_chemicals_cost,
@@ -1043,7 +1043,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 )
 
             try:
-                # flag to include land cost in overnight cost
+                # flag to include additional waste cost in overnight cost
                 self.additional_waste_cost = Expression(
                     expr=pyunits.convert(
                         additional_waste_cost, to_units=self.CE_index_units
@@ -1053,7 +1053,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
             except UnitsError:
                 try:
-                    # flag to include land cost in total variable OM cost
+                    # flag to include additional waste cost in total variable OM cost
                     self.additional_waste_cost = Expression(
                         expr=pyunits.convert(
                             additional_waste_cost,
@@ -1630,9 +1630,9 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         The scaled cost is computed using ref values for different
         technologies.
         Categories:
-        1. Supercritical PC, air-fired, with and without CO2 capture,
+        1. Supercritical Pulverized Coal, air-fired, with and without CO2 capture,
         Illinois No. 6 coal
-        2. Subcritical PC, air-fired, with and without CO2 capture,
+        2. Subcritical Pulverized Coal, air-fired, with and without CO2 capture,
         Illinois No. 6 coal
         3. Two-stage, slurry-feed, oxygen-blown gasifier with and without
         CO2 capture, Illinois No. 6 coal
@@ -1641,7 +1641,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         5. Single-stage, dry-feed, oxygen-blown, up-flow gasifier with
         and without CO2 capture, Illinois No. 6 coal
         6. Natural gas, air-fired, with and without CO2 capture
-        7. Advanced Ultrasupercritical PC
+        7. Advanced Ultrasupercritical Pulverized Coal
         8. Polymer Layers accounts
         9. Sensors & Controls accounts
         10. University of Kentucky Fire Clay Seam (Hazard No. 4) Rejects
