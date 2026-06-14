@@ -77,8 +77,8 @@ class TestQGESSConfigParameters(object):
                 "fs.costing.fixed_charge_factor": 0.0707,
             },
             "Units": {
-                "base_currency": "USD_2021",
-                "CE_index_units": "MUSD_2021",
+                "base_currency": "USD_2018",
+                "CE_index_units": "MUSD_2018",
                 "base_period": "a",
                 "fs.costing.capacity_factor": "dimensionless",
                 "fs.costing.Lang_factor": "dimensionless",
@@ -810,10 +810,10 @@ class TestQGESSBuildProcessCosts(object):
 
         m.fs.costing.build_process_costs(
             # optional arguments that directly fix cost variables and bypass calculations
-            total_purchase_cost=100 * pyunits.MUSD_2021,
-            annual_fixed_operating_cost=10 * pyunits.MUSD_2021 / pyunits.year,
-            annual_revenue=15 * pyunits.MUSD_2021 / pyunits.year,
-            debt_expression=50 * pyunits.MUSD_2021,  # for NPV method
+            total_purchase_cost=100 * pyunits.MUSD_2018,
+            annual_fixed_operating_cost=10 * pyunits.MUSD_2018 / pyunits.year,
+            annual_revenue=15 * pyunits.MUSD_2018 / pyunits.year,
+            debt_expression=50 * pyunits.MUSD_2018,  # for NPV method
             # optional arguments for additional calculations and reporting
             feedstock_rate=m.fs.coal[0],
             production_rate=m.fs.pure_product[0]
@@ -825,8 +825,8 @@ class TestQGESSBuildProcessCosts(object):
                 "byproduct": 0.5 * m.fs.mixed_product[0],
             },
             sale_prices={
-                "main_product": 1 * pyunits.USD_2021 / pyunits.kg,
-                "byproduct": 0.25 * pyunits.USD_2021 / pyunits.kg,
+                "main_product": 1 * pyunits.USD_2018 / pyunits.kg,
+                "byproduct": 0.25 * pyunits.USD_2018 / pyunits.kg,
             },
             # required arguments for variable_OM calculations
             resources={
@@ -841,18 +841,18 @@ class TestQGESSBuildProcessCosts(object):
                 "waste2": m.fs.nonharzardous_waste_disposal,
             },  # for annual OPEX costs
             resource_prices={
-                "coal1": 1 * pyunits.USD_2021 / pyunits.tonne,
-                "coal2": 1 * pyunits.USD_2021 / pyunits.tonne,
-                "natural_gas1": 1 * pyunits.USD_2021 / pyunits.MBtu,
-                "natural_gas2": 1 * pyunits.USD_2021 / pyunits.MBtu,
-                "chemicals1": 1 * pyunits.USD_2021 / pyunits.kg,
-                "chemicals2": 1 * pyunits.USD_2021 / pyunits.kg,
-                "waste1": 1 * pyunits.USD_2021 / pyunits.kg,
-                "waste2": 1 * pyunits.USD_2021 / pyunits.kg,
+                "coal1": 1 * pyunits.USD_2018 / pyunits.tonne,
+                "coal2": 1 * pyunits.USD_2018 / pyunits.tonne,
+                "natural_gas1": 1 * pyunits.USD_2018 / pyunits.MBtu,
+                "natural_gas2": 1 * pyunits.USD_2018 / pyunits.MBtu,
+                "chemicals1": 1 * pyunits.USD_2018 / pyunits.kg,
+                "chemicals2": 1 * pyunits.USD_2018 / pyunits.kg,
+                "waste1": 1 * pyunits.USD_2018 / pyunits.kg,
+                "waste2": 1 * pyunits.USD_2018 / pyunits.kg,
             },
             # optional arguments related to overnight costs
             land_cost=0.30
-            * pyunits.USD_2021
+            * pyunits.USD_2018
             / pyunits.kg
             * 1
             * pyunits.kg
@@ -872,20 +872,20 @@ class TestQGESSBuildProcessCosts(object):
                 "waste1",
                 "waste2",
             ],  # extra storage required as part of overnight costs
-            additional_waste_cost=1 * pyunits.USD_2021 / pyunits.d,
+            additional_waste_cost=1 * pyunits.USD_2018 / pyunits.d,
             # test two chemicals
             chemicals=[
                 "chemicals1",
                 "chemicals2",
             ],  # extra inventory required as part of overnight costs
-            additional_chemicals_cost=1 * pyunits.USD_2021 / pyunits.d,
+            additional_chemicals_cost=1 * pyunits.USD_2018 / pyunits.d,
             chemicals_inventory=[
                 "chemicals1",
                 "chemicals2",
             ],
-            transport_per_unit_feedstock_cost=10 * pyunits.USD_2021 / pyunits.kg,
-            transport_per_unit_production_cost=10 * pyunits.USD_2021 / pyunits.kg,
-            transport_per_unit_CO2_cost=10 * pyunits.USD_2021 / pyunits.kg,
+            transport_per_unit_feedstock_cost=10 * pyunits.USD_2018 / pyunits.kg,
+            transport_per_unit_production_cost=10 * pyunits.USD_2018 / pyunits.kg,
+            transport_per_unit_CO2_cost=10 * pyunits.USD_2018 / pyunits.kg,
         )
 
         for var in [
@@ -1050,7 +1050,7 @@ class TestQGESSBuildProcessCosts(object):
         )
 
         m.fs.costing.build_process_costs(
-            land_cost=1 * pyunits.USD_2021,
+            land_cost=1 * pyunits.USD_2018,
         )
 
         assert m.fs.costing.land_cost_reoccurrence == "one_time"
@@ -1067,7 +1067,7 @@ class TestQGESSBuildProcessCosts(object):
         )
 
         m.fs.costing.build_process_costs(
-            land_cost=1 * pyunits.USD_2021 / pyunits.year,
+            land_cost=1 * pyunits.USD_2018 / pyunits.year,
         )
 
         assert m.fs.costing.land_cost_reoccurrence == "annual"
@@ -1085,14 +1085,14 @@ class TestQGESSBuildProcessCosts(object):
 
         with pytest.raises(
             UnitsError,
-            match="Expression land_cost units USD_2021/kg are not compatible with "
-            "MUSD_2021 or MUSD_2021/a. The "
+            match="Expression land_cost units USD_2018/kg are not compatible with "
+            "MUSD_2018 or MUSD_2018/a. The "
             "expression must be compatible with cost units to be included in "
             "the overnight cost, or cost per time units to be included in the "
             "total variable operating cost.",
         ):
             m.fs.costing.build_process_costs(
-                land_cost=1 * pyunits.USD_2021 / pyunits.kg,
+                land_cost=1 * pyunits.USD_2018 / pyunits.kg,
             )
 
     @pytest.mark.unit
@@ -1126,7 +1126,7 @@ class TestQGESSBuildProcessCosts(object):
         )
 
         m.fs.costing.build_process_costs(
-            additional_chemicals_cost=1 * pyunits.USD_2021,
+            additional_chemicals_cost=1 * pyunits.USD_2018,
         )
 
         assert m.fs.costing.additional_chemicals_cost_reoccurrence == "one_time"
@@ -1143,7 +1143,7 @@ class TestQGESSBuildProcessCosts(object):
         )
 
         m.fs.costing.build_process_costs(
-            additional_chemicals_cost=1 * pyunits.USD_2021 / pyunits.year,
+            additional_chemicals_cost=1 * pyunits.USD_2018 / pyunits.year,
         )
 
         assert m.fs.costing.additional_chemicals_cost_reoccurrence == "annual"
@@ -1161,14 +1161,14 @@ class TestQGESSBuildProcessCosts(object):
 
         with pytest.raises(
             UnitsError,
-            match="Expression additional_chemicals_cost units USD_2021/kg are not compatible with "
-            "MUSD_2021 or MUSD_2021/a. The "
+            match="Expression additional_chemicals_cost units USD_2018/kg are not compatible with "
+            "MUSD_2018 or MUSD_2018/a. The "
             "expression must be compatible with cost units to be included in "
             "the overnight cost, or cost per time units to be included in the "
             "total variable operating cost.",
         ):
             m.fs.costing.build_process_costs(
-                additional_chemicals_cost=1 * pyunits.USD_2021 / pyunits.kg,
+                additional_chemicals_cost=1 * pyunits.USD_2018 / pyunits.kg,
             )
 
     @pytest.mark.unit
@@ -1201,7 +1201,7 @@ class TestQGESSBuildProcessCosts(object):
         )
 
         m.fs.costing.build_process_costs(
-            additional_waste_cost=1 * pyunits.USD_2021,
+            additional_waste_cost=1 * pyunits.USD_2018,
         )
 
         assert m.fs.costing.additional_waste_cost_reoccurrence == "one_time"
@@ -1218,7 +1218,7 @@ class TestQGESSBuildProcessCosts(object):
         )
 
         m.fs.costing.build_process_costs(
-            additional_waste_cost=1 * pyunits.USD_2021 / pyunits.year,
+            additional_waste_cost=1 * pyunits.USD_2018 / pyunits.year,
         )
 
         assert m.fs.costing.additional_waste_cost_reoccurrence == "annual"
@@ -1236,14 +1236,14 @@ class TestQGESSBuildProcessCosts(object):
 
         with pytest.raises(
             UnitsError,
-            match="Expression additional_waste_cost units USD_2021/kg are not compatible with "
-            "MUSD_2021 or MUSD_2021/a. The "
+            match="Expression additional_waste_cost units USD_2018/kg are not compatible with "
+            "MUSD_2018 or MUSD_2018/a. The "
             "expression must be compatible with cost units to be included in "
             "the overnight cost, or cost per time units to be included in the "
             "total variable operating cost.",
         ):
             m.fs.costing.build_process_costs(
-                additional_waste_cost=1 * pyunits.USD_2021 / pyunits.kg,
+                additional_waste_cost=1 * pyunits.USD_2018 / pyunits.kg,
             )
 
     @pytest.mark.unit
@@ -1259,9 +1259,12 @@ class TestQGESSBuildProcessCosts(object):
 
         with pytest.raises(
             InconsistentUnitsError,
-            match="Expression transport_production_cost failed to build with error: "
-            "Error in convert: units not compatible.: kilogram / second not compatible with "
-            "megaUSD_2021 / year. : production_rate not compatible with transport_per_unit_production_cost.",
+            match=re.escape(
+                "Expression transport_production_cost failed to build with error: "
+                "Error in convert: units not compatible.: kilogram / second not compatible with "
+                "megaUSD_2018 / year. : production_rate * transport_per_unit_production_cost "
+                "not compatible with transport_production_cost."
+            ),
         ):
             m.fs.costing.build_process_costs(
                 production_rate=1 * pyunits.kg / pyunits.s,
@@ -1281,9 +1284,12 @@ class TestQGESSBuildProcessCosts(object):
 
         with pytest.raises(
             InconsistentUnitsError,
-            match="Expression transport_feedstock_cost failed to build with error: "
-            "Error in convert: units not compatible.: kilogram / second not compatible with "
-            "megaUSD_2021 / year. : feedstock_rate not compatible with transport_per_unit_feedstock_cost.",
+            match=re.escape(
+                "Expression transport_feedstock_cost failed to build with error: "
+                "Error in convert: units not compatible.: kilogram / second not compatible with "
+                "megaUSD_2018 / year. : feedstock_rate * transport_per_unit_feedstock_cost "
+                "not compatible with transport_feedstock_cost."
+            ),
         ):
             m.fs.costing.build_process_costs(
                 feedstock_rate=1 * pyunits.kg / pyunits.s,
@@ -1303,9 +1309,12 @@ class TestQGESSBuildProcessCosts(object):
 
         with pytest.raises(
             InconsistentUnitsError,
-            match="Expression transport_CO2_cost failed to build with error: "
-            "Error in convert: units not compatible.: kilogram / second not compatible with "
-            "megaUSD_2021 / year. : CO2_capture_rate not compatible with transport_per_unit_CO2_cost.",
+            match=re.escape(
+                "Expression transport_CO2_cost failed to build with error: "
+                "Error in convert: units not compatible.: kilogram / second not compatible with "
+                "megaUSD_2018 / year. : CO2_capture_rate * transport_per_unit_CO2_cost "
+                "not compatible with transport_CO2_cost."
+            ),
         ):
             m.fs.costing.build_process_costs(
                 CO2_capture_rate=1 * pyunits.kg / pyunits.s,
