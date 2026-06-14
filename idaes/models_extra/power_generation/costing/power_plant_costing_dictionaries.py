@@ -261,6 +261,7 @@ def load_fixed_OM_data():
 
     return labor_types, labor_rates, maintenance_percentages
 
+
 # TODO add any missing quantities that should be reported
 def report(b, export=False):
     """
@@ -300,7 +301,8 @@ def report(b, export=False):
         var_dict["Total Annualized Cost excluding all transport [$MM/year]"] = (
             value(b.annualized_cost)
             + value(b.total_fixed_OM_cost if b.config.has_fixed_OM else 0)
-            + b.capacity_factor * value(b.total_variable_OM_cost[0] if b.config.has_variable_OM else 0)
+            + b.capacity_factor
+            * value(b.total_variable_OM_cost[0] if b.config.has_variable_OM else 0)
             + value(b.net_tax_owed if b.config.has_taxes_and_credits else 0)
         )
 
@@ -333,9 +335,7 @@ def report(b, export=False):
         )
 
     if hasattr(b, "npv"):
-        var_dict["Net Present Value [$MM]"] = value(
-            b.npv
-        )
+        var_dict["Net Present Value [$MM]"] = value(b.npv)
 
     report_dir = {}
     report_dir["Value"] = {}

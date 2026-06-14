@@ -267,7 +267,7 @@ def test_PP_costing_exp():
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.costing = PowerPlantCosting(
         tech=2,
-        )
+    )
 
     # check that the model solved properly and has 0 degrees of freedom
     assert degrees_of_freedom(m) == 0
@@ -305,7 +305,7 @@ def test_PP_costing_err1():
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.costing = PowerPlantCosting(
         tech=2,
-        )
+    )
 
     # check that the model solved properly and has 0 degrees of freedom
     assert degrees_of_freedom(m) == 0
@@ -344,7 +344,7 @@ def test_PP_costing_err2():
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.costing = PowerPlantCosting(
         tech=2,
-        )
+    )
 
     # check that the model solved properly and has 0 degrees of freedom
     assert degrees_of_freedom(m) == 0
@@ -386,11 +386,9 @@ def test_invalid_currency_units():
             "CE_index_year notavalidvalue is not a valid currency base "
             "option. Valid CE index options include CE500, CE394, years from 1990 "
             "to 2023, or user-defined units such as 2019_Sep and UKy_2019."
-            ),
+        ),
     ):
-        m.fs.costing = PowerPlantCosting(
-            tech=2,
-            CE_index_year="notavalidvalue")
+        m.fs.costing = PowerPlantCosting(tech=2, CE_index_year="notavalidvalue")
 
 
 @pytest.mark.component
@@ -404,7 +402,7 @@ def test_PP_costing():
         tech=2,
         has_fixed_OM=True,
         has_variable_OM=True,
-        )
+    )
 
     # check that the model solved properly and has 0 degrees of freedom
     assert degrees_of_freedom(m) == 0
@@ -567,7 +565,9 @@ def test_PP_costing():
         production_rate=m.fs.net_power[0],
         resources=dict(zip(resources, rates)),
         resource_prices=prices,
-        fuel=["natural_gas",],
+        fuel=[
+            "natural_gas",
+        ],
     )
 
     # add initialize
@@ -750,9 +750,7 @@ def test_PP_costing_CE_index_year():
 
     # Add a flowsheet object to the model
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.costing = PowerPlantCosting(
-        tech=2
-        )
+    m.fs.costing = PowerPlantCosting(tech=2)
 
     # check that the model solved properly and has 0 degrees of freedom
     assert degrees_of_freedom(m) == 0
@@ -891,9 +889,7 @@ def test_PP_costing_additional_costing_params_no_conflicts():
 
     # Add a flowsheet object to the model
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.costing = PowerPlantCosting(
-        tech=2
-        )
+    m.fs.costing = PowerPlantCosting(tech=2)
 
     # check that the model solved properly and has 0 degrees of freedom
     assert degrees_of_freedom(m) == 0
@@ -940,7 +936,9 @@ def test_PP_costing_additional_costing_params_no_conflicts():
             "scaled_param": m.fs.boiler.coal_mass_flow,
             "tech": 1,
             "ccs": "A",
-            "additional_costing_params": [additional_costing_params,],
+            "additional_costing_params": [
+                additional_costing_params,
+            ],
             # default to no overwrite, should matter since it doesn't match
         },
     )
@@ -977,9 +975,7 @@ def test_PP_costing_additional_costing_params_no_overwrite():
 
     # Add a flowsheet object to the model
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.costing = PowerPlantCosting(
-        tech=2
-        )
+    m.fs.costing = PowerPlantCosting(tech=2)
 
     # check that the model solved properly and has 0 degrees of freedom
     assert degrees_of_freedom(m) == 0
@@ -1038,7 +1034,9 @@ def test_PP_costing_additional_costing_params_no_overwrite():
                 "scaled_param": m.fs.boiler.coal_mass_flow,
                 "tech": 1,
                 "ccs": "A",
-                "additional_costing_params": [additional_costing_params,],
+                "additional_costing_params": [
+                    additional_costing_params,
+                ],
                 "use_additional_costing_params": False,
             },
         )
@@ -1051,9 +1049,7 @@ def test_PP_costing_additional_costing_params_no_overwrite_different_account():
 
     # Add a flowsheet object to the model
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.costing = PowerPlantCosting(
-        tech=2
-        )
+    m.fs.costing = PowerPlantCosting(tech=2)
 
     # check that the model solved properly and has 0 degrees of freedom
     assert degrees_of_freedom(m) == 0
@@ -1100,7 +1096,9 @@ def test_PP_costing_additional_costing_params_no_overwrite_different_account():
             "scaled_param": m.fs.boiler.coal_mass_flow,
             "tech": 1,
             "ccs": "A",
-            "additional_costing_params": [additional_costing_params,],
+            "additional_costing_params": [
+                additional_costing_params,
+            ],
             "use_additional_costing_params": False,
         },
     )
@@ -1119,9 +1117,7 @@ def test_PP_costing_additional_costing_params_allow_overwrite():
 
     # Add a flowsheet object to the model
     m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.costing = PowerPlantCosting(
-        tech=2
-        )
+    m.fs.costing = PowerPlantCosting(tech=2)
 
     # check that the model solved properly and has 0 degrees of freedom
     assert degrees_of_freedom(m) == 0
@@ -1167,7 +1163,9 @@ def test_PP_costing_additional_costing_params_allow_overwrite():
             "scaled_param": m.fs.boiler.coal_mass_flow,
             "tech": 1,
             "ccs": "A",
-            "additional_costing_params": [additional_costing_params,],
+            "additional_costing_params": [
+                additional_costing_params,
+            ],
             "use_additional_costing_params": True,
         },
     )
@@ -1202,7 +1200,7 @@ def test_build_process_costs_emptymodel():
         tech=2,
         has_fixed_OM=True,
         has_variable_OM=True,
-        )
+    )
 
     # Fixed and Variable Costs:
     # build variable costs components
@@ -1228,7 +1226,9 @@ def test_build_process_costs_emptymodel():
         production_rate=m.fs.net_power[0],
         resources=dict(zip(resources, rates)),
         resource_prices=prices,
-        fuel=["natural_gas",],
+        fuel=[
+            "natural_gas",
+        ],
     )
 
     assert hasattr(m.fs.costing, "total_TPC")
@@ -1246,7 +1246,7 @@ def test_build_process_costs_emptymodel_noarguments():
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.costing = PowerPlantCosting(
         tech=2,
-        )
+    )
 
     # Fixed and Variable Costs:
     # build variable costs components
@@ -1272,7 +1272,7 @@ def test_build_process_costs_fixedonly():
     m.fs.costing = PowerPlantCosting(
         tech=2,
         has_fixed_OM=True,
-        )
+    )
 
     # check that the model solved properly and has 0 degrees of freedom
     assert degrees_of_freedom(m) == 0
@@ -1317,7 +1317,7 @@ def test_build_process_costs_fixedonly_noarguments():
     m.fs.costing = PowerPlantCosting(
         tech=2,
         has_fixed_OM=True,
-        )
+    )
 
     # check that the model solved properly and has 0 degrees of freedom
     assert degrees_of_freedom(m) == 0
@@ -1365,7 +1365,7 @@ def test_build_process_costs_variableonly():
     m.fs.costing = PowerPlantCosting(
         tech=2,
         has_variable_OM=True,
-        )
+    )
 
     # check that the model solved properly and has 0 degrees of freedom
     assert degrees_of_freedom(m) == 0
@@ -1391,7 +1391,9 @@ def test_build_process_costs_variableonly():
         production_rate=m.fs.net_power[0],
         resources=dict(zip(resources, rates)),
         resource_prices=prices,
-        fuel=["natural_gas",],
+        fuel=[
+            "natural_gas",
+        ],
     )
 
     assert hasattr(m.fs.costing, "variable_operating_costs")
@@ -1416,7 +1418,7 @@ def test_build_process_costs_variableonly_noarguments():
     m.fs.costing = PowerPlantCosting(
         tech=2,
         has_variable_OM=True,
-        )
+    )
 
     # check that the model solved properly and has 0 degrees of freedom
     assert degrees_of_freedom(m) == 0
@@ -1433,7 +1435,7 @@ def test_build_process_costs_variableonly_noarguments():
     m.fs.costing = PowerPlantCosting(
         tech=2,
         has_variable_OM=True,
-        )
+    )
 
     m.fs.net_power = pyo.Var(m.fs.time, initialize=650, units=pyunits.MW)
     m.fs.net_power.fix()
@@ -1446,7 +1448,7 @@ def test_build_process_costs_variableonly_noarguments():
     m.fs.costing = PowerPlantCosting(
         tech=2,
         has_variable_OM=True,
-        )
+    )
 
     resources = list()
     rates = list()
@@ -1461,7 +1463,7 @@ def test_build_process_costs_variableonly_noarguments():
     m.fs.costing = PowerPlantCosting(
         tech=2,
         has_variable_OM=True,
-        )
+    )
 
     prices = dict()
     # fuel being None should not raise an Exception
@@ -1485,7 +1487,7 @@ def test_build_process_costs_allOM():
         tech=2,
         has_fixed_OM=True,
         has_variable_OM=True,
-        )
+    )
 
     # check that the model solved properly and has 0 degrees of freedom
     assert degrees_of_freedom(m) == 0
@@ -1523,17 +1525,27 @@ def test_build_process_costs_allOM():
     m.fs.costing.land_cost = pyo.Expression(
         expr=156000 * pyunits.USD_2018 * (30 / 120) ** (0.78)
     )
-    m.fs.CO2_capture_rate = pyo.Var(initialize=1, units=pyunits.ton/pyunits.year)
-    m.fs.transport_cost = pyo.Var(initialize=10e-6, units=pyunits.MUSD_2018/pyunits.ton)  # $MM/ton
+    m.fs.CO2_capture_rate = pyo.Var(initialize=1, units=pyunits.ton / pyunits.year)
+    m.fs.transport_cost = pyo.Var(
+        initialize=10e-6, units=pyunits.MUSD_2018 / pyunits.ton
+    )  # $MM/ton
     m.fs.costing.testing = True
     m.fs.costing.build_process_costs(
         production_rate=m.fs.net_power[0],
         resources=dict(zip(resources, rates)),
         resource_prices=prices,
-        fuel=["natural_gas",],
-        waste=["waste_sorbent",],
-        chemicals=["sorbent",],
-        chemicals_inventory=["solvent",],
+        fuel=[
+            "natural_gas",
+        ],
+        waste=[
+            "waste_sorbent",
+        ],
+        chemicals=[
+            "sorbent",
+        ],
+        chemicals_inventory=[
+            "solvent",
+        ],
         land_cost=m.fs.costing.land_cost,
         transport_per_unit_CO2_cost=m.fs.transport_cost,
         CO2_capture_rate=m.fs.CO2_capture_rate,
@@ -1611,7 +1623,7 @@ def test_build_process_costs_allOM_nonearguments():
         tech=2,
         has_fixed_OM=True,
         has_variable_OM=True,
-        )
+    )
 
     # check that the model solved properly and has 0 degrees of freedom
     assert degrees_of_freedom(m) == 0
@@ -1628,7 +1640,7 @@ def test_build_process_costs_allOM_nonearguments():
     m.fs.costing = PowerPlantCosting(
         tech=2,
         has_variable_OM=True,
-        )
+    )
 
     m.fs.net_power = pyo.Var(m.fs.time, initialize=650, units=pyunits.MW)
     m.fs.net_power.fix()
@@ -1641,7 +1653,7 @@ def test_build_process_costs_allOM_nonearguments():
     m.fs.costing = PowerPlantCosting(
         tech=2,
         has_variable_OM=True,
-        )
+    )
 
     resources = list()
     rates = list()
@@ -1656,7 +1668,7 @@ def test_build_process_costs_allOM_nonearguments():
     m.fs.costing = PowerPlantCosting(
         tech=2,
         has_variable_OM=True,
-        )
+    )
 
     prices = dict()
     # fuel being None should not raise an Exception
@@ -1678,7 +1690,7 @@ def test_build_process_costs_inventory_with_tpc():
         tech=2,
         has_fixed_OM=True,
         has_variable_OM=True,
-        )
+    )
 
     # check that the model solved properly and has 0 degrees of freedom
     assert degrees_of_freedom(m) == 0
@@ -1716,18 +1728,28 @@ def test_build_process_costs_inventory_with_tpc():
     m.fs.costing.land_cost = pyo.Expression(
         expr=156000 * pyunits.USD_2018 * (30 / 120) ** (0.78)
     )
-    m.fs.CO2_capture_rate = pyo.Var(initialize=1, units=pyunits.ton/pyunits.year)
-    m.fs.transport_cost = pyo.Var(initialize=10e-6, units=pyunits.MUSD_2018/pyunits.ton)  # $MM/ton
+    m.fs.CO2_capture_rate = pyo.Var(initialize=1, units=pyunits.ton / pyunits.year)
+    m.fs.transport_cost = pyo.Var(
+        initialize=10e-6, units=pyunits.MUSD_2018 / pyunits.ton
+    )  # $MM/ton
 
     m.fs.costing.build_process_costs(
-        total_purchase_cost=100*pyunits.MUSD_2018,
+        total_purchase_cost=100 * pyunits.MUSD_2018,
         production_rate=m.fs.net_power[0],
         resources=dict(zip(resources, rates)),
         resource_prices=prices,
-        fuel=["natural_gas",],
-        waste=["waste_sorbent",],
-        chemicals=["sorbent",],
-        chemicals_inventory=["solvent",],
+        fuel=[
+            "natural_gas",
+        ],
+        waste=[
+            "waste_sorbent",
+        ],
+        chemicals=[
+            "sorbent",
+        ],
+        chemicals_inventory=[
+            "solvent",
+        ],
         land_cost=m.fs.costing.land_cost,
         transport_per_unit_CO2_cost=m.fs.transport_cost,
         CO2_capture_rate=m.fs.CO2_capture_rate,
@@ -1750,7 +1772,7 @@ def test_build_process_costs_landcost_nounitsdefined():
         tech=2,
         has_fixed_OM=True,
         has_variable_OM=True,
-        )
+    )
 
     # check that the model solved properly and has 0 degrees of freedom
     assert degrees_of_freedom(m) == 0
@@ -1785,30 +1807,33 @@ def test_build_process_costs_landcost_nounitsdefined():
         "waste_sorbent": 0.86 * pyunits.USD_2018 / pyunits.ft**3,
     }
 
-    m.fs.costing.land_cost = pyo.Expression(
-        expr=156000 * (30 / 120) ** (0.78)
-    )
+    m.fs.costing.land_cost = pyo.Expression(expr=156000 * (30 / 120) ** (0.78))
 
     with pytest.raises(
-            UnitsError,
-            match=re.escape(
-                "Expression land_cost has no units defined."
-                )
-            ):
+        UnitsError, match=re.escape("Expression land_cost has no units defined.")
+    ):
         m.fs.costing.build_process_costs(
-            feedstock_rate=1*pyunits.kg/pyunits.s,
+            feedstock_rate=1 * pyunits.kg / pyunits.s,
             production_rate=m.fs.net_power[0],
-            CO2_capture_rate=1*pyunits.ton/pyunits.year,
+            CO2_capture_rate=1 * pyunits.ton / pyunits.year,
             resources=dict(zip(resources, rates)),
             resource_prices=prices,
-            fuel=["natural_gas",],
-            waste=["waste_sorbent",],
-            chemicals=["sorbent",],
-            chemicals_inventory=["solvent",],
+            fuel=[
+                "natural_gas",
+            ],
+            waste=[
+                "waste_sorbent",
+            ],
+            chemicals=[
+                "sorbent",
+            ],
+            chemicals_inventory=[
+                "solvent",
+            ],
             land_cost=m.fs.costing.land_cost,
-            transport_per_unit_feedstock_cost=10e-6*pyunits.MUSD_2018/pyunits.kg,
-            transport_per_unit_production_cost=10e-6*pyunits.MUSD_2018/pyunits.MWh,
-            transport_per_unit_CO2_cost=10e-6*pyunits.MUSD_2018/pyunits.ton,
+            transport_per_unit_feedstock_cost=10e-6 * pyunits.MUSD_2018 / pyunits.kg,
+            transport_per_unit_production_cost=10e-6 * pyunits.MUSD_2018 / pyunits.MWh,
+            transport_per_unit_CO2_cost=10e-6 * pyunits.MUSD_2018 / pyunits.ton,
         )
 
 
@@ -1823,7 +1848,7 @@ def test_build_process_costs_invalidunits_transportfeedstockcost():
         tech=2,
         has_fixed_OM=True,
         has_variable_OM=True,
-        )
+    )
 
     # check that the model solved properly and has 0 degrees of freedom
     assert degrees_of_freedom(m) == 0
@@ -1863,30 +1888,39 @@ def test_build_process_costs_invalidunits_transportfeedstockcost():
     )
 
     with pytest.raises(
-            InconsistentUnitsError,
-            match=re.escape(
-                "Expression transport_feedstock_cost failed to build with error: "
-                "Error in convert: units not compatible.: megaUSD_2018 not compatible "
-                "with megaUSD_2018 / year. : feedstock_rate * "
-                "transport_per_unit_feedstock_cost not compatible with "
-                "transport_feedstock_cost."
-                )
-            ):
+        InconsistentUnitsError,
+        match=re.escape(
+            "Expression transport_feedstock_cost failed to build with error: "
+            "Error in convert: units not compatible.: megaUSD_2018 not compatible "
+            "with megaUSD_2018 / year. : feedstock_rate * "
+            "transport_per_unit_feedstock_cost not compatible with "
+            "transport_feedstock_cost."
+        ),
+    ):
         m.fs.costing.build_process_costs(
-            feedstock_rate=1*pyunits.kg,
+            feedstock_rate=1 * pyunits.kg,
             production_rate=m.fs.net_power[0],
-            CO2_capture_rate=1*pyunits.ton/pyunits.year,
+            CO2_capture_rate=1 * pyunits.ton / pyunits.year,
             resources=dict(zip(resources, rates)),
             resource_prices=prices,
-            fuel=["natural_gas",],
-            waste=["waste_sorbent",],
-            chemicals=["sorbent",],
-            chemicals_inventory=["solvent",],
+            fuel=[
+                "natural_gas",
+            ],
+            waste=[
+                "waste_sorbent",
+            ],
+            chemicals=[
+                "sorbent",
+            ],
+            chemicals_inventory=[
+                "solvent",
+            ],
             land_cost=m.fs.costing.land_cost,
-            transport_per_unit_feedstock_cost=10e-6*pyunits.MUSD_2018/pyunits.kg,
-            transport_per_unit_production_cost=10e-6*pyunits.MUSD_2018/pyunits.MWh,
-            transport_per_unit_CO2_cost=10e-6*pyunits.MUSD_2018/pyunits.ton,
+            transport_per_unit_feedstock_cost=10e-6 * pyunits.MUSD_2018 / pyunits.kg,
+            transport_per_unit_production_cost=10e-6 * pyunits.MUSD_2018 / pyunits.MWh,
+            transport_per_unit_CO2_cost=10e-6 * pyunits.MUSD_2018 / pyunits.ton,
         )
+
 
 @pytest.mark.unit
 def test_build_process_costs_invalidunits_transportproductioncost():
@@ -1899,7 +1933,7 @@ def test_build_process_costs_invalidunits_transportproductioncost():
         tech=2,
         has_fixed_OM=True,
         has_variable_OM=True,
-        )
+    )
 
     # check that the model solved properly and has 0 degrees of freedom
     assert degrees_of_freedom(m) == 0
@@ -1939,30 +1973,39 @@ def test_build_process_costs_invalidunits_transportproductioncost():
     )
 
     with pytest.raises(
-            InconsistentUnitsError,
-            match=re.escape(
-                "Expression transport_production_cost failed to build with error: "
-                "Error in convert: units not compatible.: hour * megaUSD_2018 * "
-                "megawatt / megawatt_hour not compatible with megaUSD_2018 / year. "
-                ": production_rate * transport_per_unit_production_cost not "
-                "compatible with transport_production_cost."
-                )
-            ):
+        InconsistentUnitsError,
+        match=re.escape(
+            "Expression transport_production_cost failed to build with error: "
+            "Error in convert: units not compatible.: hour * megaUSD_2018 * "
+            "megawatt / megawatt_hour not compatible with megaUSD_2018 / year. "
+            ": production_rate * transport_per_unit_production_cost not "
+            "compatible with transport_production_cost."
+        ),
+    ):
         m.fs.costing.build_process_costs(
-            feedstock_rate=1*pyunits.kg/pyunits.s,
-            production_rate=m.fs.net_power[0]*pyunits.h,
-            CO2_capture_rate=1*pyunits.ton/pyunits.year,
+            feedstock_rate=1 * pyunits.kg / pyunits.s,
+            production_rate=m.fs.net_power[0] * pyunits.h,
+            CO2_capture_rate=1 * pyunits.ton / pyunits.year,
             resources=dict(zip(resources, rates)),
             resource_prices=prices,
-            fuel=["natural_gas",],
-            waste=["waste_sorbent",],
-            chemicals=["sorbent",],
-            chemicals_inventory=["solvent",],
+            fuel=[
+                "natural_gas",
+            ],
+            waste=[
+                "waste_sorbent",
+            ],
+            chemicals=[
+                "sorbent",
+            ],
+            chemicals_inventory=[
+                "solvent",
+            ],
             land_cost=m.fs.costing.land_cost,
-            transport_per_unit_feedstock_cost=10e-6*pyunits.MUSD_2018/pyunits.kg,
-            transport_per_unit_production_cost=10e-6*pyunits.MUSD_2018/pyunits.MWh,
-            transport_per_unit_CO2_cost=10e-6*pyunits.MUSD_2018/pyunits.ton,
+            transport_per_unit_feedstock_cost=10e-6 * pyunits.MUSD_2018 / pyunits.kg,
+            transport_per_unit_production_cost=10e-6 * pyunits.MUSD_2018 / pyunits.MWh,
+            transport_per_unit_CO2_cost=10e-6 * pyunits.MUSD_2018 / pyunits.ton,
         )
+
 
 @pytest.mark.unit
 def test_build_process_costs_invalidunits_transportCO2cost():
@@ -1975,7 +2018,7 @@ def test_build_process_costs_invalidunits_transportCO2cost():
         tech=2,
         has_fixed_OM=True,
         has_variable_OM=True,
-        )
+    )
 
     # check that the model solved properly and has 0 degrees of freedom
     assert degrees_of_freedom(m) == 0
@@ -2015,29 +2058,37 @@ def test_build_process_costs_invalidunits_transportCO2cost():
     )
 
     with pytest.raises(
-            InconsistentUnitsError,
-            match=re.escape(
-                "Expression transport_CO2_cost failed to build with error: "
-                "Error in convert: units not compatible.: megaUSD_2018 not compatible "
-                "with megaUSD_2018 / year. : CO2_capture_rate * "
-                "transport_per_unit_CO2_cost not compatible with "
-                "transport_CO2_cost."
-                )
-            ):
+        InconsistentUnitsError,
+        match=re.escape(
+            "Expression transport_CO2_cost failed to build with error: "
+            "Error in convert: units not compatible.: megaUSD_2018 not compatible "
+            "with megaUSD_2018 / year. : CO2_capture_rate * "
+            "transport_per_unit_CO2_cost not compatible with "
+            "transport_CO2_cost."
+        ),
+    ):
         m.fs.costing.build_process_costs(
-            feedstock_rate=1*pyunits.kg/pyunits.s,
+            feedstock_rate=1 * pyunits.kg / pyunits.s,
             production_rate=m.fs.net_power[0],
-            CO2_capture_rate=1*pyunits.ton,
+            CO2_capture_rate=1 * pyunits.ton,
             resources=dict(zip(resources, rates)),
             resource_prices=prices,
-            fuel=["natural_gas",],
-            waste=["waste_sorbent",],
-            chemicals=["sorbent",],
-            chemicals_inventory=["solvent",],
+            fuel=[
+                "natural_gas",
+            ],
+            waste=[
+                "waste_sorbent",
+            ],
+            chemicals=[
+                "sorbent",
+            ],
+            chemicals_inventory=[
+                "solvent",
+            ],
             land_cost=m.fs.costing.land_cost,
-            transport_per_unit_feedstock_cost=10e-6*pyunits.MUSD_2018/pyunits.kg,
-            transport_per_unit_production_cost=10e-6*pyunits.MUSD_2018/pyunits.MWh,
-            transport_per_unit_CO2_cost=10e-6*pyunits.MUSD_2018/pyunits.ton,
+            transport_per_unit_feedstock_cost=10e-6 * pyunits.MUSD_2018 / pyunits.kg,
+            transport_per_unit_production_cost=10e-6 * pyunits.MUSD_2018 / pyunits.MWh,
+            transport_per_unit_CO2_cost=10e-6 * pyunits.MUSD_2018 / pyunits.ton,
         )
 
 
@@ -2052,7 +2103,7 @@ def test_build_process_costs_transportcost_norates():
         tech=2,
         has_fixed_OM=True,
         has_variable_OM=True,
-        )
+    )
 
     # check that the model solved properly and has 0 degrees of freedom
     assert degrees_of_freedom(m) == 0
@@ -2097,14 +2148,22 @@ def test_build_process_costs_transportcost_norates():
         CO2_capture_rate=None,
         resources=dict(zip(resources, rates)),
         resource_prices=prices,
-        fuel=["natural_gas",],
-        waste=["waste_sorbent",],
-        chemicals=["sorbent",],
-        chemicals_inventory=["solvent",],
+        fuel=[
+            "natural_gas",
+        ],
+        waste=[
+            "waste_sorbent",
+        ],
+        chemicals=[
+            "sorbent",
+        ],
+        chemicals_inventory=[
+            "solvent",
+        ],
         land_cost=m.fs.costing.land_cost,
-        transport_per_unit_feedstock_cost=10e-6*pyunits.MUSD_2018/pyunits.kg,
-        transport_per_unit_production_cost=10e-6*pyunits.MUSD_2018/pyunits.MWh,
-        transport_per_unit_CO2_cost=10e-6*pyunits.MUSD_2018/pyunits.ton,
+        transport_per_unit_feedstock_cost=10e-6 * pyunits.MUSD_2018 / pyunits.kg,
+        transport_per_unit_production_cost=10e-6 * pyunits.MUSD_2018 / pyunits.MWh,
+        transport_per_unit_CO2_cost=10e-6 * pyunits.MUSD_2018 / pyunits.ton,
     )
 
     assert not hasattr(m.fs.costing, "cost_of_feedstock")
@@ -2123,7 +2182,7 @@ def test_power_plant_costing():
         tech=2,
         has_fixed_OM=True,
         has_variable_OM=True,
-        )
+    )
 
     ###########################################################################
     #  Create costing constraints                                             #
@@ -2270,7 +2329,9 @@ def test_power_plant_costing():
         production_rate=m.fs.net_power[0],
         resources=dict(zip(resources, rates)),
         resource_prices=prices,
-        fuel=["natural_gas",],
+        fuel=[
+            "natural_gas",
+        ],
     )
 
     # add initialize
@@ -2382,7 +2443,7 @@ def test_sCO2_costing():
         has_fixed_OM=True,
         has_variable_OM=True,
         CE_index_year="2017",
-        )
+    )
 
     # ######################################################
     # Primary Heater
@@ -2617,7 +2678,9 @@ def test_sCO2_costing():
         production_rate=m.fs.net_power[0],
         resources=dict(zip(resources, rates)),
         resource_prices=prices,
-        fuel=["natural_gas",]
+        fuel=[
+            "natural_gas",
+        ],
     )
 
     # add initialize
@@ -2693,7 +2756,7 @@ def test_ASU_costing():
     m.fs.costing = PowerPlantCosting(
         tech=2,
         CE_index_year="2017",
-        )
+    )
 
     m.fs.ASU = UnitModelBlock()
     m.fs.ASU.O2_flow = pyo.Var(initialize=13078, units=pyunits.ton / pyunits.d)
@@ -2733,11 +2796,11 @@ def test_OM_costing():
         tech=1,
         has_fixed_OM=True,
         has_variable_OM=True,
-        )
+    )
 
     # set fixed cost parameters
     m.fs.costing.nameplate_capacity.set_value(650 * pyunits.MW)
-    m.fs.costing.labor_rates["operator"].set_value(40 * pyunits.USD_2018/pyunits.hr)
+    m.fs.costing.labor_rates["operator"].set_value(40 * pyunits.USD_2018 / pyunits.hr)
     m.fs.costing.labor_burden.set_value(30 * pyunits.percent)
     m.fs.costing.operators_per_shift["operator"].set_value(10)
     m.fs.costing.capacity_factor.set_value(0.85)
@@ -2762,7 +2825,7 @@ def test_OM_costing():
         total_purchase_cost=800 * pyunits.MUSD_2018,
         resources=dict(zip(resources, rates)),
         resource_prices=prices,
-        )
+    )
 
     PowerPlantCostingData.initialize(m.fs.costing)
 
@@ -2791,4 +2854,3 @@ def test_OM_costing():
     assert pytest.approx(182.367, abs=0.1) == (
         pyo.value(m.fs.costing.total_variable_OM_cost[0])
     )
-

@@ -52,7 +52,7 @@ class TestQGESSConfigParameters(object):
                 "8. Polymer Layers accounts \n"
                 "9. Sensors & Controls accounts \n"
                 "10. University of Kentucky Fire Clay Seam (Hazard No. 4) Rejects \n"
-                ),
+            ),
         ):
             m.fs.costing = QGESSCosting()
 
@@ -127,7 +127,7 @@ class TestQGESSConfigParameters(object):
             match=re.escape(
                 "CE_index_year must contain a valid 4‑digit year at the start or end "
                 "(e.g. 2019, 2019_Sep, UKy_2019)"
-                ),
+            ),
         ):
             m.fs.costing = QGESSCosting(
                 tech=1, CE_index_year="CE500", has_production_credit_phaseout=True
@@ -343,7 +343,7 @@ class TestQGESSConfigParameters(object):
             ValueError,
             match=re.escape(
                 "Must set capital_expenditure_percentages as list of integer values on [0, 100]."
-                ),
+            ),
         ):
             m.fs.costing = QGESSCosting(
                 tech=1,
@@ -995,7 +995,7 @@ class TestQGESSBuildProcessCosts(object):
                 "the costing build method is not called twice on the same "
                 "model. Create a new flowsheet costing block, or if needed "
                 "use delattr() to remove the preexisting costing."
-                )
+            ),
         ):
             m.fs.costing.build_process_costs()
 
@@ -1013,12 +1013,12 @@ class TestQGESSBuildProcessCosts(object):
         with pytest.raises(
             UnitsError,
             match="The argument feedstock_rate was passed as a dimensionless "
-                "quantity with no units. Please ensure that the feed "
-                "rate is passed in units of consumption / time."
+            "quantity with no units. Please ensure that the feed "
+            "rate is passed in units of consumption / time.",
         ):
             m.fs.costing.build_process_costs(
                 feedstock_rate=1,
-                )
+            )
 
     @pytest.mark.unit
     def test_dimensionless_land_cost_units(self):
@@ -1032,12 +1032,11 @@ class TestQGESSBuildProcessCosts(object):
         )
 
         with pytest.raises(
-            UnitsError,
-            match="Expression land_cost has no units defined."
+            UnitsError, match="Expression land_cost has no units defined."
         ):
             m.fs.costing.build_process_costs(
                 land_cost=1,
-                )
+            )
 
     @pytest.mark.unit
     def test_one_time_land_cost(self):
@@ -1051,8 +1050,8 @@ class TestQGESSBuildProcessCosts(object):
         )
 
         m.fs.costing.build_process_costs(
-            land_cost=1*pyunits.USD_2021,
-            )
+            land_cost=1 * pyunits.USD_2021,
+        )
 
         assert m.fs.costing.land_cost_reoccurrence == "one_time"
 
@@ -1060,17 +1059,17 @@ class TestQGESSBuildProcessCosts(object):
     def test_annual_land_cost(self):
         # Create a Concrete Model as the top level object
         m = pyo.ConcreteModel()
-    
+
         # Add a flowsheet object to the model
         m.fs = FlowsheetBlock(dynamic=False)
         m.fs.costing = QGESSCosting(
             tech=1,
         )
-    
+
         m.fs.costing.build_process_costs(
-            land_cost=1*pyunits.USD_2021/pyunits.year,
-            )
-    
+            land_cost=1 * pyunits.USD_2021 / pyunits.year,
+        )
+
         assert m.fs.costing.land_cost_reoccurrence == "annual"
 
     @pytest.mark.unit
@@ -1087,14 +1086,14 @@ class TestQGESSBuildProcessCosts(object):
         with pytest.raises(
             UnitsError,
             match="Expression land_cost units USD_2021/kg are not compatible with "
-                "MUSD_2021 or MUSD_2021/a. The "
-                "expression must be compatible with cost units to be included in "
-                "the overnight cost, or cost per time units to be included in the "
-                "total variable operating cost."
+            "MUSD_2021 or MUSD_2021/a. The "
+            "expression must be compatible with cost units to be included in "
+            "the overnight cost, or cost per time units to be included in the "
+            "total variable operating cost.",
         ):
             m.fs.costing.build_process_costs(
-                land_cost=1*pyunits.USD_2021/pyunits.kg,
-                )
+                land_cost=1 * pyunits.USD_2021 / pyunits.kg,
+            )
 
     @pytest.mark.unit
     def test_dimensionless_additional_chemicals_cost_units(self):
@@ -1109,11 +1108,11 @@ class TestQGESSBuildProcessCosts(object):
 
         with pytest.raises(
             UnitsError,
-            match="Expression additional_chemicals_cost has no units defined."
+            match="Expression additional_chemicals_cost has no units defined.",
         ):
             m.fs.costing.build_process_costs(
                 additional_chemicals_cost=1,
-                )
+            )
 
     @pytest.mark.unit
     def test_one_time_additional_chemicals_cost(self):
@@ -1127,8 +1126,8 @@ class TestQGESSBuildProcessCosts(object):
         )
 
         m.fs.costing.build_process_costs(
-            additional_chemicals_cost=1*pyunits.USD_2021,
-            )
+            additional_chemicals_cost=1 * pyunits.USD_2021,
+        )
 
         assert m.fs.costing.additional_chemicals_cost_reoccurrence == "one_time"
 
@@ -1136,17 +1135,17 @@ class TestQGESSBuildProcessCosts(object):
     def test_annual_additional_chemicals_cost(self):
         # Create a Concrete Model as the top level object
         m = pyo.ConcreteModel()
-    
+
         # Add a flowsheet object to the model
         m.fs = FlowsheetBlock(dynamic=False)
         m.fs.costing = QGESSCosting(
             tech=1,
         )
-    
+
         m.fs.costing.build_process_costs(
-            additional_chemicals_cost=1*pyunits.USD_2021/pyunits.year,
-            )
-    
+            additional_chemicals_cost=1 * pyunits.USD_2021 / pyunits.year,
+        )
+
         assert m.fs.costing.additional_chemicals_cost_reoccurrence == "annual"
 
     @pytest.mark.unit
@@ -1163,14 +1162,14 @@ class TestQGESSBuildProcessCosts(object):
         with pytest.raises(
             UnitsError,
             match="Expression additional_chemicals_cost units USD_2021/kg are not compatible with "
-                "MUSD_2021 or MUSD_2021/a. The "
-                "expression must be compatible with cost units to be included in "
-                "the overnight cost, or cost per time units to be included in the "
-                "total variable operating cost."
+            "MUSD_2021 or MUSD_2021/a. The "
+            "expression must be compatible with cost units to be included in "
+            "the overnight cost, or cost per time units to be included in the "
+            "total variable operating cost.",
         ):
             m.fs.costing.build_process_costs(
-                additional_chemicals_cost=1*pyunits.USD_2021/pyunits.kg,
-                )
+                additional_chemicals_cost=1 * pyunits.USD_2021 / pyunits.kg,
+            )
 
     @pytest.mark.unit
     def test_dimensionless_additional_waste_cost_units(self):
@@ -1184,12 +1183,11 @@ class TestQGESSBuildProcessCosts(object):
         )
 
         with pytest.raises(
-            UnitsError,
-            match="Expression additional_waste_cost has no units defined."
+            UnitsError, match="Expression additional_waste_cost has no units defined."
         ):
             m.fs.costing.build_process_costs(
                 additional_waste_cost=1,
-                )
+            )
 
     @pytest.mark.unit
     def test_one_time_additional_waste_cost(self):
@@ -1203,8 +1201,8 @@ class TestQGESSBuildProcessCosts(object):
         )
 
         m.fs.costing.build_process_costs(
-            additional_waste_cost=1*pyunits.USD_2021,
-            )
+            additional_waste_cost=1 * pyunits.USD_2021,
+        )
 
         assert m.fs.costing.additional_waste_cost_reoccurrence == "one_time"
 
@@ -1212,17 +1210,17 @@ class TestQGESSBuildProcessCosts(object):
     def test_annual_additional_waste_cost(self):
         # Create a Concrete Model as the top level object
         m = pyo.ConcreteModel()
-    
+
         # Add a flowsheet object to the model
         m.fs = FlowsheetBlock(dynamic=False)
         m.fs.costing = QGESSCosting(
             tech=1,
         )
-    
+
         m.fs.costing.build_process_costs(
-            additional_waste_cost=1*pyunits.USD_2021/pyunits.year,
-            )
-    
+            additional_waste_cost=1 * pyunits.USD_2021 / pyunits.year,
+        )
+
         assert m.fs.costing.additional_waste_cost_reoccurrence == "annual"
 
     @pytest.mark.unit
@@ -1239,14 +1237,14 @@ class TestQGESSBuildProcessCosts(object):
         with pytest.raises(
             UnitsError,
             match="Expression additional_waste_cost units USD_2021/kg are not compatible with "
-                "MUSD_2021 or MUSD_2021/a. The "
-                "expression must be compatible with cost units to be included in "
-                "the overnight cost, or cost per time units to be included in the "
-                "total variable operating cost."
+            "MUSD_2021 or MUSD_2021/a. The "
+            "expression must be compatible with cost units to be included in "
+            "the overnight cost, or cost per time units to be included in the "
+            "total variable operating cost.",
         ):
             m.fs.costing.build_process_costs(
-                additional_waste_cost=1*pyunits.USD_2021/pyunits.kg,
-                )
+                additional_waste_cost=1 * pyunits.USD_2021 / pyunits.kg,
+            )
 
     @pytest.mark.unit
     def test_invalid_production_transport_units(self):
@@ -1262,13 +1260,13 @@ class TestQGESSBuildProcessCosts(object):
         with pytest.raises(
             InconsistentUnitsError,
             match="Expression transport_production_cost failed to build with error: "
-                "Error in convert: units not compatible.: kilogram / second not compatible with "
-                "megaUSD_2021 / year. : production_rate not compatible with transport_per_unit_production_cost."
+            "Error in convert: units not compatible.: kilogram / second not compatible with "
+            "megaUSD_2021 / year. : production_rate not compatible with transport_per_unit_production_cost.",
         ):
             m.fs.costing.build_process_costs(
-                production_rate=1*pyunits.kg/pyunits.s,
+                production_rate=1 * pyunits.kg / pyunits.s,
                 transport_per_unit_production_cost=1,
-                )
+            )
 
     @pytest.mark.unit
     def test_invalid_feedstock_transport_units(self):
@@ -1284,13 +1282,13 @@ class TestQGESSBuildProcessCosts(object):
         with pytest.raises(
             InconsistentUnitsError,
             match="Expression transport_feedstock_cost failed to build with error: "
-                "Error in convert: units not compatible.: kilogram / second not compatible with "
-                "megaUSD_2021 / year. : feedstock_rate not compatible with transport_per_unit_feedstock_cost."
+            "Error in convert: units not compatible.: kilogram / second not compatible with "
+            "megaUSD_2021 / year. : feedstock_rate not compatible with transport_per_unit_feedstock_cost.",
         ):
             m.fs.costing.build_process_costs(
-                feedstock_rate=1*pyunits.kg/pyunits.s,
+                feedstock_rate=1 * pyunits.kg / pyunits.s,
                 transport_per_unit_feedstock_cost=1,
-                )
+            )
 
     @pytest.mark.unit
     def test_invalid_CO2_transport_units(self):
@@ -1306,13 +1304,13 @@ class TestQGESSBuildProcessCosts(object):
         with pytest.raises(
             InconsistentUnitsError,
             match="Expression transport_CO2_cost failed to build with error: "
-                "Error in convert: units not compatible.: kilogram / second not compatible with "
-                "megaUSD_2021 / year. : CO2_capture_rate not compatible with transport_per_unit_CO2_cost."
+            "Error in convert: units not compatible.: kilogram / second not compatible with "
+            "megaUSD_2021 / year. : CO2_capture_rate not compatible with transport_per_unit_CO2_cost.",
         ):
             m.fs.costing.build_process_costs(
-                CO2_capture_rate=1*pyunits.kg/pyunits.s,
+                CO2_capture_rate=1 * pyunits.kg / pyunits.s,
                 transport_per_unit_CO2_cost=1,
-                )
+            )
 
     @pytest.mark.unit
     def test_invalid_production_rate_units_no_time_dimension(self):
@@ -1330,11 +1328,11 @@ class TestQGESSBuildProcessCosts(object):
             match=re.escape(
                 "The argument production_rate was passed with the units kg "
                 "with dimensions [mass]. Please ensure that the production rate has units of valid_units/time."
-                )
+            ),
         ):
             m.fs.costing.build_process_costs(
-                production_rate=1*pyunits.kg,
-                )
+                production_rate=1 * pyunits.kg,
+            )
 
     @pytest.mark.unit
     def test_invalid_production_rate_units_time_not_in_denominator(self):
@@ -1352,11 +1350,11 @@ class TestQGESSBuildProcessCosts(object):
             match=re.escape(
                 "The argument production_rate was passed with the units kg*s "
                 "with dimensions [mass] * [time]. Please ensure that the production rate has units of valid_units/time."
-                )
+            ),
         ):
             m.fs.costing.build_process_costs(
-                production_rate=1*pyunits.kg*pyunits.s,
-                )
+                production_rate=1 * pyunits.kg * pyunits.s,
+            )
 
     @pytest.mark.unit
     def test_invalid_production_rate_units_invalid_nonpertime_units(self):
@@ -1374,11 +1372,11 @@ class TestQGESSBuildProcessCosts(object):
             match=re.escape(
                 "The argument production_rate was passed with the units kg**2/s "
                 "with dimensions [mass] ** 2 / [time]. Please ensure that the production rate has units of valid_units/time."
-                )
+            ),
         ):
             m.fs.costing.build_process_costs(
-                production_rate=1*pyunits.kg**2/pyunits.s,
-                )
+                production_rate=1 * pyunits.kg**2 / pyunits.s,
+            )
 
     @pytest.mark.unit
     def test_invalid_feedstock_rate_units_no_time_dimension(self):
@@ -1396,11 +1394,11 @@ class TestQGESSBuildProcessCosts(object):
             match=re.escape(
                 "The argument feedstock_rate was passed with the units kg "
                 "with dimensions [mass]. Please ensure that the feedstock rate has units of valid_units/time."
-                )
+            ),
         ):
             m.fs.costing.build_process_costs(
-                feedstock_rate=1*pyunits.kg,
-                )
+                feedstock_rate=1 * pyunits.kg,
+            )
 
     @pytest.mark.unit
     def test_invalid_feedstock_rate_units_time_not_in_denominator(self):
@@ -1418,11 +1416,11 @@ class TestQGESSBuildProcessCosts(object):
             match=re.escape(
                 "The argument feedstock_rate was passed with the units kg*s "
                 "with dimensions [mass] * [time]. Please ensure that the feedstock rate has units of valid_units/time."
-                )
+            ),
         ):
             m.fs.costing.build_process_costs(
-                feedstock_rate=1*pyunits.kg*pyunits.s,
-                )
+                feedstock_rate=1 * pyunits.kg * pyunits.s,
+            )
 
     @pytest.mark.unit
     def test_invalid_feedstock_rate_units_invalid_nonpertime_units(self):
@@ -1440,11 +1438,11 @@ class TestQGESSBuildProcessCosts(object):
             match=re.escape(
                 "The argument feedstock_rate was passed with the units kg**2/s "
                 "with dimensions [mass] ** 2 / [time]. Please ensure that the feedstock rate has units of valid_units/time."
-                )
+            ),
         ):
             m.fs.costing.build_process_costs(
-                feedstock_rate=1*pyunits.kg**2/pyunits.s,
-                )
+                feedstock_rate=1 * pyunits.kg**2 / pyunits.s,
+            )
 
     @pytest.mark.unit
     def test_invalid_CO2_capture_rate_units_no_time_dimension(self):
@@ -1462,11 +1460,11 @@ class TestQGESSBuildProcessCosts(object):
             match=re.escape(
                 "The argument CO2_capture_rate was passed with the units kg "
                 "with dimensions [mass]. Please ensure that the CO2 capture rate has units of valid_units/time."
-                )
+            ),
         ):
             m.fs.costing.build_process_costs(
-                CO2_capture_rate=1*pyunits.kg,
-                )
+                CO2_capture_rate=1 * pyunits.kg,
+            )
 
     @pytest.mark.unit
     def test_invalid_CO2_capture_rate_units_time_not_in_denominator(self):
@@ -1484,11 +1482,11 @@ class TestQGESSBuildProcessCosts(object):
             match=re.escape(
                 "The argument CO2_capture_rate was passed with the units kg*s "
                 "with dimensions [mass] * [time]. Please ensure that the CO2 capture rate has units of valid_units/time."
-                )
+            ),
         ):
             m.fs.costing.build_process_costs(
-                CO2_capture_rate=1*pyunits.kg*pyunits.s,
-                )
+                CO2_capture_rate=1 * pyunits.kg * pyunits.s,
+            )
 
     @pytest.mark.unit
     def test_invalid_CO2_capture_rate_units_invalid_nonpertime_units(self):
@@ -1506,8 +1504,8 @@ class TestQGESSBuildProcessCosts(object):
             match=re.escape(
                 "The argument CO2_capture_rate was passed with the units kg**2/s "
                 "with dimensions [mass] ** 2 / [time]. Please ensure that the CO2 capture rate has units of valid_units/time."
-                )
+            ),
         ):
             m.fs.costing.build_process_costs(
-                CO2_capture_rate=1*pyunits.kg**2/pyunits.s,
-                )
+                CO2_capture_rate=1 * pyunits.kg**2 / pyunits.s,
+            )

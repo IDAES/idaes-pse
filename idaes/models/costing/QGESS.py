@@ -1158,7 +1158,8 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         self.fuel_cost_OC = Expression(
                             expr=sum(self.variable_operating_costs[0, i] for i in fuel)
                             / 12
-                            * 2.25 * self.capacity_factor,
+                            * 2.25
+                            * self.capacity_factor,
                             doc="Owner's costs - 2.25 months of fuel costs",
                         )
                     for i in fuel:
@@ -1185,7 +1186,8 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                                 self.variable_operating_costs[0, i] for i in feedstock
                             )
                             / 12
-                            * 0.25 * self.capacity_factor,  # exclude feedstock cost
+                            * 0.25
+                            * self.capacity_factor,  # exclude feedstock cost
                             doc="Owner's costs - 0.25 months of feedstock costs",
                         )
                     for i in feedstock:
@@ -1208,7 +1210,8 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         self.waste_cost_OC = Expression(
                             expr=(
                                 sum(self.variable_operating_costs[0, i] for i in waste)
-                                / 12 * self.capacity_factor
+                                / 12
+                                * self.capacity_factor
                             )
                         )
                     for i in waste:
@@ -1234,7 +1237,8 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                                 self.variable_operating_costs[0, i]
                                 for i in self.non_fuel_feedstock_waste_resources
                             )
-                            / 12 * self.capacity_factor
+                            / 12
+                            * self.capacity_factor
                         )
                     )
 
@@ -1270,7 +1274,8 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                                         self.variable_operating_costs[0, i]
                                         for i in chemicals_inventory
                                     )
-                                    / 6 * self.capacity_factor
+                                    / 6
+                                    * self.capacity_factor
                                 )
                                 * pyunits.year  # two months of chemicals inventory
                                 + 0.005 * self.total_TPC  # inventory spare parts
@@ -1303,7 +1308,10 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     )  # 1 month materials
                     + (
                         self.non_fuel_feedstock_waste_OC
-                        if (self.config.has_variable_OM and len(self.non_fuel_feedstock_waste_resources) > 0)
+                        if (
+                            self.config.has_variable_OM
+                            and len(self.non_fuel_feedstock_waste_resources) > 0
+                        )
                         else 0 * self.CE_index_units / pyunits.year
                     )  # 1 month nonfuel consumables
                     + (
@@ -1398,10 +1406,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 expr=0 * self.CE_index_units / pyunits.year
             )
 
-        if (
-            transport_per_unit_feedstock_cost is not None
-            and feedstock_rate is not None
-        ):
+        if transport_per_unit_feedstock_cost is not None and feedstock_rate is not None:
             try:
                 self.transport_feedstock_cost = Expression(
                     expr=pyunits.convert(
@@ -1420,10 +1425,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 expr=0 * self.CE_index_units / pyunits.year
             )
 
-        if (
-            transport_per_unit_CO2_cost is not None
-            and CO2_capture_rate is not None
-        ):
+        if transport_per_unit_CO2_cost is not None and CO2_capture_rate is not None:
             try:
                 self.transport_CO2_cost = Expression(
                     expr=pyunits.convert(
