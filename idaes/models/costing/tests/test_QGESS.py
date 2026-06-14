@@ -14,6 +14,7 @@
 __author__ = "Costing Team (B. Paul, L. Deng, A. Fritz, A. Ojo, A. Dasgupta, A. Noring, A. Deshpande, D. Caballero, and M. Zamarripa)"
 __version__ = "1.0.0"
 
+from pyomo.core.base.units_container import InconsistentUnitsError, UnitsError
 import pyomo.environ as pyo
 import pytest
 from idaes.core import FlowsheetBlock
@@ -26,10 +27,11 @@ from idaes.models_extra.power_generation.costing.power_plant_costing_dictionarie
 )
 from pyomo.core.base.expression import ScalarExpression
 from pyomo.environ import units as pyunits
+import re
 
 
 class TestQGESSConfigParameters(object):
-    @pytest.mark.component
+    @pytest.mark.unit
     def test_no_config_set(self):
         # Create a Concrete Model as the top level object
         m = pyo.ConcreteModel()
@@ -38,21 +40,23 @@ class TestQGESSConfigParameters(object):
         m.fs = FlowsheetBlock(dynamic=False)
         with pytest.raises(
             ValueError,
-            match="Must set a technology type. Valid options include: \n"
-            "1. Supercritical PC, air-fired, with and without CO2 capture, Illinois No. 6 coal \n"
-            "2. Subcritical PC, air-fired, with and without CO2 capture, Illinois No. 6 coal \n"
-            "3. Two-stage, slurry-feed, oxygen-blown gasifier with and without CO2 capture, Illinois No. 6 coal \n"
-            "4. Single-stage, slurry-feed, oxygen-blown gasifier with and without CO2 capture, Illinois No. 6 coal \n"
-            "5. Single-stage, dry-feed, oxygen-blown, up-flow gasifier with and without CO2 capture, Illinois No. 6 coal \n"
-            "6. Natural gas, air-fired, with and without CO2 capture \n"
-            "7. Advanced Ultrasupercritical PC \n"
-            "8. Polymer Layers accounts \n"
-            "9. Sensors & Controls accounts \n"
-            "10. University of Kentucky Fire Clay Seam \\(Hazard No. 4\\) Rejects \n",
+            match=re.escape(
+                "Must set a technology type. Valid options include: \n"
+                "1. Supercritical Pulverized Coal, air-fired, with and without CO2 capture, Illinois No. 6 coal \n"
+                "2. Subcritical Pulverized Coal, air-fired, with and without CO2 capture, Illinois No. 6 coal \n"
+                "3. Two-stage, slurry-feed, oxygen-blown gasifier with and without CO2 capture, Illinois No. 6 coal \n"
+                "4. Single-stage, slurry-feed, oxygen-blown gasifier with and without CO2 capture, Illinois No. 6 coal \n"
+                "5. Single-stage, dry-feed, oxygen-blown, up-flow gasifier with and without CO2 capture, Illinois No. 6 coal \n"
+                "6. Natural gas, air-fired, with and without CO2 capture \n"
+                "7. Advanced Ultrasupercritical Pulverized Coal \n"
+                "8. Polymer Layers accounts \n"
+                "9. Sensors & Controls accounts \n"
+                "10. University of Kentucky Fire Clay Seam (Hazard No. 4) Rejects \n"
+                ),
         ):
             m.fs.costing = QGESSCosting()
 
-    @pytest.mark.component
+    @pytest.mark.unit
     def test_use_defaults(self):
         # Create a Concrete Model as the top level object
         m = pyo.ConcreteModel()
@@ -96,7 +100,7 @@ class TestQGESSConfigParameters(object):
                 str(m.fs.costing.param_dir["Units"][k]) == expected["Units"][k]
             ), f"Units mismatch for key {k}"
 
-    @pytest.mark.component
+    @pytest.mark.unit
     def test_invalid_CE_index_year(self):
         # Create a Concrete Model as the top level object
         m = pyo.ConcreteModel()
@@ -111,7 +115,7 @@ class TestQGESSConfigParameters(object):
         ):
             m.fs.costing = QGESSCosting(tech=1, CE_index_year="notayear")
 
-    @pytest.mark.component
+    @pytest.mark.unit
     def test_invalid_year_for_phaseout(self):
         # Create a Concrete Model as the top level object
         m = pyo.ConcreteModel()
@@ -120,8 +124,10 @@ class TestQGESSConfigParameters(object):
         m.fs = FlowsheetBlock(dynamic=False)
         with pytest.raises(
             ValueError,
-            match="CE_index_year must contain a valid 4\\‑digit year at the start or end "
-            "\\(e.g. 2019, 2019_Sep, UKy_2019\\)",
+            match=re.escape(
+                "CE_index_year must contain a valid 4‑digit year at the start or end "
+                "(e.g. 2019, 2019_Sep, UKy_2019)"
+                ),
         ):
             m.fs.costing = QGESSCosting(
                 tech=1, CE_index_year="CE500", has_production_credit_phaseout=True
@@ -138,7 +144,7 @@ class TestQGESSConfigParameters(object):
             "2018_Dec",
         ],
     )
-    @pytest.mark.component
+    @pytest.mark.unit
     def test_valid_years_for_phaseout(self, CE_index_year):
 
         # mock UKy_2019 for the purpose of this test
@@ -162,7 +168,7 @@ class TestQGESSConfigParameters(object):
         else:
             assert m.fs.costing.current_year.value == int(CE_index_year[:4])
 
-    @pytest.mark.component
+    @pytest.mark.unit
     def test_taxes_no_fixed_OM(self):
         # Create a Concrete Model as the top level object
         m = pyo.ConcreteModel()
@@ -180,7 +186,7 @@ class TestQGESSConfigParameters(object):
                 tech=1, CE_index_year="CE500", has_taxes_and_credits=True
             )
 
-    @pytest.mark.component
+    @pytest.mark.unit
     def test_no_phaseout_years_set(self):
         # Create a Concrete Model as the top level object
         m = pyo.ConcreteModel()
@@ -198,7 +204,7 @@ class TestQGESSConfigParameters(object):
                 has_fixed_OM=True,
             )
 
-    @pytest.mark.component
+    @pytest.mark.unit
     def test_phaseout_years_not_ascending(self):
         # Create a Concrete Model as the top level object
         m = pyo.ConcreteModel()
@@ -221,7 +227,7 @@ class TestQGESSConfigParameters(object):
                 ),
             )
 
-    @pytest.mark.component
+    @pytest.mark.unit
     def test_phaseout_fractions_not_descending(self):
         # Create a Concrete Model as the top level object
         m = pyo.ConcreteModel()
@@ -261,7 +267,7 @@ class TestQGESSConfigParameters(object):
             "2035",
         ],
     )
-    @pytest.mark.component
+    @pytest.mark.unit
     def test_phaseout_factors(self, CE_index_year):
 
         # mock future years for the purpose of this test
@@ -326,7 +332,7 @@ class TestQGESSConfigParameters(object):
             pyo.value(m.fs.costing.phaseout_factor) == expected[CE_index_year]
         ), f"Expected {expected[CE_index_year]}, got {pyo.value(m.fs.costing.phaseout_factor)}"
 
-    @pytest.mark.component
+    @pytest.mark.unit
     def test_capital_expenditure_percentages_not_set(self):
         # Create a Concrete Model as the top level object
         m = pyo.ConcreteModel()
@@ -335,7 +341,9 @@ class TestQGESSConfigParameters(object):
         m.fs = FlowsheetBlock(dynamic=False)
         with pytest.raises(
             ValueError,
-            match="Must set capital_expenditure_percentages as list of integer values on \\[0, 100\\].",
+            match=re.escape(
+                "Must set capital_expenditure_percentages as list of integer values on [0, 100]."
+                ),
         ):
             m.fs.costing = QGESSCosting(
                 tech=1,
@@ -343,7 +351,7 @@ class TestQGESSConfigParameters(object):
                 has_capital_expenditure_period=True,
             )
 
-    @pytest.mark.component
+    @pytest.mark.unit
     def test_capital_expenditure_percentages_not_sum_to_100(self):
         # Create a Concrete Model as the top level object
         m = pyo.ConcreteModel()
@@ -376,7 +384,7 @@ class TestQGESSConfigParameters(object):
             10,
         ],
     )
-    @pytest.mark.component
+    @pytest.mark.unit
     def test_all_config_set(self, tech):
         # Create a Concrete Model as the top level object
         m = pyo.ConcreteModel()
@@ -715,6 +723,7 @@ class TestQGESSBuildProcessCosts(object):
             "annualized_cost",
             "transport_feedstock_cost",
             "transport_production_cost",
+            "transport_CO2_cost",
         ]:
             assert isinstance(getattr(m.fs.costing, expr), ScalarExpression)
 
@@ -876,6 +885,7 @@ class TestQGESSBuildProcessCosts(object):
             ],
             transport_per_unit_feedstock_cost=10 * pyunits.USD_2021 / pyunits.kg,
             transport_per_unit_production_cost=10 * pyunits.USD_2021 / pyunits.kg,
+            transport_per_unit_CO2_cost=10 * pyunits.USD_2021 / pyunits.kg,
         )
 
         for var in [
@@ -939,6 +949,7 @@ class TestQGESSBuildProcessCosts(object):
             "opex",
             "transport_feedstock_cost",
             "transport_production_cost",
+            "transport_CO2_cost",
         ]:
             assert isinstance(getattr(m.fs.costing, expr), ScalarExpression)
         assert isinstance(m.fs.costing.Lang_factor, pyo.Param)
@@ -963,3 +974,540 @@ class TestQGESSBuildProcessCosts(object):
         results = solver.solve(m, tee=True)
         pyo.assert_optimal_termination(results)
         dt.assert_no_numerical_warnings()
+
+    @pytest.mark.unit
+    def test_call_costing_twice(self):
+        # Create a Concrete Model as the top level object
+        m = pyo.ConcreteModel()
+
+        # Add a flowsheet object to the model
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.costing = QGESSCosting(
+            tech=1,
+        )
+
+        m.fs.costing.build_process_costs()
+
+        with pytest.raises(
+            AttributeError,
+            match=re.escape(
+                "Costing for the block fs.costing already exists. Please ensure that "
+                "the costing build method is not called twice on the same "
+                "model. Create a new flowsheet costing block, or if needed "
+                "use delattr() to remove the preexisting costing."
+                )
+        ):
+            m.fs.costing.build_process_costs()
+
+    @pytest.mark.unit
+    def test_dimensionless_feedstock_rate_units(self):
+        # Create a Concrete Model as the top level object
+        m = pyo.ConcreteModel()
+
+        # Add a flowsheet object to the model
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.costing = QGESSCosting(
+            tech=1,
+        )
+
+        with pytest.raises(
+            UnitsError,
+            match="The argument feedstock_rate was passed as a dimensionless "
+                "quantity with no units. Please ensure that the feed "
+                "rate is passed in units of consumption / time."
+        ):
+            m.fs.costing.build_process_costs(
+                feedstock_rate=1,
+                )
+
+    @pytest.mark.unit
+    def test_dimensionless_land_cost_units(self):
+        # Create a Concrete Model as the top level object
+        m = pyo.ConcreteModel()
+
+        # Add a flowsheet object to the model
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.costing = QGESSCosting(
+            tech=1,
+        )
+
+        with pytest.raises(
+            UnitsError,
+            match="Expression land_cost has no units defined."
+        ):
+            m.fs.costing.build_process_costs(
+                land_cost=1,
+                )
+
+    @pytest.mark.unit
+    def test_one_time_land_cost(self):
+        # Create a Concrete Model as the top level object
+        m = pyo.ConcreteModel()
+
+        # Add a flowsheet object to the model
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.costing = QGESSCosting(
+            tech=1,
+        )
+
+        m.fs.costing.build_process_costs(
+            land_cost=1*pyunits.USD_2021,
+            )
+
+        assert m.fs.costing.land_cost_reoccurrence == "one_time"
+
+    @pytest.mark.unit
+    def test_annual_land_cost(self):
+        # Create a Concrete Model as the top level object
+        m = pyo.ConcreteModel()
+    
+        # Add a flowsheet object to the model
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.costing = QGESSCosting(
+            tech=1,
+        )
+    
+        m.fs.costing.build_process_costs(
+            land_cost=1*pyunits.USD_2021/pyunits.year,
+            )
+    
+        assert m.fs.costing.land_cost_reoccurrence == "annual"
+
+    @pytest.mark.unit
+    def test_invalid_land_cost_units(self):
+        # Create a Concrete Model as the top level object
+        m = pyo.ConcreteModel()
+
+        # Add a flowsheet object to the model
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.costing = QGESSCosting(
+            tech=1,
+        )
+
+        with pytest.raises(
+            UnitsError,
+            match="Expression land_cost units USD_2021/kg are not compatible with "
+                "MUSD_2021 or MUSD_2021/a. The "
+                "expression must be compatible with cost units to be included in "
+                "the overnight cost, or cost per time units to be included in the "
+                "total variable operating cost."
+        ):
+            m.fs.costing.build_process_costs(
+                land_cost=1*pyunits.USD_2021/pyunits.kg,
+                )
+
+    @pytest.mark.unit
+    def test_dimensionless_additional_chemicals_cost_units(self):
+        # Create a Concrete Model as the top level object
+        m = pyo.ConcreteModel()
+
+        # Add a flowsheet object to the model
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.costing = QGESSCosting(
+            tech=1,
+        )
+
+        with pytest.raises(
+            UnitsError,
+            match="Expression additional_chemicals_cost has no units defined."
+        ):
+            m.fs.costing.build_process_costs(
+                additional_chemicals_cost=1,
+                )
+
+    @pytest.mark.unit
+    def test_one_time_additional_chemicals_cost(self):
+        # Create a Concrete Model as the top level object
+        m = pyo.ConcreteModel()
+
+        # Add a flowsheet object to the model
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.costing = QGESSCosting(
+            tech=1,
+        )
+
+        m.fs.costing.build_process_costs(
+            additional_chemicals_cost=1*pyunits.USD_2021,
+            )
+
+        assert m.fs.costing.additional_chemicals_cost_reoccurrence == "one_time"
+
+    @pytest.mark.unit
+    def test_annual_additional_chemicals_cost(self):
+        # Create a Concrete Model as the top level object
+        m = pyo.ConcreteModel()
+    
+        # Add a flowsheet object to the model
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.costing = QGESSCosting(
+            tech=1,
+        )
+    
+        m.fs.costing.build_process_costs(
+            additional_chemicals_cost=1*pyunits.USD_2021/pyunits.year,
+            )
+    
+        assert m.fs.costing.additional_chemicals_cost_reoccurrence == "annual"
+
+    @pytest.mark.unit
+    def test_invalid_additional_chemicals_cost_units(self):
+        # Create a Concrete Model as the top level object
+        m = pyo.ConcreteModel()
+
+        # Add a flowsheet object to the model
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.costing = QGESSCosting(
+            tech=1,
+        )
+
+        with pytest.raises(
+            UnitsError,
+            match="Expression additional_chemicals_cost units USD_2021/kg are not compatible with "
+                "MUSD_2021 or MUSD_2021/a. The "
+                "expression must be compatible with cost units to be included in "
+                "the overnight cost, or cost per time units to be included in the "
+                "total variable operating cost."
+        ):
+            m.fs.costing.build_process_costs(
+                additional_chemicals_cost=1*pyunits.USD_2021/pyunits.kg,
+                )
+
+    @pytest.mark.unit
+    def test_dimensionless_additional_waste_cost_units(self):
+        # Create a Concrete Model as the top level object
+        m = pyo.ConcreteModel()
+
+        # Add a flowsheet object to the model
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.costing = QGESSCosting(
+            tech=1,
+        )
+
+        with pytest.raises(
+            UnitsError,
+            match="Expression additional_waste_cost has no units defined."
+        ):
+            m.fs.costing.build_process_costs(
+                additional_waste_cost=1,
+                )
+
+    @pytest.mark.unit
+    def test_one_time_additional_waste_cost(self):
+        # Create a Concrete Model as the top level object
+        m = pyo.ConcreteModel()
+
+        # Add a flowsheet object to the model
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.costing = QGESSCosting(
+            tech=1,
+        )
+
+        m.fs.costing.build_process_costs(
+            additional_waste_cost=1*pyunits.USD_2021,
+            )
+
+        assert m.fs.costing.additional_waste_cost_reoccurrence == "one_time"
+
+    @pytest.mark.unit
+    def test_annual_additional_waste_cost(self):
+        # Create a Concrete Model as the top level object
+        m = pyo.ConcreteModel()
+    
+        # Add a flowsheet object to the model
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.costing = QGESSCosting(
+            tech=1,
+        )
+    
+        m.fs.costing.build_process_costs(
+            additional_waste_cost=1*pyunits.USD_2021/pyunits.year,
+            )
+    
+        assert m.fs.costing.additional_waste_cost_reoccurrence == "annual"
+
+    @pytest.mark.unit
+    def test_invalid_additional_waste_cost_units(self):
+        # Create a Concrete Model as the top level object
+        m = pyo.ConcreteModel()
+
+        # Add a flowsheet object to the model
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.costing = QGESSCosting(
+            tech=1,
+        )
+
+        with pytest.raises(
+            UnitsError,
+            match="Expression additional_waste_cost units USD_2021/kg are not compatible with "
+                "MUSD_2021 or MUSD_2021/a. The "
+                "expression must be compatible with cost units to be included in "
+                "the overnight cost, or cost per time units to be included in the "
+                "total variable operating cost."
+        ):
+            m.fs.costing.build_process_costs(
+                additional_waste_cost=1*pyunits.USD_2021/pyunits.kg,
+                )
+
+    @pytest.mark.unit
+    def test_invalid_production_transport_units(self):
+        # Create a Concrete Model as the top level object
+        m = pyo.ConcreteModel()
+
+        # Add a flowsheet object to the model
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.costing = QGESSCosting(
+            tech=1,
+        )
+
+        with pytest.raises(
+            InconsistentUnitsError,
+            match="Expression transport_production_cost failed to build with error: "
+                "Error in convert: units not compatible.: kilogram / second not compatible with "
+                "megaUSD_2021 / year. : production_rate not compatible with transport_per_unit_production_cost."
+        ):
+            m.fs.costing.build_process_costs(
+                production_rate=1*pyunits.kg/pyunits.s,
+                transport_per_unit_production_cost=1,
+                )
+
+    @pytest.mark.unit
+    def test_invalid_feedstock_transport_units(self):
+        # Create a Concrete Model as the top level object
+        m = pyo.ConcreteModel()
+
+        # Add a flowsheet object to the model
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.costing = QGESSCosting(
+            tech=1,
+        )
+
+        with pytest.raises(
+            InconsistentUnitsError,
+            match="Expression transport_feedstock_cost failed to build with error: "
+                "Error in convert: units not compatible.: kilogram / second not compatible with "
+                "megaUSD_2021 / year. : feedstock_rate not compatible with transport_per_unit_feedstock_cost."
+        ):
+            m.fs.costing.build_process_costs(
+                feedstock_rate=1*pyunits.kg/pyunits.s,
+                transport_per_unit_feedstock_cost=1,
+                )
+
+    @pytest.mark.unit
+    def test_invalid_CO2_transport_units(self):
+        # Create a Concrete Model as the top level object
+        m = pyo.ConcreteModel()
+
+        # Add a flowsheet object to the model
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.costing = QGESSCosting(
+            tech=1,
+        )
+
+        with pytest.raises(
+            InconsistentUnitsError,
+            match="Expression transport_CO2_cost failed to build with error: "
+                "Error in convert: units not compatible.: kilogram / second not compatible with "
+                "megaUSD_2021 / year. : CO2_capture_rate not compatible with transport_per_unit_CO2_cost."
+        ):
+            m.fs.costing.build_process_costs(
+                CO2_capture_rate=1*pyunits.kg/pyunits.s,
+                transport_per_unit_CO2_cost=1,
+                )
+
+    @pytest.mark.unit
+    def test_invalid_production_rate_units_no_time_dimension(self):
+        # Create a Concrete Model as the top level object
+        m = pyo.ConcreteModel()
+
+        # Add a flowsheet object to the model
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.costing = QGESSCosting(
+            tech=1,
+        )
+
+        with pytest.raises(
+            UnitsError,
+            match=re.escape(
+                "The argument production_rate was passed with the units kg "
+                "with dimensions [mass]. Please ensure that the production rate has units of valid_units/time."
+                )
+        ):
+            m.fs.costing.build_process_costs(
+                production_rate=1*pyunits.kg,
+                )
+
+    @pytest.mark.unit
+    def test_invalid_production_rate_units_time_not_in_denominator(self):
+        # Create a Concrete Model as the top level object
+        m = pyo.ConcreteModel()
+
+        # Add a flowsheet object to the model
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.costing = QGESSCosting(
+            tech=1,
+        )
+
+        with pytest.raises(
+            UnitsError,
+            match=re.escape(
+                "The argument production_rate was passed with the units kg*s "
+                "with dimensions [mass] * [time]. Please ensure that the production rate has units of valid_units/time."
+                )
+        ):
+            m.fs.costing.build_process_costs(
+                production_rate=1*pyunits.kg*pyunits.s,
+                )
+
+    @pytest.mark.unit
+    def test_invalid_production_rate_units_invalid_nonpertime_units(self):
+        # Create a Concrete Model as the top level object
+        m = pyo.ConcreteModel()
+
+        # Add a flowsheet object to the model
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.costing = QGESSCosting(
+            tech=1,
+        )
+
+        with pytest.raises(
+            UnitsError,
+            match=re.escape(
+                "The argument production_rate was passed with the units kg**2/s "
+                "with dimensions [mass] ** 2 / [time]. Please ensure that the production rate has units of valid_units/time."
+                )
+        ):
+            m.fs.costing.build_process_costs(
+                production_rate=1*pyunits.kg**2/pyunits.s,
+                )
+
+    @pytest.mark.unit
+    def test_invalid_feedstock_rate_units_no_time_dimension(self):
+        # Create a Concrete Model as the top level object
+        m = pyo.ConcreteModel()
+
+        # Add a flowsheet object to the model
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.costing = QGESSCosting(
+            tech=1,
+        )
+
+        with pytest.raises(
+            UnitsError,
+            match=re.escape(
+                "The argument feedstock_rate was passed with the units kg "
+                "with dimensions [mass]. Please ensure that the feedstock rate has units of valid_units/time."
+                )
+        ):
+            m.fs.costing.build_process_costs(
+                feedstock_rate=1*pyunits.kg,
+                )
+
+    @pytest.mark.unit
+    def test_invalid_feedstock_rate_units_time_not_in_denominator(self):
+        # Create a Concrete Model as the top level object
+        m = pyo.ConcreteModel()
+
+        # Add a flowsheet object to the model
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.costing = QGESSCosting(
+            tech=1,
+        )
+
+        with pytest.raises(
+            UnitsError,
+            match=re.escape(
+                "The argument feedstock_rate was passed with the units kg*s "
+                "with dimensions [mass] * [time]. Please ensure that the feedstock rate has units of valid_units/time."
+                )
+        ):
+            m.fs.costing.build_process_costs(
+                feedstock_rate=1*pyunits.kg*pyunits.s,
+                )
+
+    @pytest.mark.unit
+    def test_invalid_feedstock_rate_units_invalid_nonpertime_units(self):
+        # Create a Concrete Model as the top level object
+        m = pyo.ConcreteModel()
+
+        # Add a flowsheet object to the model
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.costing = QGESSCosting(
+            tech=1,
+        )
+
+        with pytest.raises(
+            UnitsError,
+            match=re.escape(
+                "The argument feedstock_rate was passed with the units kg**2/s "
+                "with dimensions [mass] ** 2 / [time]. Please ensure that the feedstock rate has units of valid_units/time."
+                )
+        ):
+            m.fs.costing.build_process_costs(
+                feedstock_rate=1*pyunits.kg**2/pyunits.s,
+                )
+
+    @pytest.mark.unit
+    def test_invalid_CO2_capture_rate_units_no_time_dimension(self):
+        # Create a Concrete Model as the top level object
+        m = pyo.ConcreteModel()
+
+        # Add a flowsheet object to the model
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.costing = QGESSCosting(
+            tech=1,
+        )
+
+        with pytest.raises(
+            UnitsError,
+            match=re.escape(
+                "The argument CO2_capture_rate was passed with the units kg "
+                "with dimensions [mass]. Please ensure that the CO2 capture rate has units of valid_units/time."
+                )
+        ):
+            m.fs.costing.build_process_costs(
+                CO2_capture_rate=1*pyunits.kg,
+                )
+
+    @pytest.mark.unit
+    def test_invalid_CO2_capture_rate_units_time_not_in_denominator(self):
+        # Create a Concrete Model as the top level object
+        m = pyo.ConcreteModel()
+
+        # Add a flowsheet object to the model
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.costing = QGESSCosting(
+            tech=1,
+        )
+
+        with pytest.raises(
+            UnitsError,
+            match=re.escape(
+                "The argument CO2_capture_rate was passed with the units kg*s "
+                "with dimensions [mass] * [time]. Please ensure that the CO2 capture rate has units of valid_units/time."
+                )
+        ):
+            m.fs.costing.build_process_costs(
+                CO2_capture_rate=1*pyunits.kg*pyunits.s,
+                )
+
+    @pytest.mark.unit
+    def test_invalid_CO2_capture_rate_units_invalid_nonpertime_units(self):
+        # Create a Concrete Model as the top level object
+        m = pyo.ConcreteModel()
+
+        # Add a flowsheet object to the model
+        m.fs = FlowsheetBlock(dynamic=False)
+        m.fs.costing = QGESSCosting(
+            tech=1,
+        )
+
+        with pytest.raises(
+            UnitsError,
+            match=re.escape(
+                "The argument CO2_capture_rate was passed with the units kg**2/s "
+                "with dimensions [mass] ** 2 / [time]. Please ensure that the CO2 capture rate has units of valid_units/time."
+                )
+        ):
+            m.fs.costing.build_process_costs(
+                CO2_capture_rate=1*pyunits.kg**2/pyunits.s,
+                )
