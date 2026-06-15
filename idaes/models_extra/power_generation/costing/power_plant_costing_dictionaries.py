@@ -50,7 +50,7 @@ _log = idaeslog.getLogger(__name__)
 
 def register_power_plant_currency_units():
     """
-    Define conversion rates for US Dollars based on CE Index.
+    Define conversion rates for US Dollars based on CEPCI.
     """
     register_idaes_currency_units()
     if (

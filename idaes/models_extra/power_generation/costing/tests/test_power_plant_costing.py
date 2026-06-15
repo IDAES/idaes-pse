@@ -65,7 +65,7 @@ def test_PP_costing_with_all_methods(tech):
         has_capital_expenditure_period=True,
         capital_expenditure_percentages=[10, 60, 30],
         has_economy_of_numbers=True,
-        CE_index_year="2018",
+        CEPCI_year="2018",
         tech=tech,
     )
 
@@ -383,12 +383,12 @@ def test_invalid_currency_units():
     with pytest.raises(
         AttributeError,
         match=re.escape(
-            "CE_index_year notavalidvalue is not a valid currency base "
-            "option. Valid CE index options include CE500, CE394, years from 1990 "
+            "CEPCI_year notavalidvalue is not a valid currency base "
+            "option. Valid CEPCI options include CE500, CE394, years from 1990 "
             "to 2023, or user-defined units such as 2019_Sep and UKy_2019."
         ),
     ):
-        m.fs.costing = PowerPlantCosting(tech=2, CE_index_year="notavalidvalue")
+        m.fs.costing = PowerPlantCosting(tech=2, CEPCI_year="notavalidvalue")
 
 
 @pytest.mark.component
@@ -744,7 +744,7 @@ def test_PP_costing():
 
 
 @pytest.mark.component
-def test_PP_costing_CE_index_year():
+def test_PP_costing_CEPCI_year():
     # Create a Concrete Model as the top level object
     m = pyo.ConcreteModel()
 
@@ -793,7 +793,7 @@ def test_PP_costing_CE_index_year():
             "scaled_param": m.fs.boiler_2019_Sep.coal_mass_flow,
             "tech": 2,
             "ccs": "A",
-            "CE_index_year": "2019_Sep",
+            "CEPCI_year": "2019_Sep",
         },
     )
 
@@ -810,7 +810,7 @@ def test_PP_costing_CE_index_year():
             "scaled_param": m.fs.boiler_2020.coal_mass_flow,
             "tech": 2,
             "ccs": "A",
-            "CE_index_year": "2020",
+            "CEPCI_year": "2020",
         },
     )
 
@@ -827,7 +827,7 @@ def test_PP_costing_CE_index_year():
             "scaled_param": m.fs.boiler_CE500.coal_mass_flow,
             "tech": 2,
             "ccs": "A",
-            "CE_index_year": "CE500",
+            "CEPCI_year": "CE500",
         },
     )
 
@@ -2442,7 +2442,7 @@ def test_sCO2_costing():
         tech=2,
         has_fixed_OM=True,
         has_variable_OM=True,
-        CE_index_year="2017",
+        CEPCI_year="2017",
     )
 
     # ######################################################
@@ -2459,7 +2459,7 @@ def test_sCO2_costing():
             "equipment": "Coal-fired heater",
             "scaled_param": m.fs.boiler.heat_duty,
             "temp_C": m.fs.boiler.temp,
-            "CE_index_year": "2017",
+            "CEPCI_year": "2017",
         },
     )
 
@@ -2478,7 +2478,7 @@ def test_sCO2_costing():
             "scaled_param": m.fs.turbine.work_isentropic,
             "temp_C": m.fs.turbine.temp,
             "n_equip": 1,
-            "CE_index_year": "2017",
+            "CEPCI_year": "2017",
         },
     )
 
@@ -2494,7 +2494,7 @@ def test_sCO2_costing():
             "equipment": "Generator",
             "scaled_param": m.fs.generator.work_isentropic,
             "n_equip": 1,
-            "CE_index_year": "2017",
+            "CEPCI_year": "2017",
         },
     )
 
@@ -2522,7 +2522,7 @@ def test_sCO2_costing():
             "equipment": "Recuperator",
             "scaled_param": m.fs.HTR.UA,
             "temp_C": m.fs.HTR.temp,
-            "CE_index_year": "2017",
+            "CEPCI_year": "2017",
         },
     )
 
@@ -2548,7 +2548,7 @@ def test_sCO2_costing():
             "equipment": "Recuperator",
             "scaled_param": m.fs.LTR.UA,
             "temp_C": m.fs.LTR.temp,
-            "CE_index_year": "2017",
+            "CEPCI_year": "2017",
         },
     )
 
@@ -2580,7 +2580,7 @@ def test_sCO2_costing():
             "equipment": "Recuperator",
             "scaled_param": m.fs.co2_cooler.UA,
             "temp_C": m.fs.co2_cooler.temp,
-            "CE_index_year": "2017",
+            "CEPCI_year": "2017",
         },
     )
 
@@ -2598,7 +2598,7 @@ def test_sCO2_costing():
             "equipment": "Barrel type compressor",
             "scaled_param": m.fs.main_compressor.flow_vol,
             "n_equip": 5.0,
-            "CE_index_year": "2017",
+            "CEPCI_year": "2017",
         },
     )
 
@@ -2616,7 +2616,7 @@ def test_sCO2_costing():
             "equipment": "Open drip-proof motor",
             "scaled_param": m.fs.main_compressor_motor.work_isentropic,
             "n_equip": 5.0,
-            "CE_index_year": "2017",
+            "CEPCI_year": "2017",
         },
     )
 
@@ -2634,7 +2634,7 @@ def test_sCO2_costing():
             "equipment": "Barrel type compressor",
             "scaled_param": m.fs.bypass_compressor.flow_vol,
             "n_equip": 4.0,
-            "CE_index_year": "2017",
+            "CEPCI_year": "2017",
         },
     )
 
@@ -2653,7 +2653,7 @@ def test_sCO2_costing():
             "equipment": "Open drip-proof motor",
             "scaled_param": m.fs.bypass_compressor_motor.work_isentropic,
             "n_equip": 4.0,
-            "CE_index_year": "2017",
+            "CEPCI_year": "2017",
         },
     )
 
@@ -2755,7 +2755,7 @@ def test_ASU_costing():
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.costing = PowerPlantCosting(
         tech=2,
-        CE_index_year="2017",
+        CEPCI_year="2017",
     )
 
     m.fs.ASU = UnitModelBlock()
@@ -2767,7 +2767,7 @@ def test_ASU_costing():
         costing_method=PowerPlantCostingData.get_ASU_cost,
         costing_method_arguments={
             "scaled_param": m.fs.ASU.O2_flow,
-            "CE_index_year": "2017",
+            "CEPCI_year": "2017",
         },
     )
 

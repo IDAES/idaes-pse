@@ -56,7 +56,7 @@ _log = idaeslog.getLogger(__name__)
 
 @declare_process_block_class("PowerPlantCosting")
 class PowerPlantCostingData(QGESSCostingData):
-    # Register currency and conversion rates based on CE Index
+    # Register currency and conversion rates based on CEPCI
     register_power_plant_currency_units()
 
     def build_global_params(self):
@@ -84,7 +84,7 @@ class PowerPlantCostingData(QGESSCostingData):
         scaled_param,
         temp_C=None,
         n_equip=1,
-        CE_index_year="2018",
+        CEPCI_year="2018",
         custom_accounts=None,
     ):
         """
@@ -97,7 +97,7 @@ class PowerPlantCostingData(QGESSCostingData):
                 equipment use a temperature correction factor, so it is
                 optional
             n_equip: the number of pieces of equipment to cost
-            CE_index_year: year for cost basis, e.g. "2018" to use 2018 dollars
+            CEPCI_year: year for cost basis, e.g. "2018" to use 2018 dollars
             custom_accounts: user-defined dictionary to append to
                 existing cost accounts dictionary
 
@@ -119,12 +119,12 @@ class PowerPlantCostingData(QGESSCostingData):
         self.equipment = equipment
 
         try:
-            CE_index_units = getattr(pyunits, "MUSD_" + CE_index_year)
+            CEPCI_units = getattr(pyunits, "MUSD_" + CEPCI_year)
         except AttributeError:
             raise AttributeError(
-                "CE_index_year %s is not a valid currency base option. "
-                "Valid CE index options include CE500, CE394 and years from "
-                "1990 to 2020." % (CE_index_year)
+                "CEPCI_year %s is not a valid currency base option. "
+                "Valid CEPCI options include CE500, CE394 and years from "
+                "1990 to 2020." % (CEPCI_year)
             )
 
         # load sCO2 costing dictionary
@@ -231,21 +231,21 @@ class PowerPlantCostingData(QGESSCostingData):
             initialize=self.ref_cost,
             bounds=(0, 1e4),
             doc="equipment cost of sCO2 unit in $MM",
-            units=CE_index_units,
+            units=CEPCI_units,
         )
 
         self.bare_erected_cost = Var(
             initialize=self.ref_cost,
             bounds=(0, 1e4),
             doc="bare erected cost of sCO2 unit" "in $MM",
-            units=CE_index_units,
+            units=CEPCI_units,
         )
 
         self.total_plant_cost = Var(
             initialize=self.ref_cost,
             bounds=(0, 1e4),
             doc="total plant cost of sCO2 unit" "in $MM",
-            units=CE_index_units,
+            units=CEPCI_units,
         )
 
         # divides the scaled parameter by the number of pieces of equipment
@@ -299,7 +299,7 @@ class PowerPlantCostingData(QGESSCostingData):
             return (
                 costing.equipment_cost
                 == costing.n_equip
-                * pyunits.convert(costing.ref_cost, CE_index_units)
+                * pyunits.convert(costing.ref_cost, CEPCI_units)
                 * (
                     (costing.scaled_param / costing.scaled_param.get_units())
                     ** costing.exp
@@ -374,7 +374,7 @@ class PowerPlantCostingData(QGESSCostingData):
     # -----------------------------------------------------------------------------
     # Air Separation Unit Costing Library
     # -----------------------------------------------------------------------------
-    def get_ASU_cost(self, scaled_param, CE_index_year="2018"):
+    def get_ASU_cost(self, scaled_param, CEPCI_year="2018"):
         # scaled parameter is O2 flowrate in TPD
         # only one set of parameters used, ref is hard coded for TPD and 2017
 
@@ -402,12 +402,12 @@ class PowerPlantCostingData(QGESSCostingData):
         self.library = "ASU"
 
         try:
-            CE_index_units = getattr(pyunits, "MUSD_" + CE_index_year)
+            CEPCI_units = getattr(pyunits, "MUSD_" + CEPCI_year)
         except AttributeError:
             raise AttributeError(
-                "CE_index_year %s is not a valid currency base option. "
-                "Valid CE index options include CE500, CE394 and years from "
-                "1990 to 2020." % (CE_index_year)
+                "CEPCI_year %s is not a valid currency base option. "
+                "Valid CEPCI options include CE500, CE394 and years from "
+                "1990 to 2020." % (CEPCI_year)
             )
 
         # define parameters
@@ -458,14 +458,14 @@ class PowerPlantCostingData(QGESSCostingData):
             initialize=params["Reference Cost"],
             bounds=(0, 1e4),
             doc="scaled bare erected cost in $MM",
-            units=CE_index_units,
+            units=CEPCI_units,
         )
 
         self.total_plant_cost = Var(
             initialize=params["Reference Cost"],
             bounds=(0, 1e4),
             doc="total plant cost in $MM",
-            units=CE_index_units,
+            units=CEPCI_units,
         )
 
         # rule for scaling BEC
@@ -475,7 +475,7 @@ class PowerPlantCostingData(QGESSCostingData):
                 costing.bare_erected_cost
                 == pyunits.convert(
                     costing.ref_cost,
-                    CE_index_units,
+                    CEPCI_units,
                 )
                 * (scaled_param / costing.ref_param) ** costing.exp
             )

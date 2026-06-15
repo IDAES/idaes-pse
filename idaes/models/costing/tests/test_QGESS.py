@@ -68,7 +68,7 @@ class TestQGESSConfigParameters(object):
         expected = {
             "Value": {
                 "base_currency": 1,
-                "CE_index_units": 1,
+                "CEPCI_units": 1,
                 "base_period": 1,
                 "fs.costing.capacity_factor": 0.85,
                 "fs.costing.Lang_factor": 1,
@@ -78,7 +78,7 @@ class TestQGESSConfigParameters(object):
             },
             "Units": {
                 "base_currency": "USD_2018",
-                "CE_index_units": "MUSD_2018",
+                "CEPCI_units": "MUSD_2018",
                 "base_period": "a",
                 "fs.costing.capacity_factor": "dimensionless",
                 "fs.costing.Lang_factor": "dimensionless",
@@ -101,7 +101,7 @@ class TestQGESSConfigParameters(object):
             ), f"Units mismatch for key {k}"
 
     @pytest.mark.unit
-    def test_invalid_CE_index_year(self):
+    def test_invalid_CEPCI_year(self):
         # Create a Concrete Model as the top level object
         m = pyo.ConcreteModel()
 
@@ -109,11 +109,11 @@ class TestQGESSConfigParameters(object):
         m.fs = FlowsheetBlock(dynamic=False)
         with pytest.raises(
             AttributeError,
-            match="CE_index_year notayear is not a valid currency base option. "
-            "Valid CE index options include CE500, CE394, years from 1990 to 2023, or user-defined "
+            match="CEPCI_year notayear is not a valid currency base option. "
+            "Valid CEPCI options include CE500, CE394, years from 1990 to 2023, or user-defined "
             "units such as 2019_Sep and UKy_2019.",
         ):
-            m.fs.costing = QGESSCosting(tech=1, CE_index_year="notayear")
+            m.fs.costing = QGESSCosting(tech=1, CEPCI_year="notayear")
 
     @pytest.mark.unit
     def test_invalid_year_for_phaseout(self):
@@ -125,16 +125,16 @@ class TestQGESSConfigParameters(object):
         with pytest.raises(
             ValueError,
             match=re.escape(
-                "CE_index_year must contain a valid 4‑digit year at the start or end "
+                "CEPCI_year must contain a valid 4‑digit year at the start or end "
                 "(e.g. 2019, 2019_Sep, UKy_2019)"
             ),
         ):
             m.fs.costing = QGESSCosting(
-                tech=1, CE_index_year="CE500", has_production_credit_phaseout=True
+                tech=1, CEPCI_year="CE500", has_production_credit_phaseout=True
             )
 
     @pytest.mark.parametrize(
-        "CE_index_year",
+        "CEPCI_year",
         [
             "2021",
             "2023",
@@ -145,7 +145,7 @@ class TestQGESSConfigParameters(object):
         ],
     )
     @pytest.mark.unit
-    def test_valid_years_for_phaseout(self, CE_index_year):
+    def test_valid_years_for_phaseout(self, CEPCI_year):
 
         # mock UKy_2019 for the purpose of this test
         pyunits.load_definitions_from_strings(
@@ -160,13 +160,13 @@ class TestQGESSConfigParameters(object):
         # Add a flowsheet object to the model
         m.fs = FlowsheetBlock(dynamic=False)
         m.fs.costing = QGESSCosting(
-            tech=1, CE_index_year=CE_index_year, has_production_credit_phaseout=True
+            tech=1, CEPCI_year=CEPCI_year, has_production_credit_phaseout=True
         )
 
-        if CE_index_year == "UKy_2019":
-            assert m.fs.costing.current_year.value == int(CE_index_year[-4:])
+        if CEPCI_year == "UKy_2019":
+            assert m.fs.costing.current_year.value == int(CEPCI_year[-4:])
         else:
-            assert m.fs.costing.current_year.value == int(CE_index_year[:4])
+            assert m.fs.costing.current_year.value == int(CEPCI_year[:4])
 
     @pytest.mark.unit
     def test_taxes_no_fixed_OM(self):
@@ -183,7 +183,7 @@ class TestQGESSConfigParameters(object):
             "the fixed O&M calculations.",
         ):
             m.fs.costing = QGESSCosting(
-                tech=1, CE_index_year="CE500", has_taxes_and_credits=True
+                tech=1, CEPCI_year="CE500", has_taxes_and_credits=True
             )
 
     @pytest.mark.unit
@@ -252,7 +252,7 @@ class TestQGESSConfigParameters(object):
             )
 
     @pytest.mark.parametrize(
-        "CE_index_year",
+        "CEPCI_year",
         [
             "2021",
             "2023",
@@ -268,7 +268,7 @@ class TestQGESSConfigParameters(object):
         ],
     )
     @pytest.mark.unit
-    def test_phaseout_factors(self, CE_index_year):
+    def test_phaseout_factors(self, CEPCI_year):
 
         # mock future years for the purpose of this test
         for year in range(27, 36):
@@ -285,7 +285,7 @@ class TestQGESSConfigParameters(object):
         m.fs = FlowsheetBlock(dynamic=False)
         m.fs.costing = QGESSCosting(
             tech=1,
-            CE_index_year=CE_index_year,
+            CEPCI_year=CEPCI_year,
             has_fixed_OM=True,
             has_taxes_and_credits=True,
             has_production_credit_phaseout=True,
@@ -329,8 +329,8 @@ class TestQGESSConfigParameters(object):
         )
 
         assert (
-            pyo.value(m.fs.costing.phaseout_factor) == expected[CE_index_year]
-        ), f"Expected {expected[CE_index_year]}, got {pyo.value(m.fs.costing.phaseout_factor)}"
+            pyo.value(m.fs.costing.phaseout_factor) == expected[CEPCI_year]
+        ), f"Expected {expected[CEPCI_year]}, got {pyo.value(m.fs.costing.phaseout_factor)}"
 
     @pytest.mark.unit
     def test_capital_expenditure_percentages_not_set(self):
@@ -402,7 +402,7 @@ class TestQGESSConfigParameters(object):
             has_capital_expenditure_period=True,
             capital_expenditure_percentages=[10, 60, 30],
             has_economy_of_numbers=True,
-            CE_index_year="2023",
+            CEPCI_year="2023",
             tech=tech,
         )
 
@@ -438,7 +438,7 @@ class TestQGESSConfigParameters(object):
             expected = {
                 "Value": {
                     "base_currency": 1,
-                    "CE_index_units": 1,
+                    "CEPCI_units": 1,
                     "base_period": 1,
                     "fs.costing.current_year": 2023,
                     "fs.costing.capacity_factor": capacity_factor,
@@ -491,7 +491,7 @@ class TestQGESSConfigParameters(object):
                 },
                 "Units": {
                     "base_currency": "USD_2023",
-                    "CE_index_units": "MUSD_2023",
+                    "CEPCI_units": "MUSD_2023",
                     "base_period": "a",
                     "fs.costing.current_year": "dimensionless",
                     "fs.costing.capacity_factor": "dimensionless",
@@ -541,7 +541,7 @@ class TestQGESSConfigParameters(object):
             expected = {
                 "Value": {
                     "base_currency": 1,
-                    "CE_index_units": 1,
+                    "CEPCI_units": 1,
                     "base_period": 1,
                     "fs.costing.current_year": 2023,
                     "fs.costing.capacity_factor": capacity_factor,
@@ -607,7 +607,7 @@ class TestQGESSConfigParameters(object):
                 },
                 "Units": {
                     "base_currency": "USD_2023",
-                    "CE_index_units": "MUSD_2023",
+                    "CEPCI_units": "MUSD_2023",
                     "base_period": "a",
                     "fs.costing.current_year": "dimensionless",
                     "fs.costing.capacity_factor": "dimensionless",
@@ -775,7 +775,7 @@ class TestQGESSBuildProcessCosts(object):
             has_capital_expenditure_period=True,
             capital_expenditure_percentages=[10, 60, 30],
             has_economy_of_numbers=True,
-            CE_index_year="2023",
+            CEPCI_year="2023",
             tech=tech,
         )
 
