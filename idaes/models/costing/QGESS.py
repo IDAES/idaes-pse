@@ -2303,9 +2303,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             elif isinstance(process_params[i], str):
                 return costing.bare_erected_cost[i] == (
                     n_equip
-                    * pyunits.convert(
-                        costing.ref_cost[i] * ref_cost_units, CEPCI_units
-                    )
+                    * pyunits.convert(costing.ref_cost[i] * ref_cost_units, CEPCI_units)
                     * (
                         pyunits.convert(scaled_param, ref_units)
                         / (scaler * costing.ref_param[i] * ref_units)
@@ -2356,9 +2354,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
         if total_purchase_cost is not None:
             b.total_BEC = Var(
-                initialize=pyunits.convert(
-                    total_purchase_cost, to_units=b.CEPCI_units
-                ),
+                initialize=pyunits.convert(total_purchase_cost, to_units=b.CEPCI_units),
                 units=b.CEPCI_units,
             )
             b.total_BEC.fix()
@@ -3075,9 +3071,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         @b.Constraint()
         def sum_custom_variable_costs(c):
             if len(c.custom_variable_costs_list) == 0:
-                return (
-                    c.custom_variable_costs == 1e-12 * b.CEPCI_units / pyunits.year
-                )
+                return c.custom_variable_costs == 1e-12 * b.CEPCI_units / pyunits.year
             else:
                 return c.custom_variable_costs == sum(b.custom_variable_costs_list)
 
@@ -4075,11 +4069,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 + c.pv_capital_cost
                 + c.pv_loan_interest
                 + c.pv_operating_cost
-                + (
-                    c.pv_taxes
-                    if b.config.has_taxes_and_credits
-                    else 0 * c.CEPCI_units
-                )
+                + (c.pv_taxes if b.config.has_taxes_and_credits else 0 * c.CEPCI_units)
                 + (
                     c.pv_production_incentive
                     if b.config.has_production_credit_phaseout
