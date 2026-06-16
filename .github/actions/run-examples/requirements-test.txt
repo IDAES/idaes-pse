@@ -1,2 +1,2 @@
-nbmake==1.5
+nbmake==1.5.5
 jupyter-cache==0.6.1
