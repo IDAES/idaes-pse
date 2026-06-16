@@ -69,8 +69,10 @@ class PropertyTestHarness(object):
         pass
 
     @pytest.fixture(scope="class")
-    def frame(self):
+    @classmethod
+    def frame(cls):
         m = ConcreteModel()
+        self = cls()
         self.configure_class(m)
 
         m.fs = FlowsheetBlock(dynamic=False)
