@@ -172,14 +172,18 @@ jobs:
             runner-image: macos-15
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - uses: ./.github/actions/display-debug-info
       - name: Set up Conda environment
-        uses: conda-incubator/setup-miniconda@v3
+        uses: conda-incubator/setup-miniconda@v4
         with:
           activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
           python-version: ${{ matrix.python-version }}
           miniforge-version: latest
+          channels: conda-forge
+          conda-remove-defaults: 'true'
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
@@ -201,7 +205,7 @@ jobs:
           pytest --pyargs idaes -m "not integration"
       - name: Upload coverage report as GHA workflow artifact
         if: matrix.cov-report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-report-${{ matrix.os }}
           path: coverage.xml
