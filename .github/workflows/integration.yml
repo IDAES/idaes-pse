@@ -65,6 +65,8 @@ jobs:
       workflow-trigger: ${{ steps.determine-trigger.outputs.workflow-trigger }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - uses: ./.github/actions/display-debug-info
       - id: check-pr-approval
         uses: ./.github/actions/check-pr-approval
@@ -137,6 +139,8 @@ jobs:
             runner-image: windows-2022
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - uses: ./.github/actions/display-debug-info
       - name: Set up Conda environment
         uses: conda-incubator/setup-miniconda@v4
@@ -177,6 +181,8 @@ jobs:
             runner-image: windows-2022
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - uses: ./.github/actions/display-debug-info
       - name: Set up Conda environment
         uses: conda-incubator/setup-miniconda@v4
@@ -234,6 +240,8 @@ jobs:
             dependencies-to-uninstall: omlt
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - name: Set up Conda environment
         uses: conda-incubator/setup-miniconda@v4
         with:
