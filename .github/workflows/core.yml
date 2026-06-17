@@ -201,8 +201,14 @@ jobs:
       - name: Install pandoc
         run: conda install -c conda-forge pandoc
       - name: Run pytest (not integration)
+        if: matrix.os != 'linux'
         run: |
-          pytest --pyargs idaes -m "not integration"
+          pytest -v -s --pyargs idaes -m "not integration"
+      - name: Run pytest (not integration)
+        if: matrix.os == 'linux'
+        run: |
+          sudo apt-get install gdb
+          gdb -batch -ex run -ex bt --args python -m pytest --pyargs idaes.models.unit_models.tests.test_heat_exchanger -s
       - name: Upload coverage report as GHA workflow artifact
         if: matrix.cov-report
         uses: actions/upload-artifact@v7
