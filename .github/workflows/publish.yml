@@ -89,6 +89,10 @@ jobs:
           assert pkg_version == normalized_tag
           ' "idaes-pse" "${{ github.ref_name }}"
 
+      - name: Install OS deps for ipopt
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y liblapack3 libblas3 libgfortran5
       - name: Run tests
         working-directory: /tmp
         run: |
