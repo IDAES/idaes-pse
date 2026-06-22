@@ -140,7 +140,10 @@ jobs:
             echo "pip install failed; waiting $_wait_time_s seconds"
             sleep "$_wait_time_s"
           done
-
+      - name: Install OS deps for ipopt
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y liblapack3 libblas3 libgfortran5
       - name: Run tests
         run: |
           idaes get-extensions --extra petsc --verbose
