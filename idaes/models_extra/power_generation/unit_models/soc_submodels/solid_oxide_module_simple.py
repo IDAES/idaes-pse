@@ -50,13 +50,18 @@ from functools import partial
 from pyomo.common.config import ConfigValue, ConfigBlock, Bool
 import pyomo.environ as pyo
 
-from idaes.core import declare_process_block_class, UnitModelBlockData
+from idaes.core import (
+    declare_process_block_class,
+    InletPort,
+    OutletPort,
+    UnitModelBlockData,
+)
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.models_extra.power_generation.unit_models.soc_submodels as soc
 import idaes.models_extra.power_generation.unit_models.soc_submodels.common as common
 import idaes.core.util.scaling as iscale
 from idaes.core.solvers import get_solver
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import BurntToast, ConfigurationError
 
 import idaes.logger as idaeslog
 
@@ -252,6 +257,7 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
                     ),
                 )
                 if direction == "in":
+                    port_class = InletPort
                     setattr(
                         self,
                         f"{port_name}_mole_frac_eqn",
@@ -260,7 +266,8 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
                             rule=partial(rule_mole_frac, port=port, comps=side_comps),
                         ),
                     )
-                if direction == "out":
+                elif direction == "out":
+                    port_class = OutletPort
                     setattr(
                         self,
                         f"{port_name}_absent_comp_eqn",
@@ -270,11 +277,20 @@ class SolidOxideModuleSimpleData(UnitModelBlockData):
                             rule=partial(rule_absent_comp, props=props),
                         ),
                     )
+                else:
+                    raise BurntToast(
+                        "direction should always be in or out "
+                        f"but instead we have {direction}. The "
+                        "end user should never encounter this error, "
+                        "please report this issue to the IDAES developers."
+                    )
+
                 # Add a different port at the module level
                 self.add_port(
                     name=port_name,
                     block=props,
                     doc=f"{side.capitalize()}-side {direction.capitalize()}let Port",
+                    port_class=port_class,
                 )
 
         # This is net flow of power *into* the cell. In fuel cell mode, this will
