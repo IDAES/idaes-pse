@@ -43,6 +43,7 @@ import idaes
 import idaes.logger as idaeslog
 import idaes.config as icfg
 
+
 # Importing a few things here so that they are cached
 # pylint: disable=unused-import
 # pylint: disable=import-outside-toplevel
@@ -429,6 +430,7 @@ def petsc_dae_by_time_element(
     skip_initial=False,
     initial_solver="petsc_snes",
     initial_solver_options=None,
+    initial_solver_writer_config=None,
     ts_options=None,
     keepfiles=False,
     symbolic_solver_labels=True,
@@ -575,7 +577,7 @@ def petsc_dae_by_time_element(
     if not skip_initial:
         # Nonlinear equation solver for initial conditions
         initial_solver_obj = pyo.SolverFactory(
-            initial_solver, options=initial_solver_options
+            initial_solver, options=initial_solver_options, writer_config=initial_solver_writer_config
         )
         # list of constraints to add to the initial condition problem
         if initial_constraints is None:
@@ -868,7 +870,7 @@ class PetscTrajectory(object):
         with open(f"{self.stub}.typ") as f:
             typ = list(map(int, f.readlines()))
         _vars = [name for i, name in enumerate(names) if typ[i] in [0, 1]]
-        t, v, names = petsc_binary_io().ReadTrajectory("Visualization-data")
+        (t, v, names) = petsc_binary_io().ReadTrajectory("Visualization-data")
         self.time = t
         self.vecs_by_time = v
         self.vecs = dict.fromkeys(_vars, None)
