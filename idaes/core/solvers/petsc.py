@@ -43,7 +43,6 @@ import idaes
 import idaes.logger as idaeslog
 import idaes.config as icfg
 
-
 # Importing a few things here so that they are cached
 # pylint: disable=unused-import
 # pylint: disable=import-outside-toplevel
@@ -534,6 +533,13 @@ def petsc_dae_by_time_element(
     if "scheme" not in time.get_discretization_info():
         raise RuntimeError("The ContinuousSet time has not been discretized")
 
+    scheme = time.get_discretization_info()["scheme"]
+    if scheme != "BACKWARD Difference" and scheme != "LAGRANGE-RADAU":
+        raise RuntimeError(
+            "The PETSc interface supports only the backward difference and Lagrange-Radau collocation "
+            f"schemes. Found instead the {scheme} scheme."
+        )
+
     solve_log = idaeslog.getSolveLogger("petsc-dae")
 
     # Need a representative time for flatten_dae_components to work, because otherwise things like
@@ -577,7 +583,9 @@ def petsc_dae_by_time_element(
     if not skip_initial:
         # Nonlinear equation solver for initial conditions
         initial_solver_obj = pyo.SolverFactory(
-            initial_solver, options=initial_solver_options, writer_config=initial_solver_writer_config
+            initial_solver,
+            options=initial_solver_options,
+            writer_config=initial_solver_writer_config,
         )
         # list of constraints to add to the initial condition problem
         if initial_constraints is None:
@@ -870,7 +878,7 @@ class PetscTrajectory(object):
         with open(f"{self.stub}.typ") as f:
             typ = list(map(int, f.readlines()))
         _vars = [name for i, name in enumerate(names) if typ[i] in [0, 1]]
-        (t, v, names) = petsc_binary_io().ReadTrajectory("Visualization-data")
+        t, v, names = petsc_binary_io().ReadTrajectory("Visualization-data")
         self.time = t
         self.vecs_by_time = v
         self.vecs = dict.fromkeys(_vars, None)
