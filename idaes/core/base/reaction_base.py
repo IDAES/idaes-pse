@@ -108,6 +108,7 @@ class ReactionParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
         # TODO: Need way to tie reaction package to a specific property package
         self._validate_property_parameter_units()
         self._validate_property_parameter_properties()
+        self._default_reaction_scaler_object = None
 
     @property
     def reaction_block_class(self):
@@ -119,6 +120,42 @@ class ReactionParameterBlock(ProcessBlockData, property_meta.HasPropertyClassMet
                 "with this reaction package. Please contact the developer of "
                 "the reaction package.".format(self.name)
             )
+
+    @property
+    def default_reaction_scaler_class(self):
+        return self._reaction_block_class.default_scaler
+
+    @property
+    def default_reaction_scaler_object(self):
+        if self._default_reaction_scaler_object is not None:
+            return self._default_reaction_scaler_object
+        else:
+            # Pyomo catches the error and raises its own AttributeError
+            # with its own message. Leave the error, though, in case
+            # the user looks through the code and ends up here.
+            raise AttributeError(
+                f"{self.name} has not been provided with a default scaler object "
+                "to use on state blocks."
+            )
+
+    @default_reaction_scaler_object.setter
+    def default_reaction_scaler_object(self, scaler_obj):
+        # Top-level import creates circular import
+        # pylint: disable=import-outside-toplevel
+        from idaes.core.scaling.scaling_base import ScalerBase
+
+        # pylint: enable=import-outside-toplevel
+
+        if isinstance(scaler_obj, ScalerBase):
+            self._default_reaction_scaler_object = scaler_obj
+        else:
+            raise TypeError(
+                f"Expected an instance of a subclass of ScalerBase, but instead got {type(scaler_obj)}."
+            )
+
+    @default_reaction_scaler_object.deleter
+    def default_reaction_scaler_object(self):
+        self._default_reaction_scaler_object = None
 
     def build_reaction_block(self, *args, **kwargs):
         """
@@ -274,6 +311,11 @@ should be constructed in this reaction block,
 
     @property
     def default_scaler(self):
+        for parent_class in type(self).__bases__:
+            if issubclass(parent_class, ReactionBlockBase):
+                # Scalar reaction block
+                return super(parent_class, self).default_scaler
+        # Child of indexed block
         return self.parent_component().default_scaler
 
     def lock_attribute_creation_context(self):

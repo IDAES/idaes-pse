@@ -30,7 +30,7 @@ from idaes.models_extra.power_generation.unit_models import (
 )
 import idaes.core.util.model_statistics as mstat
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.model_diagnostics import DiagnosticsToolbox
+from idaes.core.util import DiagnosticsToolbox
 
 # Set up solver
 optarg = {

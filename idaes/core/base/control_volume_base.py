@@ -208,8 +208,10 @@ class ControlVolumeScalerBase(CustomScalerBase):
                 prop_idx = idx[:-2]
                 p = idx[-2]
                 j = idx[-1]
-                nom = self.get_expression_nominal_value(
-                    props[prop_idx].get_material_flow_terms(p, j)
+                nom = abs(
+                    self.get_expression_nominal_value(
+                        props[prop_idx].get_material_flow_terms(p, j)
+                    )
                 )
                 self.set_component_scaling_factor(
                     rate_rxn_gen[idx], weight / nom, overwrite=overwrite
@@ -257,8 +259,10 @@ class ControlVolumeScalerBase(CustomScalerBase):
                 prop_idx = idx[:-2]
                 p = idx[-2]
                 j = idx[-1]
-                nom = self.get_expression_nominal_value(
-                    props[prop_idx].get_material_flow_terms(p, j)
+                nom = abs(
+                    self.get_expression_nominal_value(
+                        props[prop_idx].get_material_flow_terms(p, j)
+                    )
                 )
                 self.set_component_scaling_factor(
                     equil_rxn_gen[idx], weight / nom, overwrite=overwrite
@@ -306,8 +310,10 @@ class ControlVolumeScalerBase(CustomScalerBase):
                 prop_idx = idx[:-2]
                 p = idx[-2]
                 j = idx[-1]
-                nom = self.get_expression_nominal_value(
-                    props[prop_idx].get_material_flow_terms(p, j)
+                nom = abs(
+                    self.get_expression_nominal_value(
+                        props[prop_idx].get_material_flow_terms(p, j)
+                    )
                 )
                 self.set_component_scaling_factor(
                     inh_rxn_gen[idx], weight / nom, overwrite=overwrite
@@ -347,8 +353,10 @@ class ControlVolumeScalerBase(CustomScalerBase):
         if hasattr(model, "mass_transfer_term"):
             for prop_idx in props:
                 for p, j in phase_component_set:
-                    nom = self.get_expression_nominal_value(
-                        props[prop_idx].get_material_flow_terms(p, j)
+                    nom = abs(
+                        self.get_expression_nominal_value(
+                            props[prop_idx].get_material_flow_terms(p, j)
+                        )
                     )
                     self.set_component_scaling_factor(
                         model.mass_transfer_term[prop_idx, p, j],
@@ -360,11 +368,15 @@ class ControlVolumeScalerBase(CustomScalerBase):
             for prop_idx in props:
                 for pe_idx in phase_equilibrium_idx:
                     j, pp = phase_equilibrium_list[pe_idx]
-                    nom1 = self.get_expression_nominal_value(
-                        props[prop_idx].get_material_flow_terms(pp[0], j)
+                    nom1 = abs(
+                        self.get_expression_nominal_value(
+                            props[prop_idx].get_material_flow_terms(pp[0], j)
+                        )
                     )
-                    nom2 = self.get_expression_nominal_value(
-                        props[prop_idx].get_material_flow_terms(pp[1], j)
+                    nom2 = abs(
+                        self.get_expression_nominal_value(
+                            props[prop_idx].get_material_flow_terms(pp[1], j)
+                        )
                     )
                     nom = min(nom1, nom2)
                     self.set_component_scaling_factor(
@@ -459,8 +471,10 @@ class ControlVolumeScalerBase(CustomScalerBase):
                 nom_list = []
                 for p in phase_list:
                     nom_list.append(
-                        self.get_expression_nominal_value(
-                            props[prop_idx].get_enthalpy_flow_terms(p)
+                        abs(
+                            self.get_expression_nominal_value(
+                                props[prop_idx].get_enthalpy_flow_terms(p)
+                            )
                         )
                     )
                 # TODO we need to do some validation so that nom isn't zero or near-zero
@@ -575,8 +589,10 @@ class ControlVolumeScalerBase(CustomScalerBase):
                     for p in phase_list:
                         if (p, c) in props.phase_component_set:
                             nom_list.append(
-                                self.get_expression_nominal_value(
-                                    props[idx[:-1]].get_material_flow_terms(p, c)
+                                abs(
+                                    self.get_expression_nominal_value(
+                                        props[idx[:-1]].get_material_flow_terms(p, c)
+                                    )
                                 )
                             )
                     nom = max(nom_list)
@@ -587,8 +603,10 @@ class ControlVolumeScalerBase(CustomScalerBase):
                 for idx in mb_eqn:
                     p = idx[-2]
                     c = idx[-1]
-                    nom = self.get_expression_nominal_value(
-                        props[idx[:-2]].get_material_flow_terms(p, c)
+                    nom = abs(
+                        self.get_expression_nominal_value(
+                            props[idx[:-2]].get_material_flow_terms(p, c)
+                        )
                     )
                     self.set_component_scaling_factor(
                         mb_eqn[idx], 1 / nom, overwrite=overwrite
@@ -598,8 +616,10 @@ class ControlVolumeScalerBase(CustomScalerBase):
                     nom_list = []
                     for p, c in pc_set:
                         nom_list.append(
-                            self.get_expression_nominal_value(
-                                props[idx[:-1]].get_material_flow_terms(p, c)
+                            abs(
+                                self.get_expression_nominal_value(
+                                    props[idx[:-1]].get_material_flow_terms(p, c)
+                                )
                             )
                         )
                     nom = max(nom_list)
@@ -641,8 +661,10 @@ class ControlVolumeScalerBase(CustomScalerBase):
                 nom_list = []
                 for p in phase_list:
                     nom_list.append(
-                        self.get_expression_nominal_value(
-                            props[idx].get_enthalpy_flow_terms(p)
+                        abs(
+                            self.get_expression_nominal_value(
+                                props[idx].get_enthalpy_flow_terms(p)
+                            )
                         )
                     )
                 nom = max(nom_list)

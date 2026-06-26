@@ -2,7 +2,7 @@ Standard Property Set
 =====================
 
 .. module:: idaes.core.base.property_set
-  :noindex:
+  :no-index:
 
 .. autoclass:: StandardPropertySet
   :members:

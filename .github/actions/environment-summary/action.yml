@@ -1,0 +1,115 @@
+name: Environment Summary
+description: Writes environment info to the job summary and uploads environment files as an artifact
+
+inputs:
+  python-version:
+    required: true
+    description: Python version used in the matrix
+  os:
+    required: true
+    description: OS label used in the matrix (e.g. linux, win64)
+  job-name:
+    required: false
+    description: Optional label to distinguish jobs with the same python/os (e.g. "tests", "notebooks")
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Generate environment summary
+      if: always()
+      shell: bash -l {0}
+      run: |
+        JOB_LABEL="${{ inputs.job-name }}"
+        [ -n "$JOB_LABEL" ] && JOB_LABEL=" ($JOB_LABEL)"
+
+        HAS_CONDA=false
+        command -v conda &>/dev/null && HAS_CONDA=true
+
+        {
+          # ── Heading ──────────────────────────────────────────────────────────
+          echo "#### Environment: py${{ inputs.python-version }} / ${{ inputs.os }}${JOB_LABEL}"
+          echo ""
+
+          # ── Overview table ───────────────────────────────────────────────────
+          echo "| Property | Value |"
+          echo "| --- | --- |"
+          echo "| Python | \`$(python --version 2>&1)\` |"
+          echo "| OS | ${{ runner.os }} (${{ runner.arch }}) |"
+          echo "| Conda available | $HAS_CONDA |"
+          echo "| Workflow | \`${{ github.workflow }}\` |"
+          echo "| Run ID / Attempt | \`${{ github.run_id }}\` / \`${{ github.run_attempt }}\` |"
+          echo "| Commit | \`${{ github.sha }}\` |"
+          echo ""
+
+          # ── Key packages ─────────────────────────────────────────────────────
+          echo "### Key Packages"
+          echo ""
+          echo "| Package | Version |"
+          echo "| --- | --- |"
+          for pkg in idaes-pse pyomo watertap numpy scipy pandas; do
+            version="$(pip show "$pkg" 2>/dev/null | awk -F': ' '/^Version:/{print $2; exit}' || true)"
+            if [ -n "$version" ]; then
+              echo "| \`$pkg\` | \`$version\` |"
+            else
+              echo "| \`$pkg\` | _(not installed)_ |"
+            fi
+          done
+          echo ""
+
+          # ── Full conda list (only when conda is present) ──────────────────────
+          if [ "$HAS_CONDA" = "true" ]; then
+            echo "<details><summary>Full conda list</summary>"
+            echo ""
+            echo '```'
+            conda list
+            echo '```'
+            echo ""
+            echo "</details>"
+            echo ""
+          fi
+
+          # ── Full pip list ────────────────────────────────────────────────────
+          echo "<details><summary>Full pip list</summary>"
+          echo ""
+          echo '```'
+          pip list
+          echo '```'
+          echo ""
+          echo "</details>"
+
+        } >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Export environment files
+      if: always()
+      shell: bash -l {0}
+      run: |
+        HAS_CONDA=false
+        command -v conda &>/dev/null && HAS_CONDA=true
+
+        if [ "$HAS_CONDA" = "true" ]; then
+          # --from-history: only explicitly requested packages — cleaner for diffing
+          conda env export --from-history > environment-conda-history.yml
+          # full export with build strings — useful for exact reproduction
+          conda env export > environment-conda-full.yml
+        else
+          echo "# conda not available in this job" > environment-conda-history.yml
+          echo "# conda not available in this job" > environment-conda-full.yml
+        fi
+
+        # pip freeze: pinned versions, editable installs visible — better for reproducibility
+        pip freeze > requirements-pip.txt
+
+    - name: Upload environment as artifact
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: >-
+          environment-${{
+            inputs.job-name != '' && format('{0}-', inputs.job-name) || ''
+          }}py${{ inputs.python-version }}-${{ inputs.os }}-attempt${{ github.run_attempt }}
+        path: |
+          environment-conda-history.yml
+          environment-conda-full.yml
+          requirements-pip.txt
+        if-no-files-found: error

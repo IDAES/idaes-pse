@@ -7,6 +7,6 @@ Degeneracy Hunter (Legacy)
     
     Over the next few releases the functionality of Degeneracy Hunter will be moved over to the new Diagnostics Toolbox which will also contain a number of other tools for diagnosing model issues.
 
-.. autoclass:: idaes.core.util.model_diagnostics.DegeneracyHunter
+.. autoclass:: idaes.core.util.diagnostics_tools.deprecated.degeneracy_hunter_legacy.DegeneracyHunter
     :members:
 

@@ -152,11 +152,15 @@ class SeparatorScaler(CustomScalerBase):
                     for pe_idx in phase_equilibrium_idx:
                         j, pp = phase_equilibrium_list[pe_idx]
 
-                        nom1 = self.get_expression_nominal_value(
-                            mixed_state[prop_idx].get_material_flow_terms(pp[0], j)
+                        nom1 = abs(
+                            self.get_expression_nominal_value(
+                                mixed_state[prop_idx].get_material_flow_terms(pp[0], j)
+                            )
                         )
-                        nom2 = self.get_expression_nominal_value(
-                            mixed_state[prop_idx].get_material_flow_terms(pp[1], j)
+                        nom2 = abs(
+                            self.get_expression_nominal_value(
+                                mixed_state[prop_idx].get_material_flow_terms(pp[1], j)
+                            )
                         )
                         nom = min(nom1, nom2)
                         self.set_component_scaling_factor(
@@ -176,8 +180,10 @@ class SeparatorScaler(CustomScalerBase):
                 prop_idx = idx[0]
                 p = idx[-2]
                 j = idx[-1]
-                nom = self.get_expression_nominal_value(
-                    mixed_state[prop_idx].get_material_flow_terms(p, j)
+                nom = abs(
+                    self.get_expression_nominal_value(
+                        mixed_state[prop_idx].get_material_flow_terms(p, j)
+                    )
                 )
                 self.set_component_scaling_factor(
                     inh_rxn_gen[idx], 1 / nom, overwrite=overwrite
@@ -247,8 +253,10 @@ class SeparatorScaler(CustomScalerBase):
             pc_set = mixed_state.phase_component_set
             if mb_type == MaterialBalanceType.componentPhase:
                 for (t, _, p, j), c in model.material_splitting_eqn.items():
-                    nom = self.get_expression_nominal_value(
-                        mixed_state[t].get_material_flow_terms(p, j)
+                    nom = abs(
+                        self.get_expression_nominal_value(
+                            mixed_state[t].get_material_flow_terms(p, j)
+                        )
                     )
                     self.set_constraint_scaling_factor(c, 1 / nom, overwrite=overwrite)
 
@@ -258,14 +266,14 @@ class SeparatorScaler(CustomScalerBase):
                     for p in mixed_state.phase_list:
                         if (p, j) in pc_set:
                             ft = mixed_state[t].get_material_flow_terms(p, j)
-                            nom = max(nom, self.get_expression_nominal_value(ft))
+                            nom = max(nom, abs(self.get_expression_nominal_value(ft)))
                     self.set_constraint_scaling_factor(c, 1 / nom, overwrite=overwrite)
             elif mb_type == MaterialBalanceType.total:
                 for (t, _), c in model.material_splitting_eqn.items():
                     nom = 0
                     for p, j in pc_set:
                         ft = mixed_state[t].get_material_flow_terms(p, j)
-                        nom = max(nom, self.get_expression_nominal_value(ft))
+                        nom = max(nom, abs(self.get_expression_nominal_value(ft)))
                     self.set_constraint_scaling_factor(c, 1 / nom, overwrite=overwrite)
 
         if hasattr(model, "temperature_equality_eqn"):
@@ -281,8 +289,10 @@ class SeparatorScaler(CustomScalerBase):
                 nom_list = []
                 for p in mixed_state.phase_list:
                     nom_list.append(
-                        self.get_expression_nominal_value(
-                            mixed_state[idx[:-1]].get_enthalpy_flow_terms(p)
+                        abs(
+                            self.get_expression_nominal_value(
+                                mixed_state[idx[:-1]].get_enthalpy_flow_terms(p)
+                            )
                         )
                     )
                 nom = max(nom_list)

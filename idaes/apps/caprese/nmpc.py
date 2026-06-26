@@ -54,7 +54,7 @@ class NMPCSim(object):
         inputs_at_t0=None,
         measurements=None,
         sample_time=None,
-        **kwargs
+        **kwargs,
     ):
         """
         Measurements must be defined in the controller model.

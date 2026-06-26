@@ -124,8 +124,10 @@ class MSContactorScaler(CustomScalerBase):
             for p, j in pc_set:
                 # Scale the reaction generation term to be
                 # the same magnitude as the material flow term
-                nom = self.get_expression_nominal_value(
-                    stream_state[t, e].get_material_flow_terms(p, j)
+                nom = abs(
+                    self.get_expression_nominal_value(
+                        stream_state[t, e].get_material_flow_terms(p, j)
+                    )
                 )
                 self.set_variable_scaling_factor(
                     rxn_gen[t, e, p, j], 1 / nom, overwrite=overwrite
@@ -304,17 +306,23 @@ class MSContactorScaler(CustomScalerBase):
                         # Determine the precision at which each stream
                         # is tracking comp in its material balances
                         nom1 = self.get_expression_nominal_value(
-                            sum(
-                                stream_state1[t, e].get_material_flow_terms(p, comp)
-                                for p in stream_state1[t, e].phase_list
-                                if (p, comp) in stream_state1[t, e].phase_component_set
+                            abs(
+                                sum(
+                                    stream_state1[t, e].get_material_flow_terms(p, comp)
+                                    for p in stream_state1[t, e].phase_list
+                                    if (p, comp)
+                                    in stream_state1[t, e].phase_component_set
+                                )
                             )
                         )
                         nom2 = self.get_expression_nominal_value(
-                            sum(
-                                stream_state2[t, e].get_material_flow_terms(p, comp)
-                                for p in stream_state2[t, e].phase_list
-                                if (p, comp) in stream_state2[t, e].phase_component_set
+                            abs(
+                                sum(
+                                    stream_state2[t, e].get_material_flow_terms(p, comp)
+                                    for p in stream_state2[t, e].phase_list
+                                    if (p, comp)
+                                    in stream_state2[t, e].phase_component_set
+                                )
                             )
                         )
                         # Scale the material transfer term at the same
@@ -341,8 +349,10 @@ class MSContactorScaler(CustomScalerBase):
                         for p, j in pc_set:
                             # Scale the heterogeneous reaction term to be
                             # the same magnitude as the material flow term
-                            nom = self.get_expression_nominal_value(
-                                stream_state[t, e].get_material_flow_terms(p, j)
+                            nom = abs(
+                                self.get_expression_nominal_value(
+                                    stream_state[t, e].get_material_flow_terms(p, j)
+                                )
                             )
                             self.set_variable_scaling_factor(
                                 het_rxn_gen[t, e, p, j], 1 / nom, overwrite=overwrite
@@ -425,19 +435,23 @@ class MSContactorScaler(CustomScalerBase):
                 for t in model.flowsheet().time:
                     for e in model.elements:
                         if model.config.streams[stream1].has_energy_balance:
-                            nom1 = self.get_expression_nominal_value(
-                                sum(
-                                    stream_state1[t, e].get_enthalpy_flow_terms(p)
-                                    for p in stream_state1[t, e].phase_list
+                            nom1 = abs(
+                                self.get_expression_nominal_value(
+                                    sum(
+                                        stream_state1[t, e].get_enthalpy_flow_terms(p)
+                                        for p in stream_state1[t, e].phase_list
+                                    )
                                 )
                             )
                         else:
                             nom1 = None
                         if model.config.streams[stream2].has_energy_balance:
-                            nom2 = self.get_expression_nominal_value(
-                                sum(
-                                    stream_state2[t, e].get_enthalpy_flow_terms(p)
-                                    for p in stream_state2[t, e].phase_list
+                            nom2 = abs(
+                                self.get_expression_nominal_value(
+                                    sum(
+                                        stream_state2[t, e].get_enthalpy_flow_terms(p)
+                                        for p in stream_state2[t, e].phase_list
+                                    )
                                 )
                             )
                         else:
@@ -466,10 +480,12 @@ class MSContactorScaler(CustomScalerBase):
                 heat_var = getattr(model, stream + "_heat")
                 for t in model.flowsheet().time:
                     for e in model.elements:
-                        nom = self.get_expression_nominal_value(
-                            sum(
-                                stream_state[t, e].get_enthalpy_flow_terms(p)
-                                for p in stream_state[t, e].phase_list
+                        nom = abs(
+                            self.get_expression_nominal_value(
+                                sum(
+                                    stream_state[t, e].get_enthalpy_flow_terms(p)
+                                    for p in stream_state[t, e].phase_list
+                                )
                             )
                         )
                         self.set_variable_scaling_factor(
@@ -624,11 +640,13 @@ class MSContactorScaler(CustomScalerBase):
             if hasattr(model, stream + "_material_balance"):
                 mbal = getattr(model, stream + "_material_balance")
                 for t, e, comp in mbal:
-                    nom = self.get_expression_nominal_value(
-                        sum(
-                            stream_state[t, e].get_material_flow_terms(p, comp)
-                            for p in stream_state[t, e].phase_list
-                            if (p, comp) in stream_state[t, e].phase_component_set
+                    nom = abs(
+                        self.get_expression_nominal_value(
+                            sum(
+                                stream_state[t, e].get_material_flow_terms(p, comp)
+                                for p in stream_state[t, e].phase_list
+                                if (p, comp) in stream_state[t, e].phase_component_set
+                            )
                         )
                     )
                     self.set_component_scaling_factor(
@@ -640,10 +658,12 @@ class MSContactorScaler(CustomScalerBase):
             if hasattr(model, stream + "_energy_balance"):
                 ebal = getattr(model, stream + "_energy_balance")
                 for t, e in ebal:
-                    nom = self.get_expression_nominal_value(
-                        sum(
-                            stream_state[t, e].get_enthalpy_flow_terms(p)
-                            for p in stream_state[t, e].phase_list
+                    nom = abs(
+                        self.get_expression_nominal_value(
+                            sum(
+                                stream_state[t, e].get_enthalpy_flow_terms(p)
+                                for p in stream_state[t, e].phase_list
+                            )
                         )
                     )
                     self.set_component_scaling_factor(

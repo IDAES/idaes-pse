@@ -552,7 +552,7 @@ class TestStateBlockScalerObject(object):
         gsf = get_scaling_factor
 
         assert len(sblock.scaling_factor) == 42
-        assert len(sblock.scaling_hint) == 11
+        assert len(sblock.scaling_hint) == 15
 
         # Variables
         for vdata in sblock.flow_mol_comp.values():
@@ -618,6 +618,21 @@ class TestStateBlockScalerObject(object):
                 * 300  # scaling factor for temperature
             )
             assert gsf(edata) == pytest.approx(sf_enth, rel=1e-4)
+
+        sf_dens_liq = 1 / value(
+            1000
+            * pyunits.kg
+            / pyunits.m**3
+            / 0.08512705000000001
+            * pyunits.kg
+            / pyunits.mol
+        )
+        assert gsf(sblock.dens_mol_phase["Liq"]) == pytest.approx(sf_dens_liq, rel=1e-4)
+        assert gsf(sblock.dens_mol_phase["Vap"]) == pytest.approx(1 / 40, rel=1e-4)
+        assert gsf(sblock.vol_mol_phase["Liq"]) == pytest.approx(
+            1 / sf_dens_liq, rel=1e-4
+        )
+        assert gsf(sblock.vol_mol_phase["Vap"]) == pytest.approx(40, rel=1e-4)
 
     @pytest.mark.unit
     def test_define_state_vars(self, model):

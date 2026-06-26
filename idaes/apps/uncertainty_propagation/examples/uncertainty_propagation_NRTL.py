@@ -33,10 +33,10 @@ if __name__ == "__main__":
 
     def SSE(model, data):
         expr = (
-            float(data["vap_benzene"])
+            float(data["vap_benzene"].iloc[0])
             - model.fs.flash.vap_outlet.mole_frac_comp[0, "benzene"]
         ) ** 2 + (
-            float(data["liq_benzene"])
+            float(data["liq_benzene"].iloc[0])
             - model.fs.flash.liq_outlet.mole_frac_comp[0, "benzene"]
         ) ** 2
         return expr * 1e4

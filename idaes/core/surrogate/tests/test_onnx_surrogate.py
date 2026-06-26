@@ -20,6 +20,10 @@ pytest.importorskip("onnx", reason="onnx not available")
 pytest.importorskip("omlt", reason="omlt not available")
 
 import os.path
+import json
+
+import numpy as np
+import omlt.io.onnx_parser as onnx_parser
 from pyomo.common.fileutils import this_file_dir
 from pyomo.common.tempfiles import TempfileManager
 from pyomo.environ import (
@@ -32,12 +36,7 @@ from pyomo.environ import (
 from idaes.core.surrogate.onnx_surrogate import ONNXSurrogate
 from idaes.core.surrogate.surrogate_block import SurrogateBlock
 from idaes.core.surrogate.sampling.scaling import OffsetScaler
-import json
 import onnx
-
-# onnx, onnx_available = attempt_import("onnx")
-rtol = 1e-4
-atol = 1e-4
 
 
 def load_onnx_model_data(
@@ -80,6 +79,126 @@ def load_onnx_model_data(
     return onnx_model, scaler_info, test_inputs, test_outputs
 
 
+def make_dense_activation_model(activation):
+    input_tensor = onnx.helper.make_tensor_value_info(
+        "input", onnx.TensorProto.FLOAT, [1]
+    )
+    output_tensor = onnx.helper.make_tensor_value_info(
+        "output", onnx.TensorProto.FLOAT, [1]
+    )
+
+    weights_1 = onnx.numpy_helper.from_array(
+        np.array([[1.0], [-0.5]], dtype=np.float32), name="weights_1"
+    )
+    bias_1 = onnx.numpy_helper.from_array(
+        np.array([0.25, -0.1], dtype=np.float32), name="bias_1"
+    )
+    weights_2 = onnx.numpy_helper.from_array(
+        np.array([[0.4, -0.2]], dtype=np.float32), name="weights_2"
+    )
+    bias_2 = onnx.numpy_helper.from_array(
+        np.array([0.05], dtype=np.float32), name="bias_2"
+    )
+
+    nodes = [
+        onnx.helper.make_node(
+            "Gemm",
+            ["input", "weights_1", "bias_1"],
+            ["hidden_linear"],
+            name="dense_1",
+            alpha=1.0,
+            beta=1.0,
+            transA=0,
+            transB=1,
+        ),
+        onnx.helper.make_node(
+            activation,
+            ["hidden_linear"],
+            ["hidden_activation"],
+            name="activation_1",
+        ),
+        onnx.helper.make_node(
+            "Gemm",
+            ["hidden_activation", "weights_2", "bias_2"],
+            ["output"],
+            name="dense_2",
+            alpha=1.0,
+            beta=1.0,
+            transA=0,
+            transB=1,
+        ),
+    ]
+
+    graph = onnx.helper.make_graph(
+        nodes,
+        "{}_graph".format(activation.lower()),
+        [input_tensor],
+        [output_tensor],
+        [weights_1, bias_1, weights_2, bias_2],
+    )
+
+    return onnx.helper.make_model(
+        graph,
+        opset_imports=[onnx.helper.make_opsetid("", 13)],
+    )
+
+
+@pytest.fixture(autouse=True)
+def patch_supported_activation_functions(monkeypatch):
+    monkeypatch.setattr(
+        onnx_parser,
+        "_ACTIVATION_OP_TYPES",
+        ["Relu", "Sigmoid", "LogSoftmax", "Tanh", "Softplus"],
+    )
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "activation, formulation, error_message",
+    [
+        ("Relu", ONNXSurrogate.Formulation.RELU_BIGM, None),
+        ("Sigmoid", ONNXSurrogate.Formulation.REDUCED_SPACE, None),
+        (
+            "LogSoftmax",
+            ONNXSurrogate.Formulation.REDUCED_SPACE,
+            "Activation logsoftmax is not supported by this formulation.",
+        ),
+        ("Tanh", ONNXSurrogate.Formulation.REDUCED_SPACE, None),
+        ("Softplus", ONNXSurrogate.Formulation.REDUCED_SPACE, None),
+    ],
+)
+def test_onnx_surrogate_supported_activation_functions(
+    activation, formulation, error_message
+):
+    onnx_surrogate = ONNXSurrogate(
+        make_dense_activation_model(activation),
+        input_labels=["x"],
+        output_labels=["y"],
+        input_bounds={"x": (-1.0, 1.0)},
+    )
+
+    m = ConcreteModel()
+    m.inputs = Var(["x"])
+    m.outputs = Var(["y"])
+    m.surrogate = SurrogateBlock()
+
+    if error_message is None:
+        m.surrogate.build_model(
+            surrogate_object=onnx_surrogate,
+            input_vars=[m.inputs["x"]],
+            output_vars=[m.outputs["y"]],
+            formulation=formulation,
+        )
+    else:
+        with pytest.raises(ValueError, match=error_message):
+            m.surrogate.build_model(
+                surrogate_object=onnx_surrogate,
+                input_vars=[m.inputs["x"]],
+                output_vars=[m.outputs["y"]],
+                formulation=formulation,
+            )
+
+
 @pytest.mark.unit
 @pytest.mark.skipif(not SolverFactory("ipopt").available(False), reason="no Ipopt")
 def test_onnx_surrogate_manual_creation():
@@ -88,8 +207,6 @@ def test_onnx_surrogate_manual_creation():
     ###
     onnx_model, scaler_info, test_inputs, test_outputs = load_onnx_model_data()
     input_scaler = None
-    for key, items in scaler_info.items():
-        print(key, items)
     if scaler_info["input_scaler"] is not None:
         input_scaler = OffsetScaler.from_dict(scaler_info["input_scaler"])
 

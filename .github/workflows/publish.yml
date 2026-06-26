@@ -1,0 +1,223 @@
+name: Create and Publish idaes-pse PyPI package
+
+on:
+  push:
+    tags:
+      - "*"
+
+defaults:
+  run:
+    shell: bash -l {0}
+
+env:
+  PYTEST_ADDOPTS: --color=yes
+  PIP_PROGRESS_BAR: "off"
+  PYTHON_VERSION: "3.12"
+  PACKAGE_NAME: "idaes-pse"
+  EXTRAS_REQUIRE: "[ui,coolprop,grid]"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code to be packaged
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Generate dist files
+        run: |
+          pip install build wheel
+          python -m build
+
+      - name: Check that the dist directory's size is below PyPI's maximum
+        run: |
+          ls -lh dist/*
+          _maxsize=100000  # 100 MB
+          _dirsize=$(du -s dist/ | cut -f 1) ; echo $_dirsize
+          echo "::notice title=dist::Total size of dist/ directory is $_dirsize kB"
+          [ "$_dirsize" -lt "$_maxsize" ]
+
+      - name: Upload dist files as artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist/
+          retention-days: 1
+
+  test-whl:
+    needs: [build]
+    name: Test idaes-pse from .whl file
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install from .whl file
+        run: |
+          ls -lh dist/
+          whl_file="$(ls dist/*.whl)"
+          echo "$whl_file"
+          pip install "${whl_file}[ui,coolprop,grid]"
+
+      - name: Check that installed package has the expected tag
+        run: |
+          pip install packaging
+          python -c '
+          import sys
+          from importlib.metadata import version
+          from packaging.version import Version
+
+          name = sys.argv[1]
+          tag = sys.argv[2]
+          normalized_tag = str(Version(tag))
+          pkg_version = version(name)
+
+          print(f"{name=}\n{tag=}\n{normalized_tag=}\n{pkg_version=}")
+          assert pkg_version == normalized_tag
+          ' "idaes-pse" "${{ github.ref_name }}"
+
+      - name: Install OS deps for ipopt
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y liblapack3 libblas3 libgfortran5
+      - name: Run tests
+        working-directory: /tmp
+        run: |
+          idaes get-extensions --extra petsc --verbose
+          pip install pytest
+          wget https://raw.githubusercontent.com/IDAES/idaes-pse/main/pytest.ini
+          pytest --pyargs idaes -m "unit" -x -k "not (TestMSContactorInitializerNoHoldup or TestMSContactorInitializerWithHoldup)"
+
+  upload-test-pypi:
+    needs: [test-whl]
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    environment: test-release
+
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist
+
+      - name: Upload dist files to TestPyPI
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b
+        with:
+          repository-url: https://test.pypi.org/legacy/
+
+  install-test-pypi:
+    runs-on: ubuntu-latest
+    needs: [upload-test-pypi]
+
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install idaes-pse==${{ github.ref_name }} from TestPyPI
+        env:
+          _wait_time_s: 15
+          _pip_install_flags: --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/
+          _pip_install_target: idaes-pse[ui,coolprop,grid]==${{ github.ref_name }}
+        run: |
+          until pip install $_pip_install_flags "$_pip_install_target"
+          do
+            echo "pip install failed; waiting $_wait_time_s seconds"
+            sleep "$_wait_time_s"
+          done
+      - name: Install OS deps for ipopt
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y liblapack3 libblas3 libgfortran5
+      - name: Run tests
+        run: |
+          idaes get-extensions --extra petsc --verbose
+          pip install pytest
+          wget https://raw.githubusercontent.com/IDAES/idaes-pse/main/pytest.ini
+          pytest --pyargs idaes -m "unit" -x -k "not (TestMSContactorInitializerNoHoldup or TestMSContactorInitializerWithHoldup)"
+
+  upload-pypi:
+    needs: [install-test-pypi]
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    environment: release
+
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist
+
+      - name: Upload dist files to PyPI
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b
+
+  env-snapshot:
+    name: Create and collect env snapshot
+    needs: [upload-pypi]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      ENV_NAME: idaes-pse-${{ github.ref_name }}
+      OUTPUT_DIR: idaes-pse-${{ github.ref_name }}
+
+    steps:
+      - name: Set up Conda environment with Python
+        uses: conda-incubator/setup-miniconda@v4
+        with:
+          miniforge-version: latest
+          activate-environment: ${{ env.ENV_NAME }}
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install idaes-pse==${{ github.ref_name }}[ui,coolprop,grid]
+        run: |
+          pip install "idaes-pse[ui,coolprop,grid]==${{ github.ref_name }}"
+
+      - name: Create output directory
+        run: mkdir "$OUTPUT_DIR"
+
+      - name: Save environment info (requirements.txt)
+        working-directory: ${{ env.OUTPUT_DIR }}
+        run: |
+          pip freeze > requirements.txt
+          cat requirements.txt
+
+      - name: Save environment info (environment.yml)
+        working-directory: ${{ env.OUTPUT_DIR }}
+        run: |
+          conda env export \
+            -n "$ENV_NAME" \
+            --no-builds \
+            -f environment.yml
+          cat environment.yml
+
+      - name: Save as workflow artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.ENV_NAME }}
+          path: ${{ env.OUTPUT_DIR }}/
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: |
+            ${{ env.OUTPUT_DIR }}/requirements.txt
+            ${{ env.OUTPUT_DIR }}/environment.yml

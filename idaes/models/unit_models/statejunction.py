@@ -111,7 +111,7 @@ see property package for documentation.}""",
             doc="Material properties",
             has_phase_equilibrium=False,
             defined_state=True,
-            **self.config.property_package_args
+            **self.config.property_package_args,
         )
 
         # Add Ports
