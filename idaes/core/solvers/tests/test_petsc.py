@@ -1270,3 +1270,65 @@ def test_exception_collocation_ll():
             skip_initial=True,  # With u and x fixed, no variables to solve for at t0
             calculate_derivatives=True,
         )
+
+def make_index_reduction_model(disc_method, nfe):
+    m = pyo.ConcreteModel()
+    m.time = pyodae.ContinuousSet(initialize=(0.0, 1.0))
+    m.comp_set = ["A", "B"]
+    m.n = pyo.Var(
+        m.time,
+        m.comp_set,
+        initialize=1,
+    )
+    m.dn_dt = pyodae.DerivativeVar(m.n, initialize=0)
+    m.C_in = pyo.Param(
+        m.time,
+        m.comp_set,
+        initialize=1,
+        mutable=True
+    )
+    m.F_in = pyo.Param(m.time, initialize=1, mutable=True)
+    m.V = pyo.Param(initialize=1)
+    m.V_bar = pyo.Param(
+        m.comp_set,
+        initialize={
+            "A": 1,
+            "B": 2
+        }
+    )
+    m.F_out = pyo.Var(m.time, initialize=1)
+
+    @m.Constraint(m.time, m.comp_set)
+    def material_balance_eqn(b, t, j):
+        return b.dn_dt[t, j] == (
+            b.C_in[t, j] * b.F_in[t]
+            - b.n[t, j] / b.V * b.F_out[t]
+        )
+
+    @m.Constraint(m.time)
+    def volume_eqn(b, t):
+        return sum(b.n[t, j] * b.V_bar[j] for j in b.comp_set) == b.V
+    
+    discretizer = pyo.TransformationFactory(disc_method)
+    if disc_method == "dae.collocation":
+        discretizer.apply_to(m, nfe=nfe, ncp=2, scheme="LAGRANGE-RADAU")
+    else:
+        discretizer.apply_to(m, nfe=nfe, scheme="BACKWARD")
+
+    m.dn_dt_disc_eq[:,"B"].deactivate()
+
+    m.n[:, "A"].set_value(1/2)
+    m.n[:, "B"].set_value(1/4)
+    m.C_in[:, "A"].set_value(1/2)
+    m.C_in[:, "B"].set_value(1/2)
+
+    return m
+
+@pytest.mark.parametrize("disc_method", ["dae.finite_difference", "dae.collocation"])
+@pytest.mark.parametrize("nfe", [1, 2])
+@pytest.mark.unit
+@pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
+def test_find_discretization_equations_deactivated(disc_method, nfe):
+    m = make_index_reduction_model(disc_method, nfe)
+    out = petsc.find_discretization_equations(m, m.time)
+    assert m.dn_dt_disc_eq in out

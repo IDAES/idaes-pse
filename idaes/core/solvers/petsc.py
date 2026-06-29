@@ -356,6 +356,8 @@ def _get_derivative_differential_data_map(m, time):
             con_disc = block.find_component(var.local_name + DAE_DISC_SUFFIX)
 
             for idx in var:
+                if not (idx in con_disc and con_disc[idx].active):
+                    continue
                 if deriv[idx].fixed and pyo.value(abs(deriv[idx])) > 1e-10:
                     raise RuntimeError(
                         f"{deriv[idx]} is fixed to a nonzero value "
@@ -364,9 +366,7 @@ def _get_derivative_differential_data_map(m, time):
                         f"derivative consider adding a constraint like "
                         f"dxdt = constant"
                     )
-                # TODO what behavior do we want for variables at 0?
-                if idx in con_disc and con_disc[idx].active:
-                    deriv_diff_list.append((deriv[idx], diffvar[idx]))
+                deriv_diff_list.append((deriv[idx], diffvar[idx]))
 
     # Get unfixed variables in active constraints
     active_con_vars = ComponentSet()
@@ -504,7 +504,7 @@ def petsc_dae_by_time_element(
             msg="Keyword argument snes_options has been DEPRECATED in favor of initial_solver_options.",
             logger=_log,
             version="2.2.0",
-            remove_in="3.0.0",
+            remove_in="2.14.0",
         )
         initial_solver_options = snes_options
 
