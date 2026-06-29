@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -47,6 +47,7 @@ are mixed before entering drum
 
 Created: August 19 2020
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
@@ -355,7 +356,7 @@ see property package for documentation.}""",
             units=units_meta.get_derived_units("length"),
         )
         # Number of downcomers connected at the bottom of drum,
-        # used to calculate contrac
+        # used to calculate contraction
         self.number_downcomers = pyo.Var(
             initialize=4, doc="Number of downcomers connected to drum"
         )

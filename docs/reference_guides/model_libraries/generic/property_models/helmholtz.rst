@@ -188,7 +188,7 @@ The ``PhaseType.LG`` option appears to the IDAES framework to be two phases "Vap
 and "Liq".  This option requires one of two unit model options to be set.  You
 can use the total material balance option for unit models, to specify that only
 one material balance equation should be written not one per phase. The other
-possible option is to specify ``has_phase_equlibrium=True``. This will
+possible option is to specify ``has_phase_equilibrium=True``. This will
 write a material balance per phase, but will add a phase generation term to the
 model. For Helmholtz EoS packages, it is generally recommended that specifying
 total material balances is best because it results in a problem with fewer

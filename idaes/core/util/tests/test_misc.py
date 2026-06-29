@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -14,16 +14,20 @@
 This module contains miscellaneous utility functions for use in IDAES models.
 """
 
+from io import StringIO
 import pytest
 import re
 
-from pyomo.environ import ConcreteModel, Set, Block, Var, units
+from pyomo.environ import ConcreteModel, Constraint, Expression, Set, Block, Var, units
 from pyomo.common.config import ConfigBlock
 from pyomo.core.base.units_container import UnitsError
 
 from idaes.core.util.misc import (
     add_object_reference,
     set_param_from_config,
+    compact_expression_to_string,
+    print_compact_form,
+    make_ordinal,
 )
 import idaes.logger as idaeslog
 
@@ -361,3 +365,82 @@ class TestSetParamFromConfig:
             "b no units provided for parameter test_param - assuming "
             "default units" in caplog.text
         )
+
+
+class TestToExprStringVisitor:
+    @pytest.fixture
+    def model(self):
+        m = ConcreteModel()
+        m.v1 = Var()
+        m.v2 = Var()
+        m.v3 = Var()
+
+        m.e1 = Expression(expr=m.v1 + m.v2)
+        m.c1 = Constraint(expr=0 == m.v3 * m.e1)
+
+        return m
+
+    @pytest.mark.unit
+    def test_compact_expression_to_string(self, model):
+        assert compact_expression_to_string(model.c1.expr) == "v3*e1  ==  0"
+
+    @pytest.mark.parametrize("use_stream", [False, True])
+    @pytest.mark.parametrize("print_component", [False, True])
+    @pytest.mark.unit
+    def test_print_compact_form_expr(self, use_stream, print_component, model, capsys):
+        expected = "v3*e1  ==  0"
+        if use_stream:
+            stream = StringIO()
+        else:
+            stream = None
+
+        if print_component:
+            print_compact_form(model.c1, stream=stream)
+        else:
+            print_compact_form(model.c1.expr, stream=stream)
+
+        captured = capsys.readouterr()
+        if use_stream:
+            assert stream.getvalue() == expected
+            assert len(captured.out) == 0
+            assert len(captured.err) == 0
+        else:
+            assert captured.out == expected + "\n"
+            assert len(captured.err) == 0
+
+
+@pytest.mark.unit
+def test_make_ordinal():
+    assert make_ordinal(0) == "0th"
+    assert make_ordinal(1) == "1st"
+    assert make_ordinal(2) == "2nd"
+    assert make_ordinal(3) == "3rd"
+    assert make_ordinal(4) == "4th"
+    assert make_ordinal(5) == "5th"
+    assert make_ordinal(6) == "6th"
+    assert make_ordinal(7) == "7th"
+    assert make_ordinal(8) == "8th"
+    assert make_ordinal(9) == "9th"
+    assert make_ordinal(10) == "10th"
+
+    assert make_ordinal(11) == "11th"
+    assert make_ordinal(12) == "12th"
+    assert make_ordinal(13) == "13th"
+    assert make_ordinal(14) == "14th"
+    assert make_ordinal(16) == "16th"
+    assert make_ordinal(19) == "19th"
+
+    assert make_ordinal(20) == "20th"
+    assert make_ordinal(21) == "21st"
+    assert make_ordinal(22) == "22nd"
+    assert make_ordinal(23) == "23rd"
+    assert make_ordinal(24) == "24th"
+    assert make_ordinal(29) == "29th"
+
+    assert make_ordinal(44) == "44th"
+    assert make_ordinal(52) == "52nd"
+    assert make_ordinal(63) == "63rd"
+    assert make_ordinal(91) == "91st"
+    assert make_ordinal(102) == "102nd"
+    assert make_ordinal(111) == "111th"
+    assert make_ordinal(121) == "121st"

@@ -19,18 +19,17 @@ When installing IDAES using pip, optional dependencies can be installed by speci
    # install the `ui` target
    pip install "idaes-pse[ui]"
 
-   # install the `ui` and `dmf` targets
-   pip install "idaes-pse[ui,dmf]"
+   # install the `ui` and `omlt` targets
+   pip install "idaes-pse[ui,omlt]"
 
 .. important:: The ``pip install`` argument should be wrapped in double quotes (``"``) when it contains square brackets. Otherwise, it might cause an error to be reported by the shell/command interface used to invoke the command.
 
 Available optional dependencies targets
 ---------------------------------------
 
-As of IDAES 2.1, the following ``extras_require`` targets are available:
+As of IDAES 2.6, the following ``extras_require`` targets are available:
 
 * ``ui``: for the `IDAES User Interface (UI) <https://github.com/IDAES/idaes-ui>`_ (`UI documentation <https://idaes-ui.readthedocs.io/en/latest/>`_)
-* ``dmf``: for the :ref:`Data Management Framework <dmf-overview>`
 * ``grid``: for the :ref:`IDAES Grid integration <idaes-grid>`
 * ``omlt``: for the :ref:`OMLT integration <omlt>`
 * ``coolprop``: for the :py:mod:`idaes.models.properties.modular_properties.coolprop` property package
@@ -40,7 +39,7 @@ Specifying optional dependencies when installing a prerelease version of IDAES
 
 .. code-block:: bash
 
-   pip install "idaes-pse[ui,dmf] @ git+https://github.com/IDAES/idaes-pse@main"
+   pip install "idaes-pse[ui,omlt] @ git+https://github.com/IDAES/idaes-pse@main"
 
 For Conda installations
 ^^^^^^^^^^^^^^^^^^^^^^^

@@ -56,7 +56,7 @@ The isothermal assumption writes one additional Constraint:
 Adiabatic Assumption
 ~~~~~~~~~~~~~~~~~~~~
 
-The isothermal assumption writes one additional Constraint:
+The adiabatic assumption writes one additional Constraint:
 
 .. math:: H_{out} = H_{in}
 

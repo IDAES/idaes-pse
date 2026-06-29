@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -386,9 +386,9 @@ def generate_table(blocks, attributes, heading=None, exception=True):
                 try:
                     assert len(a) > 1
                 except AssertionError:
-                    _log.error(f"An index must be supplided for attribute {a[0]}")
+                    _log.error(f"An index must be supplied for attribute {a[0]}")
                     raise AssertionError(
-                        f"An index must be supplided for attribute {a[0]}"
+                        f"An index must be supplied for attribute {a[0]}"
                     )
                 j = a[1:]
                 a = a[0]

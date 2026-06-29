@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -303,16 +303,12 @@ def propagate_uncertainty(
         raise ValueError("cov must be square")
 
     if cov_.shape[0] != len(theta_names):
-        raise ValueError(
-            """cov must be a n x n matrix or dataframe where 
-                         n = len(theta_names)"""
-        )
+        raise ValueError("""cov must be a n x n matrix or dataframe where 
+                         n = len(theta_names)""")
 
     if len(theta_names) != len(theta):
-        raise ValueError(
-            """theta_names and theta must have the same number 
-                          of elements"""
-        )
+        raise ValueError("""theta_names and theta must have the same number 
+                          of elements""")
 
     # Remove all "'" in theta_names
     theta_names, var_dic, variable_clean = clean_variable_name(theta_names)
@@ -385,7 +381,7 @@ def propagate_uncertainty(
         # Not sure if this is correct.
         # propagation_c = np.sum(np.matmul(cssp,cov)*cssp,axis=1)
 
-        # Updated to match propgation_f
+        # Updated to match propagation_f
         propagation_c = cssp @ cov_ @ cssp.transpose()
     else:
         propagation_c = np.array([])

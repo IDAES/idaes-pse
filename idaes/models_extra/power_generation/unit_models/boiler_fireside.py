@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -67,6 +67,7 @@ The surrogate models are typically a function of:
 * Secondary air temperature
 
 """
+
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, Bool
 
@@ -341,7 +342,7 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
         self.atomic_mass_S = Param(initialize=0.0320652, doc="Atomic mass of S")
         # mole fractions of O2, H2O, CO2, SO2, and NO in air
         # at 25 C and relative humidity of 25% with SO2 and NO at 0.1 ppm
-        # change air compostion accordingly if relative humidity changes
+        # change air composition accordingly if relative humidity changes
         # N2 mole fraction not needed since summation of mole fractions of
         # all six species is 1. It is 0.7839958
         if self.config.calculate_PA_SA_flows is True:

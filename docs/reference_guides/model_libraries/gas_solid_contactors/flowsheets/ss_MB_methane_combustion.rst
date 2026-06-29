@@ -7,6 +7,13 @@ Steady-state flowsheet example of the moving bed reactor model for methane combu
 
 This model is for demonstration and tutorial purposes only.
 
+The model code is located in the `main flowsheet module <https://github.com/IDAES/idaes-pse/blob/main/idaes/models_extra/gas_solid_contactors/flowsheets/ss_MB_methane_combustion.py>`_ and may be imported as:
+
+.. code:: python
+
+  >>> from idaes.models_extra.gas_solid_contactors.flowsheets.ss_MB_methane_combustion import main
+  >>> m = main()
+
 Inputs:
 
 * Bed diameter

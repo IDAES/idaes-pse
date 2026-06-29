@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -22,6 +22,7 @@ phase transitions (if user requires phase transitions, they need a general
 model)
 
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
@@ -183,7 +184,7 @@ documentation for supported transformations.""",
         ConfigValue(
             default="BACKWARD",
             description="Discretization scheme to use for DAE transformation",
-            doc="""Discretization scheme to use when transformating domain.
+            doc="""Discretization scheme to use when transforming domain.
 See Pyomo documentation for supported schemes.""",
         ),
     )
@@ -2817,7 +2818,8 @@ tube side flows from 1 to 0""",
 
             # location P2
             @self.Expression(
-                self.flowsheet().time, doc="Total Stress at Critial Point P2 for Header"
+                self.flowsheet().time,
+                doc="Total Stress at Critical Point P2 for Header",
             )
             def sigma_notch_P2(b, t):
                 return (

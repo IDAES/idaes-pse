@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -27,6 +27,7 @@ N.G. Barton, C.-H. Li, S.J. Spencer, Control of a surface of discontinuity in co
 Journal of the Australian Mathematical Society Series B 33 (1992) 269–289
 
 """
+
 # Import Python libraries
 import logging
 from pandas import DataFrame
@@ -54,7 +55,6 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.units_of_measurement import report_quantity
 from idaes.core.util.constants import Constants as CONST
 
-
 __author__ = "Andrew Lee"
 
 
@@ -62,6 +62,7 @@ __author__ = "Andrew Lee"
 logger = logging.getLogger("idaes.unit_model")
 
 
+# TODO Evaluate whether this unit model would be better in WaterTap or PrOMMiS
 @declare_process_block_class("Thickener0D")
 class Thickener0DData(UnitModelBlockData):
     """

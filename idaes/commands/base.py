@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -13,6 +13,7 @@
 """
 Base command for 'idaes' commandline script
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
@@ -91,8 +92,7 @@ def command_base(verbose, quiet):
 
 @command_base.command(help="Show IDAES copyright information")
 def copyright():  # pylint: disable=W0622
-    click.echo(
-        """
+    click.echo("""
 ================================================================================
  Institute for the Design of Advanced Energy Systems Process Systems
  Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
@@ -104,8 +104,7 @@ def copyright():  # pylint: disable=W0622
  license information, respectively. Both files are also available online
  at the URL "https://github.com/IDAES/idaes-pse".
 ================================================================================
-"""
-    )
+""")
 
 
 @command_base.command(help="Show how long it takes to import command modules")

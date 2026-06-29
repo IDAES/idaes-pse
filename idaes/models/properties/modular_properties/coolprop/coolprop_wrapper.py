@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -19,6 +19,7 @@ thermophysical properties required by the generic property framework, along
 with some helper functions for common calls to the CoolProp database and
 caching data to avoid repeated database lookups.
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
@@ -457,7 +458,7 @@ class CoolPropWrapper:
             expected_forms: list of expression forms supported by wrapper for
                               for property
             using_tau_r: (optional) flag indicating whether to check for use
-                          of tau_r in the epxression or not (default = False,
+                          of tau_r in the expression or not (default = False,
                           do not check).
 
         Returns:

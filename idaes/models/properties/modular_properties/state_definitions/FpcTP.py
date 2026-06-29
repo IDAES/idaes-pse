@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -13,7 +13,10 @@
 """
 Methods for setting up FpcTP as the state variables in a generic property
 package
+
+Authors: Andrew Lee, Douglas Allan
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
@@ -37,6 +40,7 @@ from idaes.models.properties.modular_properties.base.utility import (
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
+from idaes.models.properties.modular_properties.state_definitions.FTPx import FTPxScaler
 from .electrolyte_states import define_electrolyte_state, calculate_electrolyte_scaling
 
 # Set up logger
@@ -354,6 +358,20 @@ def calculate_scaling_factors(b):
 do_not_initialize = []
 
 
+class FpcTPScaler(FTPxScaler):
+    """
+    Scaler for FpcTP state variables
+    """
+
+    # Inherit variable_scaling_routine from FTPx.
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: dict = None
+    ):
+        for condata in model.mole_frac_phase_comp_eq.values():
+            self.scale_constraint_by_nominal_value(condata, overwrite=overwrite)
+
+
 class FpcTP(object):
     """Phase-component flow, temperature, pressure state."""
 
@@ -363,3 +381,4 @@ class FpcTP(object):
     do_not_initialize = do_not_initialize
     define_default_scaling_factors = define_default_scaling_factors
     calculate_scaling_factors = calculate_scaling_factors
+    default_scaler = FpcTPScaler

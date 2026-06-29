@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -17,7 +17,7 @@ Basic heater/cooler models
 __author__ = "John Eslick"
 
 # Import Pyomo libraries
-from pyomo.environ import Reference
+from pyomo.environ import ComponentMap, Reference
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 
 # Import IDAES cores
@@ -31,9 +31,62 @@ from idaes.core import (
     useDefault,
 )
 from idaes.core.util.config import is_physical_parameter_block
+from idaes.core.scaling import CustomScalerBase
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
+
+
+class HeaterScaler(CustomScalerBase):
+    """
+    Default modular scaler for Heaters.
+
+    This Scaler relies on the modular scaler for the ControlVolume0D.
+    There are no unit model level variables to scale---those that do exist
+    are just References for the variables on the ControlVolume0D.
+    """
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
+    ):
+        """
+        Routine to apply scaling factors to variables in model.
+
+        Args:
+            model: model to be scaled
+            overwrite: whether to overwrite existing scaling factors
+            submodel_scalers: dict of Scalers to use for sub-models, keyed by submodel local name
+
+        Returns:
+            None
+        """
+        self.call_submodel_scaler_method(
+            model.control_volume,
+            method="variable_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: ComponentMap = None
+    ):
+        """
+        Routine to apply scaling factors to constraints in model.
+
+        Args:
+            model: model to be scaled
+            overwrite: whether to overwrite existing scaling factors
+            submodel_scalers: dict of Scalers to use for sub-models, keyed by submodel local name
+
+        Returns:
+            None
+        """
+        self.call_submodel_scaler_method(
+            model.control_volume,
+            method="constraint_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
 
 
 def _make_heater_control_volume(o, name, config, dynamic=None, has_holdup=None):
@@ -194,6 +247,8 @@ class HeaterData(UnitModelBlockData):
     Simple 0D heater unit.
     Unit model to add or remove heat from a material.
     """
+
+    default_scaler = HeaterScaler
 
     CONFIG = UnitModelBlockData.CONFIG()
     _make_heater_config_block(CONFIG)

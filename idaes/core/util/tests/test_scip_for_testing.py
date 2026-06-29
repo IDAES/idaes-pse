@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -16,7 +16,6 @@ import pytest
 from pyomo.environ import SolverFactory
 
 from idaes.core.util.testing import _enable_scip_solver_for_testing
-
 
 ampl_module_scip = pytest.importorskip(
     "ampl_module_scip", reason="'ampl_module_scip' not available"

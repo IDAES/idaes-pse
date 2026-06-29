@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -57,6 +57,7 @@ def test_registered_components():
     """Use some standard components to test list"""
     assert "h2o" in registered_components()
     assert "co2" in registered_components()
+    assert "nh3" in registered_components()
     assert "r134a" in registered_components()
 
 

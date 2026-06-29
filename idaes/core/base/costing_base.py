@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -13,6 +13,7 @@
 """
 Base classes for process costing
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
@@ -32,7 +33,6 @@ from idaes.core.util.misc import add_object_reference, StrEnum
 from idaes.core.util.exceptions import ConfigurationError
 
 import idaes.logger as idaeslog
-
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -93,6 +93,7 @@ def register_idaes_currency_units():
                 "USD_2020 = 500/596.2 * USD_CE500",
                 "USD_2021 = 500/708.0 * USD_CE500",
                 "USD_2022 = 500/816.0 * USD_CE500",
+                "USD_2023 = 500/797.9 * USD_CE500",
             ]
         )
 

@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -13,6 +13,7 @@
 """This module contains utility classes that allow users to tag model quantities
 and group them, for easy display, formatting, and input.
 """
+
 import xml.dom.minidom
 import collections
 
@@ -112,20 +113,20 @@ class ModelTag:
 
     def keys(self):
         """Iterator of keys in the tag.  If scalar, is a single None."""
-        indx_set = self.indexes
-        for i in indx_set:
+        index_set = self.indexes
+        for i in index_set:
             yield i
 
     def values(self):
         """Iterator for scalar elements in a tag (The elements are scalar tags)"""
-        indx_set = self.indexes
-        for i in indx_set:
+        index_set = self.indexes
+        for i in index_set:
             yield self[i]
 
     def items(self):
         """Iterator for key scalar elements pairs in a tag"""
-        indx_set = self.indexes
-        for i in indx_set:
+        index_set = self.indexes
+        for i in index_set:
             yield i, self[i]
 
     def __str__(self):

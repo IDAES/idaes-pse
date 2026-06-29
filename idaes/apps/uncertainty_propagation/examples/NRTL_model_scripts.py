@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -15,6 +15,7 @@ NRTL property model for a benzene-toluene mixture.
 The example model is from the IDAES tutorial,
 https://github.com/IDAES/examples-pse/blob/main/src/Tutorials/Advanced/ParamEst/
 """
+
 from idaes.core import FlowsheetBlock
 from idaes.models.unit_models import Flash
 from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
@@ -72,7 +73,7 @@ def NRTL_model(data):
     m.fs.flash.initialize(outlvl=idaeslog.INFO_LOW)
 
     # Fix at actual temperature
-    m.fs.flash.inlet.temperature.fix(float(data["temperature"]))
+    m.fs.flash.inlet.temperature.fix(float(data["temperature"].iloc[0]))
 
     # Set bounds on variables to be estimated
     m.fs.properties.tau["benzene", "toluene"].setlb(-5)

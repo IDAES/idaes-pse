@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -18,12 +18,13 @@ are two models included here.
 1) FWHCondensing0D: this is a regular 0D heat exchanger model with a constraint
    added to ensure all the steam fed to the feedwater heater is condensed at
    the outlet. At the shell outlet the molar enthalpy is equal to the the
-   staurated liquid molar enthalpy.
+   saturated liquid molar enthalpy.
 2) FWH0D is a feedwater heater model with three sections and a mixer for
    combining another feedwater heater's drain outlet with steam extracted from
    the turbine.  The drain mixer, desuperheat, and drain cooling sections are
    optional. Only the condensing section is required.
 """
+
 # TODO: Missing docstrings
 # pylint: disable=missing-class-docstring
 # pylint: disable=missing-function-docstring

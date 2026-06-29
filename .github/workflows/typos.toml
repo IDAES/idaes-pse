@@ -8,6 +8,7 @@ idaes = "idaes"
 IDAE = "IDAE"
 # HELMET - HELMholtz
 HEL = "HEL"
+gam = "gam"
 # Datas
 Datas = "Datas"
 # ba triggers in docs
@@ -19,6 +20,8 @@ Attemp = "Attemp"
 attemp = "attemp"
 # Ficks Law
 Ficks = "Ficks"
+# inh == inherent
+inh = "inh"
 # scaling - ue
 ue = "ue"
 # Nd in Atom
@@ -36,11 +39,18 @@ equil = "equil"
 astroid = "astroid"
 # delt == delta
 delt = "delt"
+# FOM for fixed operating and maintenance for DISPATCHES
+FOM = "FOM"
+fom = "fom"
 # Minimal Infeasible System
 mis = "mis"
 MIS = "MIS"
-# TEMPORARY - Remove after example update
-upadate = "upadate"
+# Commonly used in place of type
+typ = "typ"
+# Real heat-exchanger word
+cocurrent = "cocurrent"
+# Used for a regex
+deprecat = "deprecat"
 
 # false positive from 1.20.3
 RTO = "RTO"
@@ -48,3 +58,6 @@ PN = "PN"
 hd = "hd"
 Tge = "Tge"
 iy = "iy"
+
+# more chemE abbreviations
+HDA = "HDA"

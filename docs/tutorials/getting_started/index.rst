@@ -8,7 +8,7 @@ Getting Started
 Installation
 ------------
 To install the IDAES PSE framework, follow the set of instructions below that are appropriate for 
-your needs. The OS specific instructions provide optional steps for installing Miniconda, which can be 
+your needs. The OS specific instructions provide optional steps for installing Miniforge, which can be 
 skipped. If you are an IDAES developer or expect to change IDAES code, we recommend following the
 :ref:`advanced user installation<tutorials/advanced_install/index:Advanced User Installation>`.
 Please contact `idaes-support@idaes.org <idaes-support@idaes.org>`_, if you have difficulty installing 
@@ -80,7 +80,7 @@ assuming that the installation was done using one of the methods described earli
 
         idaes --version
 
-3. Run the ``idaes get-extension`` command to install compiled binaries compatible with the newly upgraded IDAES version. The ``--extra petsc`` argument installs the optional PETSc solver. These binaries include solvers and function libraries.  See :ref:`Binary Packages <tutorials/getting_started/binaries:Binary Packages>` for more details.::
+3. Run the ``idaes get-extensions`` command to install compiled binaries compatible with the newly upgraded IDAES version. The ``--extra petsc`` argument installs the optional PETSc solver. These binaries include solvers and function libraries.  See :ref:`Binary Packages <tutorials/getting_started/binaries:Binary Packages>` for more details.::
 
     idaes get-extensions --extra petsc
 

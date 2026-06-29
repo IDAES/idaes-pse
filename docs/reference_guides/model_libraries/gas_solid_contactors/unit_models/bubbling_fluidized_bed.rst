@@ -7,6 +7,12 @@ The BFBR model is represented as a 1-D axially discretized model with two phases
 and two regions (bubble and emulsion). The model captures the gas-solid interaction between both phases and regions 
 through reaction, mass and heat transfer.
 
+The model code is located in the `main unit model module <https://github.com/IDAES/idaes-pse/blob/main/idaes/models_extra/gas_solid_contactors/unit_models/bubbling_fluidized_bed.py>`_ and may be imported as:
+
+.. code:: python
+
+  >>> from idaes.models_extra.gas_solid_contactors.unit_models.bubbling_fluidized_bed import BubblingFluidizedBed
+
 **Assumptions:**
 
 * Cloud-wake region effects are negligible and are not modelled.

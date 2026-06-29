@@ -16,7 +16,6 @@ import astroid
 import pylint
 from astroid.builder import extract_node, parse
 
-
 _logger = logging.getLogger("pylint.ideas_plugin")
 
 
@@ -51,12 +50,12 @@ def _check_version_compatibility() -> None:
     to_check = [
         VersionCompat(
             distr_name="pylint",
-            expected="3.0.3",
+            expected="3.3.9",
             actual=pylint.__version__,
         ),
         VersionCompat(
             distr_name="astroid",
-            expected="3.0.3",
+            expected="3.3.11",
             actual=astroid.__version__,
         ),
     ]
@@ -188,7 +187,10 @@ def disable_attr_checks_on_slots(node: astroid.ClassDef):
     # overrides the "strict" semantics of having __slots__ defined
     # NOTE to be extra defensive, we should probably make sure that there are
     # no __slots__ defined throughout the complete class hierarchy as well
-    del node.locals["__slots__"]
+    try:
+        del node.locals["__slots__"]
+    except KeyError as e:
+        pass
 
 
 def has_conditional_instantiation(node: astroid.ClassDef, context=None):

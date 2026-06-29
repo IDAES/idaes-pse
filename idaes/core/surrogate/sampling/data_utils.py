@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -86,10 +86,13 @@ def split_dataframe(dataframe, fractions, seed=None):
     # note seed=None is the default value for random_state (e.g., not seeded)
     shuffled_df = dataframe.sample(frac=1, random_state=seed).reset_index(drop=True)
 
-    dfs = np.split(
-        shuffled_df, [math.floor(f * len(shuffled_df)) for f in np.cumsum(fractions)]
-    )
-    # reset all the indices
-    for df in dfs:
-        df.reset_index(drop=True, inplace=True)
+    indices = [math.floor(f * len(shuffled_df)) for f in np.cumsum(fractions)]
+
+    split_points = [0] + indices + [len(shuffled_df)]
+
+    dfs = [
+        shuffled_df.iloc[split_points[i] : split_points[i + 1]].reset_index(drop=True)
+        for i in range(len(split_points) - 1)
+    ]
+
     return dfs

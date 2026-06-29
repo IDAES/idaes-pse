@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -13,6 +13,7 @@
 """
 Code to create the keras models used in testing
 """
+
 import tensorflow.keras as keras
 from keras.callbacks import ModelCheckpoint
 from tensorflow.keras.optimizers import Adam
@@ -82,7 +83,7 @@ nn.add(Dense(units=2))
 nn.compile(optimizer=Adam(), loss="mse")
 
 mcp_save = ModelCheckpoint(
-    ".mdl_wts.hdf5", save_best_only=True, monitor="val_loss", mode="min"
+    ".mdl_wts.keras", save_best_only=True, monitor="val_loss", mode="min"
 )
 history = nn.fit(
     x=x,
@@ -111,7 +112,7 @@ nn.add(Dense(units=2))
 nn.compile(optimizer=Adam(), loss="mse")
 
 mcp_save = ModelCheckpoint(
-    ".mdl_wts.hdf5", save_best_only=True, monitor="val_loss", mode="min"
+    ".mdl_wts.keras", save_best_only=True, monitor="val_loss", mode="min"
 )
 history = nn.fit(
     x=x,
@@ -161,7 +162,7 @@ nn.add(Dense(units=2))
 nn.compile(optimizer=Adam(), loss="mse")
 
 mcp_save = ModelCheckpoint(
-    ".mdl_wts.hdf5", save_best_only=True, monitor="val_loss", mode="min"
+    ".mdl_wts.keras", save_best_only=True, monitor="val_loss", mode="min"
 )
 history = nn.fit(
     x=x,
@@ -188,7 +189,7 @@ nn.add(Dense(units=2))
 nn.compile(optimizer=Adam(), loss="mse")
 
 mcp_save = ModelCheckpoint(
-    ".mdl_wts.hdf5", save_best_only=True, monitor="val_loss", mode="min"
+    ".mdl_wts.keras", save_best_only=True, monitor="val_loss", mode="min"
 )
 history = nn.fit(
     x=x,

@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -15,6 +15,8 @@ Tests for flowsheet_model.
 
 Author: Andrew Lee
 """
+
+import re
 import pytest
 import inspect
 from pyomo.environ import ConcreteModel, Constraint, Set, Var, units as pyunits
@@ -29,6 +31,7 @@ from idaes.core import (
     StateBlockData,
 )
 from idaes.core.util.exceptions import PropertyPackageError, PropertyNotSupportedError
+from idaes.core.scaling.scaling_base import ScalerBase
 
 
 # -----------------------------------------------------------------------------
@@ -339,6 +342,72 @@ def test_build():
     assert m.rb.params == m.rb.config.parameters
 
 
+@pytest.mark.unit
+def test_default_reaction_scaler():
+    m = ConcreteModel()
+    m.p = PropertyParameterBlock()
+
+    m.pb = DummyStateBlock(parameters=m.p)
+
+    m.r = ReactionParameterBlock6(property_package=m.p)
+    super(_ReactionParameterBlock6, m.r).build()
+
+    m.rb = ReactionBlock2(parameters=m.r, state_block=m.pb)
+
+    with pytest.raises(
+        AttributeError,
+        match=re.escape(
+            "_ScalarReactionParameterBlock6' object has no attribute 'default_reaction_scaler_class"
+        ),
+    ):
+        _ = m.r.default_reaction_scaler_class
+
+    assert m.r._default_reaction_scaler_object is None
+    with pytest.raises(
+        AttributeError,
+        match=re.escape(
+            "_ScalarReactionParameterBlock6' object has no attribute 'default_reaction_scaler_object"
+        ),
+    ):
+        _ = m.r.default_reaction_scaler_object
+
+    not_a_scaler_obj = "foo"
+    with pytest.raises(
+        TypeError,
+        match=re.escape(
+            "Expected an instance of a subclass of ScalerBase, but instead got <class 'str'>."
+        ),
+    ):
+        m.r.default_reaction_scaler_object = not_a_scaler_obj
+
+    with pytest.raises(
+        TypeError,
+        match=re.escape(
+            "Expected an instance of a subclass of ScalerBase, but instead got <class 'type'>."
+        ),
+    ):
+        # Do not let the user set a scaler class. Instead force them to set
+        # an instance of a scaler class.
+        _ = m.r.default_reaction_scaler_object = ScalerBase
+
+    scaler_obj = ScalerBase()
+    m.r.default_reaction_scaler_object = scaler_obj
+    assert m.r._default_reaction_scaler_object is scaler_obj
+    assert m.r.default_reaction_scaler_object is scaler_obj
+
+    # Test deleter
+    del m.r.default_reaction_scaler_object
+
+    assert m.r._default_reaction_scaler_object is None
+    with pytest.raises(
+        AttributeError,
+        match=re.escape(
+            "_ScalarReactionParameterBlock6' object has no attribute 'default_reaction_scaler_object"
+        ),
+    ):
+        _ = m.r.default_reaction_scaler_object
+
+
 # -----------------------------------------------------------------------------
 # Test reaction __getattr__ method
 @declare_process_block_class("Parameters")
@@ -363,8 +432,12 @@ class _Parameters(ReactionParameterBlock):
         )
 
 
-@declare_process_block_class("Reaction", block_class=ReactionBlockBase)
-class _Reaction(ReactionBlockDataBase):
+class _Reaction(ReactionBlockBase):
+    default_scaler = ScalerBase
+
+
+@declare_process_block_class("Reaction", block_class=_Reaction)
+class _ReactionBase(ReactionBlockDataBase):
     def build(self):
         super(ReactionBlockDataBase, self).build()
 
@@ -456,6 +529,23 @@ def test_getattr_not_supported(m):
 def test_getattr_raise_exception(m):
     with pytest.raises(Exception):
         m.p.cons = Constraint(expr=m.p.raise_exception == 1)
+
+
+@pytest.mark.unit
+def test_default_scaler_scalar():
+    m = ConcreteModel()
+    m.pb = Parameters()
+    m.p = Reaction(parameters=m.pb)
+    assert m.p.default_scaler is ScalerBase
+
+
+@pytest.mark.unit
+def test_default_scaler_indexed():
+    m = ConcreteModel()
+    m.pb = Parameters()
+    m.p = Reaction([1, 2, 3], parameters=m.pb)
+    assert m.p.default_scaler is ScalerBase
+    assert m.p[1].default_scaler is ScalerBase
 
 
 # TODO : Need a test for cases where method does not create property

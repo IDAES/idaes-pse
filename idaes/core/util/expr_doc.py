@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -30,7 +30,6 @@ from pyomo.core.expr.visitor import StreamBasedExpressionVisitor
 from pyomo.core.expr.numeric_expr import ExternalFunctionExpression
 from pyomo.core import expr as EXPR, native_types
 from pyomo.common.collections import ComponentMap
-
 
 _log = logging.getLogger(__name__)
 
@@ -239,7 +238,7 @@ def _add_docs(object_map, docs, typ, head):
         object_map (PyomoSympyBimap): Pyomo, sympy, LaTeX mapping
         docs: string containing a markdown table
         typ: the class of objects to document (Var, Expression, ExternalFunction)
-        head: a string to used in the sybol table heading for this class of objects
+        head: a string to used in the symbol table heading for this class of objects
     Returns:
         A new string markdown table with added doc rows.
     """
@@ -283,7 +282,7 @@ def to_latex(expr):
     object_map, sympy_expr = sympify_expression(expr)
 
     # This next bit documents the expression, could use a lot of work, but
-    # for now it generates markdown tables that are resonably readable in a
+    # for now it generates markdown tables that are reasonably readable in a
     # jupyter notebook.
     docs = "\nSymbol | Doc | Path | UoM\n ---: | --- | --- | ---\n"
     docs = _add_docs(object_map, docs, Var, "Variable")

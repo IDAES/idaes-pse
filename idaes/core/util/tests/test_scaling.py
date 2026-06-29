@@ -3,7 +3,7 @@
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES).
 #
-# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
 # University of California, through Lawrence Berkeley National Laboratory,
 # National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
 # University, West Virginia University Research Corporation, et al.
@@ -13,6 +13,7 @@
 """
 This module contains tests for scaling.
 """
+
 import math
 from io import StringIO
 import pytest
@@ -39,6 +40,7 @@ from idaes.models.properties.modular_properties.eos.ceos_common import (
     CubicThermoExpressions,
     CubicType as CubicEoS,
 )
+from idaes.models.properties import iapws95
 
 __author__ = "John Eslick, Tim Bartholomew"
 
@@ -595,7 +597,7 @@ def test_find_unscaled_vars_and_constraints():
     sc.constraint_scaling_transform(m.c3, 1)
 
     a = [id(v) for v in sc.unscaled_variables_generator(m)]
-    # Make sure we pick up the right variales
+    # Make sure we pick up the right variables
     assert id(m.x) not in a
     assert id(m.y) in a
     assert id(m.z) in a
@@ -2229,6 +2231,16 @@ class TestNominalValueExtractionVisitor:
         assert sc.NominalValueExtractionVisitor().walk_expression(
             expr=m.constraint.expr
         ) == [21, 0.5 ** (22 + 23 + 24)]
+
+    @pytest.mark.component
+    def test_external_function_w_string_argument(self):
+        m = pyo.ConcreteModel()
+        m.properties = iapws95.Iapws95ParameterBlock()
+        m.state = m.properties.build_state_block([0])
+
+        assert sc.NominalValueExtractionVisitor().walk_expression(
+            expr=m.state[0].temperature
+        ) == [pytest.approx(235.0, rel=1e-8)]
 
 
 @pytest.fixture(scope="function")

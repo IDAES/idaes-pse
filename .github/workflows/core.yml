@@ -4,10 +4,10 @@ on:
   push:
     branches:
       - main
-      - '*_rel'
+      - "*_rel"
   schedule:
     # run daily at 5:00 am UTC (12 am ET/9 pm PT)
-    - cron: '0 5 * * *'
+    - cron: "0 5 * * *"
   repository_dispatch:
     # to run this, send a POST API call at repos/IDAES/idaes-pse/dispatches with the specified event_type
     # e.g. `gh repos/IDAES/idaes-pse/dispatches -F event_type=ci_run_tests`
@@ -38,7 +38,7 @@ concurrency:
 
 env:
   # default Python version to use for checks that do not require multiple versions
-  DEFAULT_PYTHON_VERSION: '3.10'
+  DEFAULT_PYTHON_VERSION: "3.10"
   IDAES_CONDA_ENV_NAME_DEV: idaes-pse-dev
   PYTEST_ADDOPTS: "--color=yes"
 
@@ -53,8 +53,11 @@ jobs:
     # OS and/or Python version don't make a difference, so we choose ubuntu and 3.10 for performance
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
       - name: Install Black
@@ -67,17 +70,18 @@ jobs:
           pip --no-cache-dir install --progress-bar off "$black_requirement"
       - name: Run Black to verify that the committed code is formatted
         run: |
-          black --check .
+          black --check --diff .
 
   spell-check:
     name: Check Spelling
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+
       - name: Run Spell Checker
-        uses: crate-ci/typos@master
-        with: 
+        uses: crate-ci/typos@v1.24.5
+        with:
           config: ./.github/workflows/typos.toml
 
   pytest:
@@ -88,27 +92,33 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
         os:
           - linux
           - win64
         include:
           - os: linux
-            runner-image: ubuntu-20.04
+            runner-image: ubuntu-24.04
           - os: win64
             runner-image: windows-2022
-          - python-version: '3.11'
+          - python-version: "3.12"
             # only generate coverage report for a single python version in the matrix
             # to avoid overloading Codecov
             cov-report: true
+
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - uses: ./.github/actions/display-debug-info
       - name: Set up Conda environment
-        uses: conda-incubator/setup-miniconda@v3
+        uses: conda-incubator/setup-miniconda@v4
         with:
           activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
           python-version: ${{ matrix.python-version }}
+          miniforge-version: latest
+          channels: conda-forge
+          conda-remove-defaults: 'true'
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
@@ -117,16 +127,25 @@ jobs:
         if: matrix.cov-report
         run: |
           echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov --cov-report=xml" >> "$GITHUB_ENV"
+      - name: Install pandoc
+        run: conda install -c conda-forge pandoc
       - name: Run pytest (not integration)
         run: |
           pytest --pyargs idaes -m "not integration"
       - name: Upload coverage report as GHA workflow artifact
         if: matrix.cov-report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-report-${{ matrix.os }}
           path: coverage.xml
           if-no-files-found: error
+      - name: Environment summary
+        if: always()
+        uses: ./.github/actions/environment-summary
+        with:
+          python-version: ${{ matrix.python-version }}
+          os: ${{ matrix.os }}
+          job-name: pytest
 
   upload-coverage:
     name: Upload coverage report (Codecov)
@@ -138,12 +157,13 @@ jobs:
         report-variant: ["linux", "win64"]
     steps:
       # the checkout step is needed to have access to codecov.yml
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v6
+
+      - uses: actions/download-artifact@v8
         with:
           name: coverage-report-${{ matrix.report-variant }}
       - name: Upload coverage report to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v6
         with:
           fail_ci_if_error: true
           verbose: true
@@ -152,18 +172,29 @@ jobs:
           # but does require token for other workflows e.g. merge to `main`
           # see https://github.com/codecov/codecov-action/issues/1274#issuecomment-1934437359
           token: ${{ secrets.CODECOV_TOKEN }}
+          # pinning version after v0.7.0 broke tokenless upload
+          # see codecov/codecov-action#1487
+          # version: v0.7.1
 
   build-docs:
     name: Build Sphinx docs
     runs-on: ubuntu-latest
     needs: [code-formatting, spell-check]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
       - name: Set up Conda environment
-        uses: conda-incubator/setup-miniconda@v3
+        uses: conda-incubator/setup-miniconda@v4
         with:
           activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+          miniforge-version: latest
+          channels: conda-forge
+          conda-remove-defaults: 'true'
+      - name: Install pandoc
+        run: conda install -c conda-forge pandoc
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
@@ -174,11 +205,18 @@ jobs:
           cd docs/
           python build.py --timeout 600
       - name: Publish built docs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: idaes-pse-docs-html
           path: docs/build/html/
           retention-days: 7
+      - name: Environment summary
+        if: always()
+        uses: ./.github/actions/environment-summary
+        with:
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+          os: linux
+          job-name: build-docs
 
   pylint:
     name: Pylint
@@ -189,15 +227,22 @@ jobs:
       pylint_output_path: pylint.json
       pylint_todo_sentinel: PYLINT-TODO
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+      
+        with:
+          fetch-depth: 0
       # NOTE: using Conda instead of actions/setup-python in this job is not strictly necessary
       # as it doesn't need to run on Windows or use the setup-idaes local action,
       # but we do it for consistency with the other jobs
+
       - name: Set up Conda environment
-        uses: conda-incubator/setup-miniconda@v3
+        uses: conda-incubator/setup-miniconda@v4
         with:
           activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+          miniforge-version: latest
+          channels: conda-forge
+          conda-remove-defaults: 'true'
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
@@ -219,17 +264,31 @@ jobs:
           grep_opts=( --recursive --include '*.py' --color=always --after-context=2 --line-number --initial-tab )
 
           grep "$pylint_todo_sentinel" "${grep_opts[@]}" "$pylint_target_dir" || echo "No \"$pylint_todo_sentinel\" comments found in $pylint_target_dir"
+      - name: Environment summary
+        if: always()
+        uses: ./.github/actions/environment-summary
+        with:
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+          os: linux
+          job-name: pylint
 
   compat:
     name: Compatibility tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+
+        with:
+          fetch-depth: 0
+
       - name: Set up Conda environment
-        uses: conda-incubator/setup-miniconda@v3
+        uses: conda-incubator/setup-miniconda@v4
         with:
           activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+          miniforge-version: latest
+          channels: conda-forge
+          conda-remove-defaults: 'true'
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
@@ -241,3 +300,10 @@ jobs:
         run: |
           pip install "git+https://github.com/IDAES/idaes-compatibility@0.23.8"
           pytest --pyargs idaes_compatibility
+      - name: Environment summary
+        if: always()
+        uses: ./.github/actions/environment-summary
+        with:
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+          os: linux
+          job-name: compat
