@@ -118,20 +118,19 @@ def quantify_propagate_uncertainty(
 
     """
 
-    if (isinstance(obj_function, str) and obj_function not
-            in ["SSE", "SSE_weighted"]):
+    if isinstance(obj_function, str) and obj_function not in ["SSE", "SSE_weighted"]:
         raise ValueError(
             "Incorrect objective function for parameter estimation. "
             "Please select from ['SSE', 'SSE_weighted']."
         )
     if not isinstance(cov_method, str):
-        raise TypeError(
-            "A string object is expected for the covariance method."
-        )
+        raise TypeError("A string object is expected for the covariance method.")
     else:
-        supported_methods = ['finite_difference',
-                             'automatic_differentiation_kaug',
-                             'reduced_hessian']
+        supported_methods = [
+            'finite_difference',
+            'automatic_differentiation_kaug',
+            'reduced_hessian',
+        ]
         if cov_method not in supported_methods:
             raise ValueError(
                 "Incorrect method for covariance matrix calculation. "
@@ -167,8 +166,7 @@ def quantify_propagate_uncertainty(
     cov = parmest_class.cov_est(method=cov_method, step=cov_step)
 
     return _propagate_and_package_results(
-        model_uncertain, theta_names, var_dic, variable_clean,
-        obj, theta, cov, tee
+        model_uncertain, theta_names, var_dic, variable_clean, obj, theta, cov, tee
     )
 
     # The deprecated function
@@ -178,15 +176,15 @@ def quantify_propagate_uncertainty(
     # method is called and the deprecation warning is displayed.
     @quantify_propagate_uncertainty.register(Callable)
     def _deprecated_quantify_propagate_uncertainty(
-            model_function,
-            model_uncertain,
-            data,
-            theta_names,
-            obj_function=None,
-            tee=False,
-            diagnostic_mode=False,
-            solver_options=None,
-            covariance_n=None,
+        model_function,
+        model_uncertain,
+        data,
+        theta_names,
+        obj_function=None,
+        tee=False,
+        diagnostic_mode=False,
+        solver_options=None,
+        covariance_n=None,
     ):
         """
         Solves the parameter estimation problem of the uncertainty
@@ -265,20 +263,12 @@ def quantify_propagate_uncertainty(
         obj, theta, cov = parmest_class.theta_est(calc_cov=True, cov_n=covariance_n)
 
         return _propagate_and_package_results(
-            model_uncertain, theta_names, var_dic, variable_clean,
-            obj, theta, cov, tee
+            model_uncertain, theta_names, var_dic, variable_clean, obj, theta, cov, tee
         )
 
 
 def _propagate_and_package_results(
-    model_uncertain,
-    theta_names,
-    var_dic,
-    variable_clean,
-    obj,
-    theta,
-    cov,
-    tee,
+    model_uncertain, theta_names, var_dic, variable_clean, obj, theta, cov, tee
 ):
     """
     Saves the uncertainty propagation results into a tuple
@@ -290,21 +280,20 @@ def _propagate_and_package_results(
         Pyomo model
     theta_names : list of strings
         List of Var names to estimate
-    var_dic: dict
-            Dictionary with keys converted theta_names and values original
-            theta_names
-    variable_clean : boolean,
+    var_dic : dict
+        Dictionary with keys converted theta_names and values original
+        theta_names
+    variable_clean : bool
         If True, the variable name of the parameters doesn't have ' and spaces
-    obj : float or int,
+    obj : float or int
         Optimal objective value after parameter estimation
-    theta : dict,
+    theta : dict
         Dictionary containing the estimated value of the parameters
     cov : pandas.DataFrame,
         DataFrame object containing the covariance matrix of
         the estimated parameters
-    tee : bool,
-        Indicates that ef solver output should be teed.
-        Inherited default is False
+    tee : bool
+        Indicates that ef solver output should be teed
 
     Returns
     -------
@@ -482,12 +471,16 @@ def propagate_uncertainty(
         raise ValueError("cov must be square")
 
     if cov_.shape[0] != len(theta_names):
-        raise ValueError("""cov must be a n x n matrix or dataframe where 
-                         n = len(theta_names)""")
+        raise ValueError(
+            """cov must be a n x n matrix or dataframe where 
+                         n = len(theta_names)"""
+        )
 
     if len(theta_names) != len(theta):
-        raise ValueError("""theta_names and theta must have the same number 
-                          of elements""")
+        raise ValueError(
+            """theta_names and theta must have the same number 
+                          of elements"""
+        )
 
     # Remove all "'" in theta_names
     theta_names, var_dic, variable_clean = clean_variable_name(theta_names)
