@@ -138,6 +138,67 @@ class TestUncertaintyPropagation:
         assert results.propagation_f == pytest.approx(5.45439337747349)
 
     @pytest.mark.component
+    def test_new_interface_quantify_propagate_uncertainty(self):
+        """
+        This is the same test as test_quantify_propagate_uncertainty2,
+        but with the new interface of ParmEst (i.e., Experiment class).
+        """
+
+        from pyomo.contrib.parmest.examples.rooney_biegler.rooney_biegler import (
+            RooneyBieglerExperiment,
+        )
+
+        variable_name = ["asymptote", "rate_constant"]
+        data = pd.DataFrame(
+            data=[[1, 8.3], [2, 10.3], [3, 19.0], [4, 16.0], [5, 15.6], [7, 19.8]],
+            columns=["hour", "y"],
+        )
+
+        # Create an experiment list
+        exp_list = []
+        for i in range(data.shape[0]):
+            exp_list.append(RooneyBieglerExperiment(data.loc[i, :]))
+
+        model_uncertain = ConcreteModel()
+        model_uncertain.asymptote = Var(initialize=15)
+        model_uncertain.rate_constant = Var(initialize=0.5)
+        model_uncertain.obj = Objective(
+            expr=model_uncertain.asymptote
+            * (1 - exp(-model_uncertain.rate_constant * 10)),
+        )
+
+        results = quantify_propagate_uncertainty(
+            exp_list,
+            model_uncertain,
+            variable_name,
+            obj_function="SSE",
+        )
+
+        assert results.obj == pytest.approx(4.331711213656886, abs=1e-4)
+        assert list(results.theta.keys()) == ["asymptote", "rate_constant"]
+        assert results.theta["asymptote"] == pytest.approx(
+            19.142575284617866,
+            abs=1e-4,
+        )
+        assert results.theta["rate_constant"] == pytest.approx(
+            0.53109137696521,
+            abs=1e-4,
+        )
+        np.testing.assert_array_almost_equal(
+            results.gradient_f, [0.99506259, 0.945148], decimal=4
+        )
+        assert list(results.propagation_c) == []
+        np.testing.assert_array_almost_equal(
+            results.dsdp.toarray(), [[1.0, 0.0], [0.0, 1.0]]
+        )
+        np.testing.assert_array_almost_equal(
+            results.cov,
+            np.array([[6.229612, -0.432265], [-0.432265, 0.041242]]),
+            decimal=4,
+        )
+        assert results.propagation_f == pytest.approx(5.392014308, abs=1e-4)
+
+    @pytest.mark.component
     def test_propagate_uncertainty(self):
         """
         It tests the function propagate_uncertainty with rooney & biegler's model.
