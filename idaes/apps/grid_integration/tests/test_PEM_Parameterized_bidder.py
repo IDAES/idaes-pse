@@ -70,7 +70,7 @@ def wind_df():
         end=start_date
         + pd.offsets.DateOffset(days=1)
         - pd.offsets.DateOffset(hours=24 - day_ahead_horizon + 1),
-        freq="1H",
+        freq="1h",
     )
     df = pd.DataFrame(index=ix)
     gen = testing_renewable_data.gen_name
