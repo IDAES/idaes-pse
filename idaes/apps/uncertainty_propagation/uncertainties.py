@@ -29,6 +29,7 @@ from idaes.apps.uncertainty_propagation.sens import (
 )
 from functools import singledispatch
 from collections.abc import Callable
+from pyomo.common.deprecation import deprecation_warning
 
 # will replace with pyomo
 # (Pyomo PR 1613: https://github.com/pyomo/pyomo/pull/1613/)
@@ -169,102 +170,103 @@ def quantify_propagate_uncertainty(
         model_uncertain, theta_names, var_dic, variable_clean, obj, theta, cov, tee
     )
 
-    # The deprecated function
-    # This works by checking the type of the first argument passed to
-    # the function. If it matches the old interface (i.e. is
-    # callable) then this _deprecated_quantify_propagate_uncertainty
-    # method is called and the deprecation warning is displayed.
-    @quantify_propagate_uncertainty.register(Callable)
-    def _deprecated_quantify_propagate_uncertainty(
+
+# The deprecated function
+# This works by checking the type of the first argument passed to
+# the function. If it matches the old interface (i.e. is
+# callable) then this _deprecated_quantify_propagate_uncertainty
+# method is called and the deprecation warning is displayed.
+@quantify_propagate_uncertainty.register(Callable)
+def _deprecated_quantify_propagate_uncertainty(
+    model_function,
+    model_uncertain,
+    data,
+    theta_names,
+    obj_function=None,
+    tee=False,
+    diagnostic_mode=False,
+    solver_options=None,
+    covariance_n=None,
+):
+    """
+    Solves the parameter estimation problem of the uncertainty
+    propagation using the old ParmEst interface
+
+    Parameters
+    ----------
+    model_function : function
+        A python Function that generates an instance of the Pyomo model using
+        'data' as the input argument
+    data : pandas DataFrame, list of dictionary, or list of json file names
+        Data that is used to build an instance of the Pyomo model and build the
+        objective function
+    covariance_n : int, optional
+        Number of datapoints to use in the objective function to
+        calculate the covariance matrix.  If omitted, defaults to
+        len(data)
+    All other parameters retain the same definitions as
+    in quantify_propagate_uncertainty
+
+    Returns
+    -------
+    results : tuple,
+        Named tuple containing the parameter estimation and uncertainty
+        propagation results
+
+    Raises
+    ------
+    Deprecation Warning
+        When the old ParmEst interface is used for parameter estimation
+    TypeError
+        When tee entry is not Boolean
+    TypeError
+        When diagnostic_mode entry is not Boolean
+    TypeError
+        When solver_options entry is not None and a Dictionary
+    Warnings
+        When an element of theta_names includes a space
+    """
+
+    deprecation_warning(
+        "You're using the deprecated uncertainty propagation interface "
+        "(model_function, data, covariance_n). This interface will be removed "
+        "in a future release. Please update to the new experiment-list "
+        "interface.",
+        version='2.13.1',
+    )
+
+    if not isinstance(tee, bool):
+        raise TypeError("tee  must be boolean.")
+    if not isinstance(diagnostic_mode, bool):
+        raise TypeError("diagnostic_mode  must be boolean.")
+    if not solver_options == None:
+        if not isinstance(solver_options, dict):
+            raise TypeError("solver_options must be dictionary.")
+    if covariance_n is None:
+        if isinstance(data, pd.DataFrame):
+            covariance_n = len(data.index)
+        else:
+            covariance_n = len(data)
+        logger.info(
+            "covariance_n omitted from quantify_propagate_uncertainty().  "
+            f"Assuming {covariance_n}"
+        )
+    # Remove all "'" and " " in theta_names
+    theta_names, var_dic, variable_clean = clean_variable_name(theta_names)
+    parmest_class = parmest.Estimator(
         model_function,
-        model_uncertain,
         data,
         theta_names,
-        obj_function=None,
-        tee=False,
-        diagnostic_mode=False,
-        solver_options=None,
-        covariance_n=None,
-    ):
-        """
-        Solves the parameter estimation problem of the uncertainty
-        propagation using the old ParmEst interface
+        obj_function,
+        tee,
+        diagnostic_mode,
+        solver_options,
+    )
+    obj, theta, cov = parmest_class.theta_est(calc_cov=True, cov_n=covariance_n)
 
-        Parameters
-        ----------
-        model_function : function
-            A python Function that generates an instance of the Pyomo model using
-            'data' as the input argument
-        data : pandas DataFrame, list of dictionary, or list of json file names
-            Data that is used to build an instance of the Pyomo model and build the
-            objective function
-        covariance_n : int, optional
-            Number of datapoints to use in the objective function to
-            calculate the covariance matrix.  If omitted, defaults to
-            len(data)
-        All other parameters retain the same definitions as
-        in quantify_propagate_uncertainty
-
-        Returns
-        -------
-        results : tuple,
-            Named tuple containing the parameter estimation and uncertainty
-            propagation results
-
-        Raises
-        ------
-        Deprecation Warning
-            When the old ParmEst interface is used for parameter estimation
-        TypeError
-            When tee entry is not Boolean
-        TypeError
-            When diagnostic_mode entry is not Boolean
-        TypeError
-            When solver_options entry is not None and a Dictionary
-        Warnings
-            When an element of theta_names includes a space
-        """
-
-        deprecation_warning(
-            "You're using the deprecated uncertainty propagation interface "
-            "(model_function, data, covariance_n). This interface will be removed "
-            "in a future release. Please update to the new experiment-list "
-            "interface.",
-            version='2.13.1',
-        )
-
-        if not isinstance(tee, bool):
-            raise TypeError("tee  must be boolean.")
-        if not isinstance(diagnostic_mode, bool):
-            raise TypeError("diagnostic_mode  must be boolean.")
-        if not solver_options == None:
-            if not isinstance(solver_options, dict):
-                raise TypeError("solver_options must be dictionary.")
-        if covariance_n is None:
-            if isinstance(data, pd.DataFrame):
-                covariance_n = len(data.index)
-            else:
-                covariance_n = len(data)
-            logger.info(
-                "covariance_n omitted from quantify_propagate_uncertainty().  "
-                f"Assuming {covariance_n}"
-            )
-        # Remove all "'" and " " in theta_names
-        theta_names, var_dic, variable_clean = clean_variable_name(theta_names)
-        parmest_class = parmest.Estimator(
-            model_function,
-            data,
-            theta_names,
-            obj_function,
-            tee,
-            diagnostic_mode,
-            solver_options,
-        )
-        obj, theta, cov = parmest_class.theta_est(calc_cov=True, cov_n=covariance_n)
-
-        return _propagate_and_package_results(
-            model_uncertain, theta_names, var_dic, variable_clean, obj, theta, cov, tee
-        )
+    return _propagate_and_package_results(
+        model_uncertain, theta_names, var_dic, variable_clean, obj, theta, cov, tee
+    )
 
 
 def _propagate_and_package_results(
