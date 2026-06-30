@@ -61,6 +61,14 @@ class TestUncertaintyPropagation:
         m.obj = Objective(expr=m.asymptote * (1 - exp(-m.rate_constant * 10)))
         return m
 
+    @staticmethod
+    def exp_list(data):
+        from pyomo.contrib.parmest.examples.rooney_biegler.rooney_biegler import (
+            RooneyBieglerExperiment,
+        )
+
+        return [RooneyBieglerExperiment(data.loc[i, :]) for i in range(data.shape[0])]
+
     @pytest.mark.unit
     def test_quantify_propagate_uncertainty1(self):
         """
@@ -150,14 +158,10 @@ class TestUncertaintyPropagation:
         but with the new interface of ParmEst (i.e., Experiment class).
         """
 
-        from pyomo.contrib.parmest.examples.rooney_biegler.rooney_biegler import (
-            RooneyBieglerExperiment,
-        )
+        data = self.data()
 
         # Create an experiment list
-        exp_list = []
-        for i in range(self.data().shape[0]):
-            exp_list.append(RooneyBieglerExperiment(self.data().loc[i, :]))
+        exp_list = self.exp_list(data)
 
         results = quantify_propagate_uncertainty(
             exp_list,
@@ -197,14 +201,10 @@ class TestUncertaintyPropagation:
         but is misspelled or is not one of the built-in objective functions.
         """
 
-        from pyomo.contrib.parmest.examples.rooney_biegler.rooney_biegler import (
-            RooneyBieglerExperiment,
-        )
+        data = self.data()
 
         # Create an experiment list
-        exp_list = []
-        for i in range(self.data().shape[0]):
-            exp_list.append(RooneyBieglerExperiment(self.data().loc[i, :]))
+        exp_list = self.exp_list(data)
 
         with pytest.raises(
             ValueError,
@@ -224,14 +224,10 @@ class TestUncertaintyPropagation:
         Tests the exception raised when the cov_method argument is not a string.
         """
 
-        from pyomo.contrib.parmest.examples.rooney_biegler.rooney_biegler import (
-            RooneyBieglerExperiment,
-        )
+        data = self.data()
 
         # Create an experiment list
-        exp_list = []
-        for i in range(self.data().shape[0]):
-            exp_list.append(RooneyBieglerExperiment(self.data().loc[i, :]))
+        exp_list = self.exp_list(data)
 
         with pytest.raises(
             TypeError,
@@ -252,14 +248,10 @@ class TestUncertaintyPropagation:
         but is misspelled or is not one of the supported covariance methods.
         """
 
-        from pyomo.contrib.parmest.examples.rooney_biegler.rooney_biegler import (
-            RooneyBieglerExperiment,
-        )
+        data = self.data()
 
         # Create an experiment list
-        exp_list = []
-        for i in range(self.data().shape[0]):
-            exp_list.append(RooneyBieglerExperiment(self.data().loc[i, :]))
+        exp_list = self.exp_list(data)
 
         with pytest.raises(
             ValueError,
@@ -283,14 +275,10 @@ class TestUncertaintyPropagation:
         Tests the exception raised when the cov_step argument is a not a float.
         """
 
-        from pyomo.contrib.parmest.examples.rooney_biegler.rooney_biegler import (
-            RooneyBieglerExperiment,
-        )
+        data = self.data()
 
         # Create an experiment list
-        exp_list = []
-        for i in range(self.data().shape[0]):
-            exp_list.append(RooneyBieglerExperiment(self.data().loc[i, :]))
+        exp_list = self.exp_list(data)
 
         with pytest.raises(
             TypeError,
