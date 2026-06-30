@@ -166,8 +166,6 @@ jobs:
             runner-image: ubuntu-24.04
           - os: win64
             runner-image: windows-2022
-          - os: macos-amd64
-            runner-image: macos-15-intel
           - os: macos-arm64
             runner-image: macos-15
 
@@ -202,7 +200,7 @@ jobs:
         run: conda install -c conda-forge pandoc
       - name: Run pytest (not integration)
         run: |
-          pytest -v -s --pyargs idaes -m "not integration"
+          pytest -v -rs --pyargs idaes -m "not integration"
       - name: Upload coverage report as GHA workflow artifact
         if: matrix.cov-report
         uses: actions/upload-artifact@v7
