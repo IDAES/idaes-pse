@@ -128,9 +128,9 @@ def quantify_propagate_uncertainty(
         raise TypeError("A string object is expected for the covariance method.")
     else:
         supported_methods = [
-            'finite_difference',
-            'automatic_differentiation_kaug',
-            'reduced_hessian',
+            "finite_difference",
+            "automatic_differentiation_kaug",
+            "reduced_hessian",
         ]
         if cov_method not in supported_methods:
             raise ValueError(
@@ -232,7 +232,7 @@ def _deprecated_quantify_propagate_uncertainty(
         "(model_function, data, covariance_n). This interface will be removed "
         "in a future release. Please update to the new experiment-list "
         "interface.",
-        version='2.13.1',
+        version="2.13.1",
     )
 
     if not isinstance(tee, bool):
@@ -473,16 +473,12 @@ def propagate_uncertainty(
         raise ValueError("cov must be square")
 
     if cov_.shape[0] != len(theta_names):
-        raise ValueError(
-            """cov must be a n x n matrix or dataframe where 
-                         n = len(theta_names)"""
-        )
+        raise ValueError("""cov must be a n x n matrix or dataframe where 
+                         n = len(theta_names)""")
 
     if len(theta_names) != len(theta):
-        raise ValueError(
-            """theta_names and theta must have the same number 
-                          of elements"""
-        )
+        raise ValueError("""theta_names and theta must have the same number 
+                          of elements""")
 
     # Remove all "'" in theta_names
     theta_names, var_dic, variable_clean = clean_variable_name(theta_names)
