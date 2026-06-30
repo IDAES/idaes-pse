@@ -207,8 +207,7 @@ jobs:
       - name: Run pytest (not integration)
         if: matrix.os == 'linux'
         run: |
-          sudo apt-get install gdb
-          gdb -batch -ex run -ex bt --args python -m pytest --pyargs idaes.models.unit_models.tests.test_heat_exchanger -s
+          python -m pytest --pyargs idaes.models.unit_models.tests.test_heat_exchanger -s
       - name: Upload coverage report as GHA workflow artifact
         if: matrix.cov-report
         uses: actions/upload-artifact@v7
