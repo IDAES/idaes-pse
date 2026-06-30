@@ -1,0 +1,50 @@
+{
+    "nl_file": "npentane_expressions_eos.nl",
+    "expr_map": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        13,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        12,
+        11
+    ],
+    "var_map": [
+        0,
+        1,
+        1000,
+        1000
+    ],
+    "param": {
+        "R": 0.11524,
+        "MW": 72.14878,
+        "T_star": 469.7,
+        "rho_star": 232,
+        "Tc": 469.7,
+        "rhoc": 232,
+        "Pc": 3373.3563245687888,
+        "Tt": 143.47,
+        "Pt": 7e-05,
+        "rhot_l": 763.648,
+        "rhot_v": 4.71937e-06,
+        "P_min": 9e-08,
+        "P_max": 1000000,
+        "rho_max": 788.23,
+        "T_min": 112.65,
+        "T_max": 500,
+        "reference_state_offset": [
+            0.0,
+            0.0
+        ]
+    },
+    "have_tcx": false,
+    "have_st": false,
+    "have_visc": false
+}

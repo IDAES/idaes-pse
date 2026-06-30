@@ -1,0 +1,50 @@
+{
+    "nl_file": "isopentane_expressions_eos.nl",
+    "expr_map": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        13,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        12,
+        11
+    ],
+    "var_map": [
+        0,
+        1,
+        1000,
+        1000
+    ],
+    "param": {
+        "R": 0.11524,
+        "MW": 72.14878,
+        "T_star": 460.35,
+        "rho_star": 215.654249,
+        "Tc": 460.35,
+        "rhoc": 235.99865938,
+        "Pc": 3087.2645893137073,
+        "Tt": 112.65,
+        "Pt": 9e-05,
+        "rhot_l": 789.01,
+        "rhot_v": 6.9e-09,
+        "P_min": 9e-08,
+        "P_max": 1000000,
+        "rho_max": 788.23,
+        "T_min": 112.65,
+        "T_max": 500,
+        "reference_state_offset": [
+            0.0,
+            0.0
+        ]
+    },
+    "have_tcx": false,
+    "have_st": false,
+    "have_visc": false
+}

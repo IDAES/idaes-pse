@@ -20,7 +20,9 @@ import numpy
 import pyomo.environ as pyo
 
 from idaes.models.properties.general_helmholtz.expressions import (
+    phi_ideal_types,
     phi_ideal_modular_parts,
+    phi_residual_types,
     phi_residual_modular_parts,
     delta_sat_types,
     surface_tension_types,
@@ -148,74 +150,94 @@ class WriteParameters(object):
 
         # Check if a predefined form of the ideal part of Helmholtz free energy is used
         try:
-            phi_ideal = {
-                "phii": 0,
-                "phii_d": 0,
-                "phii_dd": 0,
-                "phii_t": 0,
-                "phii_tt": 0,
-                "phii_dt": 0,
-            }
-            phi_ideal_terms = parameters["eos"]["ideal_terms"]
-            if phi_ideal_terms:
-                for ideal_term in phi_ideal_terms:
-                    phi_expressions = phi_ideal_modular_parts[ideal_term["ideal_type"]](
-                        model=self.model, parameters=ideal_term
+            #First check to see if legact formulation is present
+            phi_ideal_type = parameters["eos"]["phi_ideal_type"]
+            if phi_ideal_type:
+                self.add(
+                    phi_ideal_types[phi_ideal_type](
+                        model=self.model, parameters=parameters
                     )
-                    phi_ideal["phii"] = phi_ideal["phii"] + phi_expressions["phii"]
-                phii_d = pyo.differentiate(
-                    phi_ideal["phii"], self.model.delta, mode="sympy"
                 )
-                phii_dd = pyo.differentiate(phii_d, self.model.delta, mode="sympy")
-                phii_t = pyo.differentiate(
-                    phi_ideal["phii"], self.model.tau, mode="sympy"
-                )
-                phii_tt = pyo.differentiate(phii_t, self.model.tau, mode="sympy")
-                phii_dt = pyo.differentiate(phii_d, self.model.tau, mode="sympy")
-                phi_ideal["phii_d"] = phi_ideal["phii_d"] + phii_d
-                phi_ideal["phii_dd"] = phi_ideal["phii_dd"] + phii_dd
-                phi_ideal["phii_t"] = phi_ideal["phii_t"] + phii_t
-                phi_ideal["phii_tt"] = phi_ideal["phii_tt"] + phii_tt
-                phi_ideal["phii_dt"] = phi_ideal["phii_dt"] + phii_dt
-                self.add(phi_ideal)
+            #Check for modular package formulation
+            else:
+                phi_ideal = {
+                    "phii": 0,
+                    "phii_d": 0,
+                    "phii_dd": 0,
+                    "phii_t": 0,
+                    "phii_tt": 0,
+                    "phii_dt": 0,
+                }
+                phi_ideal_terms = parameters["eos"]["ideal_terms"]
+                if phi_ideal_terms:
+                    for ideal_term in phi_ideal_terms:
+                        phi_expressions = phi_ideal_modular_parts[ideal_term["ideal_type"]](
+                            model=self.model, parameters=ideal_term
+                        )
+                        phi_ideal["phii"] = phi_ideal["phii"] + phi_expressions["phii"]
+                    phii_d = pyo.differentiate(
+                        phi_ideal["phii"], self.model.delta, mode="sympy"
+                    )
+                    phii_dd = pyo.differentiate(phii_d, self.model.delta, mode="sympy")
+                    phii_t = pyo.differentiate(
+                        phi_ideal["phii"], self.model.tau, mode="sympy"
+                    )
+                    phii_tt = pyo.differentiate(phii_t, self.model.tau, mode="sympy")
+                    phii_dt = pyo.differentiate(phii_d, self.model.tau, mode="sympy")
+                    phi_ideal["phii_d"] = phi_ideal["phii_d"] + phii_d
+                    phi_ideal["phii_dd"] = phi_ideal["phii_dd"] + phii_dd
+                    phi_ideal["phii_t"] = phi_ideal["phii_t"] + phii_t
+                    phi_ideal["phii_tt"] = phi_ideal["phii_tt"] + phii_tt
+                    phi_ideal["phii_dt"] = phi_ideal["phii_dt"] + phii_dt
+                    self.add(phi_ideal)
         except KeyError:
             # No ideal part of Helmholtz free energy provided, so skip
             pass
 
         # Check if a predefined form of the residual part of Helmholtz free energy is used
         try:
-            phi_residual = {
-                "phir": 0,
-                "phir_d": 0,
-                "phir_dd": 0,
-                "phir_t": 0,
-                "phir_tt": 0,
-                "phir_dt": 0,
-            }
-            phi_residual_terms = parameters["eos"]["residual_terms"]
-            if phi_residual_terms:
-                for residual_term in phi_residual_terms:
-                    phi_expressions = phi_residual_modular_parts[
-                        residual_term["residual_type"]
-                    ](model=self.model, parameters=residual_term)
-                    phi_residual["phir"] = (
-                        phi_residual["phir"] + phi_expressions["phir"]
+            #First check to see if legact formulation is present
+            phi_residual_type = parameters["eos"]["phi_residual_type"]
+            if phi_residual_type:
+                self.add(
+                    phi_residual_types[phi_residual_type](
+                        model=self.model, parameters=parameters
                     )
-                phir_d = pyo.differentiate(
-                    phi_residual["phir"], self.model.delta, mode="sympy"
                 )
-                phir_dd = pyo.differentiate(phir_d, self.model.delta, mode="sympy")
-                phir_t = pyo.differentiate(
-                    phi_residual["phir"], self.model.tau, mode="sympy"
-                )
-                phir_tt = pyo.differentiate(phir_t, self.model.tau, mode="sympy")
-                phir_dt = pyo.differentiate(phir_d, self.model.tau, mode="sympy")
-                phi_residual["phir_d"] = phi_residual["phir_d"] + phir_d
-                phi_residual["phir_dd"] = phi_residual["phir_dd"] + phir_dd
-                phi_residual["phir_t"] = phi_residual["phir_t"] + phir_t
-                phi_residual["phir_tt"] = phi_residual["phir_tt"] + phir_tt
-                phi_residual["phir_dt"] = phi_residual["phir_dt"] + phir_dt
-                self.add(phi_residual)
+            #Check for modular package formulation
+            else:
+                phi_residual = {
+                    "phir": 0,
+                    "phir_d": 0,
+                    "phir_dd": 0,
+                    "phir_t": 0,
+                    "phir_tt": 0,
+                    "phir_dt": 0,
+                }
+                phi_residual_terms = parameters["eos"]["residual_terms"]
+                if phi_residual_terms:
+                    for residual_term in phi_residual_terms:
+                        phi_expressions = phi_residual_modular_parts[
+                            residual_term["residual_type"]
+                        ](model=self.model, parameters=residual_term)
+                        phi_residual["phir"] = (
+                            phi_residual["phir"] + phi_expressions["phir"]
+                        )
+                    phir_d = pyo.differentiate(
+                        phi_residual["phir"], self.model.delta, mode="sympy"
+                    )
+                    phir_dd = pyo.differentiate(phir_d, self.model.delta, mode="sympy")
+                    phir_t = pyo.differentiate(
+                        phi_residual["phir"], self.model.tau, mode="sympy"
+                    )
+                    phir_tt = pyo.differentiate(phir_t, self.model.tau, mode="sympy")
+                    phir_dt = pyo.differentiate(phir_d, self.model.tau, mode="sympy")
+                    phi_residual["phir_d"] = phi_residual["phir_d"] + phir_d
+                    phi_residual["phir_dd"] = phi_residual["phir_dd"] + phir_dd
+                    phi_residual["phir_t"] = phi_residual["phir_t"] + phir_t
+                    phi_residual["phir_tt"] = phi_residual["phir_tt"] + phir_tt
+                    phi_residual["phir_dt"] = phi_residual["phir_dt"] + phir_dt
+                    self.add(phi_residual)
         except KeyError:
             # No residual part of Helmholtz free energy provided, so skip
             pass

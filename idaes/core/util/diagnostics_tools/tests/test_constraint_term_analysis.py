@@ -988,7 +988,7 @@ class TestConstraintTermAnalysisVisitor:
         vv, mm, cc, k, tr = ConstraintTermAnalysisVisitor().walk_expression(
             expr=m.state[0].enth_mol
         )
-        assert vv == [pytest.approx(1.1021387e-2, rel=1e-5)]
+        assert vv == [pytest.approx(1.1021387e-2, rel=1e-6)]
         assert len(mm) == 0
         assert len(cc) == 0
         assert not k
