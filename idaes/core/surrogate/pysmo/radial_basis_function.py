@@ -696,7 +696,7 @@ class RadialBasisFunctions:
     @staticmethod
     def explicit_linear_algebra_solution(x, y):
         """
-        The function finds the explicit linear algebra solution to the reqularized problem (X+yI).A = B
+        The function finds the explicit linear algebra solution to the regularized problem (X+yI).A = B
 
         If:
             (x + yI).A = B,
