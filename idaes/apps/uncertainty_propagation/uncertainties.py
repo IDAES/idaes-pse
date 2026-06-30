@@ -121,7 +121,7 @@ def quantify_propagate_uncertainty(
 
     if isinstance(obj_function, str) and obj_function not in ["SSE", "SSE_weighted"]:
         raise ValueError(
-            "Incorrect objective function for parameter estimation. "
+            "Invalid objective function for parameter estimation. "
             "Please select from ['SSE', 'SSE_weighted']."
         )
     if not isinstance(cov_method, str):
@@ -134,13 +134,13 @@ def quantify_propagate_uncertainty(
         ]
         if cov_method not in supported_methods:
             raise ValueError(
-                "Incorrect method for covariance matrix calculation. "
+                "Invalid method for covariance matrix calculation. "
                 "Please select from "
                 "['finite_difference', 'automatic_differentiation_kaug', "
                 "'reduced_hessian']."
             )
     if not isinstance(cov_step, float):
-        raise TypeError("Expected a float for the step, e.g., 1e-2")
+        raise TypeError("Expected a float for the covariance step, e.g., 1e-2")
     if not isinstance(tee, bool):
         raise TypeError("tee  must be boolean.")
     if not isinstance(diagnostic_mode, bool):
