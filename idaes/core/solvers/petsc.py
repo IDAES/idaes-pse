@@ -419,6 +419,74 @@ class PetscDAEResults(object):
         self.trajectory = trajectory
 
 
+def get_initial_condition_problem(
+    m: pyo.Block,
+    time_set: pyodae.ContinuousSet,
+    time_point: float = None,
+    representative_time: float = None,
+    detect_initial: bool = True,
+    initial_variables: list = None,
+    initial_constraints: list = None,
+    flattened_model: dict = None,
+):
+    if time_point is None:
+        time_point = time_set.at(1)  # One because Pyomo sets use one-based indexing
+    if representative_time is None:
+        representative_time = time_set.at(2)
+
+    if flattened_model is None:
+        atemporal_vars, time_vars = flatten_dae_components(
+            m, time_set, pyo.Var, active=True, indices=(representative_time,)
+        )
+        atemporal_cons, time_cons = flatten_dae_components(
+            m, time_set, pyo.Constraint, active=True, indices=(representative_time,)
+        )
+        tdisc = find_discretization_equations(m, time_set)
+    else:
+        atemporal_vars = flattened_model["atemporal_vars"]
+        time_vars = flattened_model["time_vars"]
+        atemporal_cons = flattened_model["atemporal_cons"]
+        time_cons = flattened_model["time_cons"]
+        tdisc = ComponentSet(flattened_model["discretization_equations"])
+
+    # list of variables to add to initial condition problem
+    if initial_variables is None:
+        initial_variables = []
+    if detect_initial:
+        rvset = ComponentSet(atemporal_vars)
+        ivset = ComponentSet(initial_variables)
+        initial_variables = list(ivset | rvset)
+
+    # list of constraints to add to the initial condition problem
+    if initial_constraints is None:
+        initial_constraints = []
+
+    if detect_initial:
+        # If detect_initial, solve the non-time-indexed variables and
+        # constraints with the initial conditions
+        acset = ComponentSet(atemporal_cons)
+        icset = ComponentSet(initial_constraints)
+        initial_constraints = list(icset | acset)
+
+    constraints = copy.copy(initial_constraints)
+    for con in time_cons:
+        if con in tdisc or time_point not in con:
+            continue
+        constraints.append(con[time_point])
+
+    variables = [var[time_point] for var in time_vars] + initial_variables
+    if len(constraints) > 0:
+        t_block = create_subsystem_block(
+            constraints,
+            variables,
+        )
+        _sub_problem_scaling_suffix(m, t_block)
+    else:
+        t_block = None
+
+    return t_block, initial_variables
+
+
 def petsc_dae_by_time_element(
     m,
     time,
@@ -558,27 +626,33 @@ def petsc_dae_by_time_element(
     )
     tdisc = find_discretization_equations(m, time)
 
+    flattened_model = {
+        "atemporal_vars": regular_vars,
+        "atemporal_cons": regular_cons,
+        "time_vars": time_vars,
+        "time_cons": time_cons,
+        "discretization_equations": tdisc,
+    }
+
     solver_dae = pyo.SolverFactory("petsc_ts", options=ts_options)
     save_trajectory = solver_dae.options.get("--ts_save_trajectory", 0)
 
     # First calculate the initial conditions and non-time-indexed constraints
     res_list = []
     t0 = between.first()
-    # list of variables to add to initial condition problem
-    if initial_variables is None:
-        initial_variables = []
-    if detect_initial:
-        rvset = ComponentSet(regular_vars)
-        ivset = ComponentSet(initial_variables)
-        initial_variables = list(ivset | rvset)
 
-        # Workaround for Pyomo bug in which the context manager activates
-        # all ConstraintData children of IndexedConstraint object upon
-        # exit of the context manager. See Pyomo issue #3734
-        disc_condata_list = []
-        for con in tdisc:
-            for condata in con.values():
-                disc_condata_list.append(condata)
+    # Even if we don't solve the initial block, we need to
+    # determine the initial variables to fix at future timepoints
+    ic_block, initial_variables = get_initial_condition_problem(
+        m,
+        time,
+        time_point=t0,
+        representative_time=representative_time,
+        detect_initial=detect_initial,
+        initial_variables=initial_variables,
+        initial_constraints=initial_constraints,
+        flattened_model=flattened_model,
+    )
 
     if not skip_initial:
         # Nonlinear equation solver for initial conditions
@@ -587,38 +661,14 @@ def petsc_dae_by_time_element(
             options=initial_solver_options,
             writer_config=initial_solver_writer_config,
         )
-        # list of constraints to add to the initial condition problem
-        if initial_constraints is None:
-            initial_constraints = []
-
-        if detect_initial:
-            # If detect_initial, solve the non-time-indexed variables and
-            # constraints with the initial conditions
-            rcset = ComponentSet(regular_cons)
-            icset = ComponentSet(initial_constraints)
-            initial_constraints = list(icset | rcset)
-
-        with TemporarySubsystemManager(to_deactivate=disc_condata_list):
-            constraints = [
-                con[t0] for con in time_cons if t0 in con
-            ] + initial_constraints
-            variables = [var[t0] for var in time_vars] + initial_variables
-            if len(constraints) > 0:
-                # if the initial condition is specified and there are no
-                # initial constraints, don't try to solve.
-                t_block = create_subsystem_block(
-                    constraints,
-                    variables,
+        if ic_block is not None:
+            with idaeslog.solver_log(solve_log, idaeslog.INFO) as slc:
+                res = initial_solver_obj.solve(
+                    ic_block,
+                    tee=slc.tee,
+                    symbolic_solver_labels=symbolic_solver_labels,
                 )
-                # set up the scaling factor suffix
-                _sub_problem_scaling_suffix(m, t_block)
-                with idaeslog.solver_log(solve_log, idaeslog.INFO) as slc:
-                    res = initial_solver_obj.solve(
-                        t_block,
-                        tee=slc.tee,
-                        symbolic_solver_labels=symbolic_solver_labels,
-                    )
-                res_list.append(res)
+            res_list.append(res)
 
     tprev = t0
     tj = previous_trajectory
@@ -628,6 +678,14 @@ def petsc_dae_by_time_element(
     # TODO does moving this outside the context manager
     # have any unexpected side effects?
     deriv_diff_map = _get_derivative_differential_data_map(m, time)
+
+    # Workaround for Pyomo bug in which the context manager activates
+    # all ConstraintData children of IndexedConstraint object upon
+    # exit of the context manager. See Pyomo issue #3734
+    disc_condata_list = []
+    for con in tdisc:
+        for condata in con.values():
+            disc_condata_list.append(condata)
 
     with TemporarySubsystemManager(
         to_deactivate=disc_condata_list,
