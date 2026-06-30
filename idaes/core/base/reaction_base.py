@@ -253,7 +253,7 @@ class ReactionBlockDataBase(ProcessBlockData):
     """
     This is the base class for reaction block data objects. These are
     blocks that contain the Pyomo components associated with calculating a
-    set of reacion properties for a given material.
+    set of reaction properties for a given material.
     """
 
     # Create Class ConfigBlock
