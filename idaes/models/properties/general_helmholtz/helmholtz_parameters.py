@@ -150,7 +150,7 @@ class WriteParameters(object):
 
         # Check if a predefined form of the ideal part of Helmholtz free energy is used
         try:
-            #First check to see if legact formulation is present
+            # First check to see if legacy formulation is present
             phi_ideal_type = parameters["eos"]["phi_ideal_type"]
             if phi_ideal_type:
                 self.add(
@@ -158,7 +158,7 @@ class WriteParameters(object):
                         model=self.model, parameters=parameters
                     )
                 )
-            #Check for modular package formulation
+            # Check for modular package formulation
             else:
                 phi_ideal = {
                     "phii": 0,
@@ -171,9 +171,9 @@ class WriteParameters(object):
                 phi_ideal_terms = parameters["eos"]["ideal_terms"]
                 if phi_ideal_terms:
                     for ideal_term in phi_ideal_terms:
-                        phi_expressions = phi_ideal_modular_parts[ideal_term["ideal_type"]](
-                            model=self.model, parameters=ideal_term
-                        )
+                        phi_expressions = phi_ideal_modular_parts[
+                            ideal_term["ideal_type"]
+                        ](model=self.model, parameters=ideal_term)
                         phi_ideal["phii"] = phi_ideal["phii"] + phi_expressions["phii"]
                     phii_d = pyo.differentiate(
                         phi_ideal["phii"], self.model.delta, mode="sympy"
@@ -196,7 +196,7 @@ class WriteParameters(object):
 
         # Check if a predefined form of the residual part of Helmholtz free energy is used
         try:
-            #First check to see if legact formulation is present
+            # First check to see if legacy formulation is present
             phi_residual_type = parameters["eos"]["phi_residual_type"]
             if phi_residual_type:
                 self.add(
@@ -204,7 +204,7 @@ class WriteParameters(object):
                         model=self.model, parameters=parameters
                     )
                 )
-            #Check for modular package formulation
+            # Check for modular package formulation
             else:
                 phi_residual = {
                     "phir": 0,
