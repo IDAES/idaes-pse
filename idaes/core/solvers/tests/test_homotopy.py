@@ -18,7 +18,14 @@ __author__ = "Andrew Lee"
 
 import pytest
 
-from pyomo.environ import ConcreteModel, Constraint, Param, TerminationCondition, Var
+from pyomo.environ import (
+    ConcreteModel,
+    Constraint,
+    Param,
+    SolverFactory,
+    TerminationCondition,
+    Var,
+)
 
 from idaes.core import FlowsheetBlock
 from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
@@ -35,6 +42,24 @@ pytestmark = pytest.mark.solver
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
+
+
+def _ipopt_max_iter_for_homotopy():
+    """Return the max_solver_iterations that makes test_ideal_prop_max_iter
+    exercise the homotopy step-cutback logic deterministically.
+
+    The exact number of homotopy iterations depends on how many Ipopt
+    iterations the "hard" step near the two-phase boundary requires, and this
+    changed between Ipopt versions. Ipopt < 3.14 converges that step in 3
+    iterations, while Ipopt >= 3.14 needs 4. Both yield ni == 19.
+    """
+    try:
+        version = SolverFactory("ipopt").version()
+    except Exception:  # pylint: disable=broad-except
+        version = None
+    if version is not None and version[:2] < (3, 14):
+        return 3
+    return 4
 
 
 @pytest.fixture()
@@ -424,7 +449,7 @@ def test_ideal_prop_max_iter(model2):
         model2,
         [model2.fs.state_block.temperature],
         [390],
-        max_solver_iterations=4,
+        max_solver_iterations=_ipopt_max_iter_for_homotopy(),
         min_step=0.01,
         step_accel=0,
     )
