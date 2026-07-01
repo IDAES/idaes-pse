@@ -485,6 +485,61 @@ def get_initial_condition_problem(
 
     return t_block, initial_variables
 
+def get_timestep_problem(
+    m: pyo.Block,
+    time_set: pyodae.ContinuousSet,
+    time_point: float = None,
+    representative_time: float = None,
+    detect_initial: bool = True,
+    initial_variables: list = None,
+    initial_constraints: list = None,
+    flattened_model: dict = None,    
+):
+    if flattened_model is None:
+        atemporal_vars, time_vars = flatten_dae_components(
+            m, time_set, pyo.Var, active=True, indices=(representative_time,)
+        )
+        atemporal_cons, time_cons = flatten_dae_components(
+            m, time_set, pyo.Constraint, active=True, indices=(representative_time,)
+        )
+        tdisc = find_discretization_equations(m, time_set)
+    else:
+        time_vars = flattened_model["time_vars"]
+        time_cons = flattened_model["time_cons"]
+        disc_condata = flattened_model["discretization_condata"]
+        deriv_diff_map = flattened_model["deriv_diff_map"]
+
+    variables = [var[time_point] for var in time_vars]
+    constraints = []
+    for con in time_cons:
+        if time_point in con and con[time_point] not in disc_condata:
+            constraints.append(con[time_point])
+
+    with TemporarySubsystemManager(
+        to_deactivate=disc_condata,
+        to_fix=initial_variables,
+    ):
+        t_block = create_subsystem_block(constraints, variables)
+        differential_vars = _set_dae_suffixes_from_variables(
+            t_block,
+            variables,
+            deriv_diff_map,
+        )
+        # We need to check if there are derivatives in the problem before
+        # sending this to the solver.  We'll assume that if you are using
+        # this and don't have any differential equations, you are making a
+        # mistake.
+        if len(differential_vars) < 1:
+            raise RuntimeError(
+                f"No differential equations found at t = {t}, not a DAE"
+            )
+        if timevar is not None:
+            t_block.dae_suffix[timevar[t]] = int(DaeVarTypes.TIME)
+        # Set up the scaling factor suffix
+        _sub_problem_scaling_suffix(m, t_block)
+        # Take initial conditions for this step from the result of previous
+        _copy_time(time_vars, tprev, t)
+
 
 def petsc_dae_by_time_element(
     m,
@@ -624,11 +679,17 @@ def petsc_dae_by_time_element(
         m, time, pyo.Constraint, active=True, indices=(representative_time,)
     )
     tdisc = find_discretization_equations(m, time)
+
+    # Workaround for Pyomo bug in which the context manager activates
+    # all ConstraintData children of IndexedConstraint object upon
+    # exit of the context manager. See Pyomo issue #3734
     disc_condata = []
     for con in tdisc:
         for condata in con.values():
             disc_condata.append(condata)
     disc_condata = ComponentSet(disc_condata)
+
+    deriv_diff_map = _get_derivative_differential_data_map(m, time)
 
     flattened_model = {
         "atemporal_vars": regular_vars,
@@ -636,6 +697,7 @@ def petsc_dae_by_time_element(
         "time_vars": time_vars,
         "time_cons": time_cons,
         "discretization_condata": disc_condata,
+        "deriv_diff_map": deriv_diff_map
     }
 
     solver_dae = pyo.SolverFactory("petsc_ts", options=ts_options)
@@ -678,14 +740,6 @@ def petsc_dae_by_time_element(
     tj = previous_trajectory
     if tj is not None:
         variables_prev = [var[t0] for var in time_vars]
-
-    # TODO does moving this outside the context manager
-    # have any unexpected side effects?
-    deriv_diff_map = _get_derivative_differential_data_map(m, time)
-
-    # Workaround for Pyomo bug in which the context manager activates
-    # all ConstraintData children of IndexedConstraint object upon
-    # exit of the context manager. See Pyomo issue #3734
 
     with TemporarySubsystemManager(
         to_deactivate=disc_condata,
