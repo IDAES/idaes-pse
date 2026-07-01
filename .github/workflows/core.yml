@@ -160,7 +160,6 @@ jobs:
           - linux
           - win64
           - macos-arm64
-          - macos-amd64
         include:
           - os: linux
             runner-image: ubuntu-24.04
