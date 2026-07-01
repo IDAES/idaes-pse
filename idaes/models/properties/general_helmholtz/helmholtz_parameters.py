@@ -151,15 +151,15 @@ class WriteParameters(object):
         # Check if a predefined form of the ideal part of Helmholtz free energy is used
         try:
             # First check to see if legacy formulation is present
-            phi_ideal_type = parameters["eos"]["phi_ideal_type"]
-            if phi_ideal_type:
+            if "phi_ideal_type" in parameters["eos"]:
+                phi_ideal_type = parameters["eos"]["phi_ideal_type"]
                 self.add(
                     phi_ideal_types[phi_ideal_type](
                         model=self.model, parameters=parameters
                     )
                 )
             # Check for modular package formulation
-            else:
+            elif "ideal_terms" in parameters["eos"]:
                 phi_ideal = {
                     "phii": 0,
                     "phii_d": 0,
@@ -197,15 +197,15 @@ class WriteParameters(object):
         # Check if a predefined form of the residual part of Helmholtz free energy is used
         try:
             # First check to see if legacy formulation is present
-            phi_residual_type = parameters["eos"]["phi_residual_type"]
-            if phi_residual_type:
+            if "phi_residual_type" in parameters["eos"]:
+                phi_residual_type = parameters["eos"]["phi_residual_type"]
                 self.add(
                     phi_residual_types[phi_residual_type](
                         model=self.model, parameters=parameters
                     )
                 )
             # Check for modular package formulation
-            else:
+            elif "residual_terms" in parameters["eos"]:
                 phi_residual = {
                     "phir": 0,
                     "phir_d": 0,
@@ -239,6 +239,7 @@ class WriteParameters(object):
                     phi_residual["phir_dt"] = phi_residual["phir_dt"] + phir_dt
                     self.add(phi_residual)
         except KeyError:
+            print("asda?")
             # No residual part of Helmholtz free energy provided, so skip
             pass
 
