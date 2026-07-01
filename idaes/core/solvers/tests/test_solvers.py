@@ -56,10 +56,12 @@ def test_ipopt_idaes_available():
         )
 
 
+@pytest.mark.skipif(
+    not pyo.SolverFactory("ipopt_l1").available(False), reason="solver not available"
+)
 @pytest.mark.unit
 def test_ipopt_l1_available():
-    if not pyo.SolverFactory("ipopt_l1").available():
-        raise RuntimeError("Could not find ipopt_l1.")
+    assert pyo.SolverFactory("ipopt_l1").available()
 
 
 @pytest.mark.unit

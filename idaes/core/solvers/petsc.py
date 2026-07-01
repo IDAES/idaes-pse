@@ -62,18 +62,45 @@ def petsc_binary_io():
         return PetscBinaryIOTrajectory
     except ImportError:
         pass
-    # Next, look for a 'petscpy' directory alongside the 'petsc'
-    # executable: first look at the petsc we found on the path, then
-    # look in the IDAES bin dir.  Casting the Executable path to a
-    # string will map None to '' in the case where there is no petsc
-    # executable found.
-    for petsc_exe_dir in (
+
+    # Next, look for a 'petscpy' directory associated with the PETSc install.
+    # Old layout:
+    #   <bin>/petscpy
+    # New layout:
+    #   <prefix>/lib/petscpy, where <bin> == <prefix>/bin
+    #
+    # First look at the petsc found on the path, then look in the IDAES bin dir.
+    # Casting the Executable path to a string will map None to '' in the case
+    # where there is no petsc executable found.
+    candidate_bin_dirs = (
         os.path.dirname(str(Executable("petsc").path())),
         icfg.bin_directory,
-    ):
+    )
+
+    search_dirs = []
+    for petsc_exe_dir in candidate_bin_dirs:
         if not petsc_exe_dir:
             continue
-        petscpy_dir = os.path.join(petsc_exe_dir, "petscpy")
+
+        # Old layout
+        search_dirs.append(os.path.join(petsc_exe_dir, "petscpy"))
+
+        # New layout
+        search_dirs.append(
+            os.path.join(os.path.dirname(petsc_exe_dir), "lib", "petscpy")
+        )
+
+    # Remove duplicates while preserving order
+    seen = set()
+    unique_search_dirs = []
+    for d in search_dirs:
+        if d not in seen:
+            seen.add(d)
+            unique_search_dirs.append(d)
+
+    for petscpy_dir in unique_search_dirs:
+        if not os.path.isdir(petscpy_dir):
+            continue
         try:
             sys.path.insert(0, petscpy_dir)
             import PetscBinaryIOTrajectory
@@ -88,7 +115,9 @@ def petsc_binary_io():
         except ImportError:
             pass
         finally:
-            sys.path.remove(petscpy_dir)
+            if petscpy_dir in sys.path:
+                sys.path.remove(petscpy_dir)
+
     return None
 
 
