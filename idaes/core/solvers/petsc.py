@@ -447,7 +447,7 @@ def get_initial_condition_problem(
         time_vars = flattened_model["time_vars"]
         atemporal_cons = flattened_model["atemporal_cons"]
         time_cons = flattened_model["time_cons"]
-        tdisc = ComponentSet(flattened_model["discretization_equations"])
+        disc_condata = ComponentSet(flattened_model["discretization_condata"])
 
     # list of variables to add to initial condition problem
     if initial_variables is None:
@@ -470,9 +470,8 @@ def get_initial_condition_problem(
 
     constraints = copy.copy(initial_constraints)
     for con in time_cons:
-        if con in tdisc or time_point not in con:
-            continue
-        constraints.append(con[time_point])
+        if time_point in con and con[time_point] not in disc_condata:
+            constraints.append(con[time_point])
 
     variables = [var[time_point] for var in time_vars] + initial_variables
     if len(constraints) > 0:
@@ -625,13 +624,18 @@ def petsc_dae_by_time_element(
         m, time, pyo.Constraint, active=True, indices=(representative_time,)
     )
     tdisc = find_discretization_equations(m, time)
+    disc_condata = []
+    for con in tdisc:
+        for condata in con.values():
+            disc_condata.append(condata)
+    disc_condata = ComponentSet(disc_condata)
 
     flattened_model = {
         "atemporal_vars": regular_vars,
         "atemporal_cons": regular_cons,
         "time_vars": time_vars,
         "time_cons": time_cons,
-        "discretization_equations": tdisc,
+        "discretization_condata": disc_condata,
     }
 
     solver_dae = pyo.SolverFactory("petsc_ts", options=ts_options)
@@ -682,13 +686,9 @@ def petsc_dae_by_time_element(
     # Workaround for Pyomo bug in which the context manager activates
     # all ConstraintData children of IndexedConstraint object upon
     # exit of the context manager. See Pyomo issue #3734
-    disc_condata_list = []
-    for con in tdisc:
-        for condata in con.values():
-            disc_condata_list.append(condata)
 
     with TemporarySubsystemManager(
-        to_deactivate=disc_condata_list,
+        to_deactivate=disc_condata,
         to_fix=initial_variables,
     ):
         # Solver time steps
