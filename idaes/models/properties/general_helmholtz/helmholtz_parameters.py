@@ -239,7 +239,6 @@ class WriteParameters(object):
                     phi_residual["phir_dt"] = phi_residual["phir_dt"] + phir_dt
                     self.add(phi_residual)
         except KeyError:
-            print("asda?")
             # No residual part of Helmholtz free energy provided, so skip
             pass
 
