@@ -72,8 +72,8 @@ class TestWrapper:
     @pytest.mark.unit
     def test_load_component_invalid(self):
         with pytest.raises(
-            RuntimeError,
-            match="Failed to find component foo in CoolProp " "JSON database.",
+            ValueError,
+            match="not found in string_to_index_map in JSONFluidLibrary",
         ):
             CoolPropWrapper._load_component_data("foo")
 
@@ -116,8 +116,8 @@ class TestWrapper:
     @pytest.mark.unit
     def test_get_component_invalid(self):
         with pytest.raises(
-            RuntimeError,
-            match="Failed to find component foo in CoolProp " "JSON database.",
+            ValueError,
+            match="not found in string_to_index_map in JSONFluidLibrary",
         ):
             CoolPropWrapper._get_component_data("foo")
 
