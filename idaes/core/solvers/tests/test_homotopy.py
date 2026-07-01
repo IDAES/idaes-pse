@@ -424,7 +424,7 @@ def test_ideal_prop_max_iter(model2):
         model2,
         [model2.fs.state_block.temperature],
         [390],
-        max_solver_iterations=3,
+        max_solver_iterations=4,
         min_step=0.01,
         step_accel=0,
     )
