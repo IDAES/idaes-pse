@@ -35,7 +35,7 @@ from pyomo.common.deprecation import deprecation_warning
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 from idaes.core.scaling.scaling_base import CONFIG, ScalerBase
-from idaes.core.scaling.util import NominalValueExtractionVisitor
+from idaes.core.scaling.nominal_value_tools import NominalValueExtractionVisitor
 import idaes.logger as idaeslog
 from idaes.core.util.exceptions import BurntToast
 from idaes.core.util.misc import StrEnum
