@@ -51,6 +51,8 @@ typ = "typ"
 cocurrent = "cocurrent"
 # Used for a regex
 deprecat = "deprecat"
+# Parmest
+Parm = "Parm"
 
 # false positive from 1.20.3
 RTO = "RTO"
@@ -61,3 +63,7 @@ iy = "iy"
 
 # more chemE abbreviations
 HDA = "HDA"
+
+# False positives from 1.48.0
+iz = "iz"
+Bimap = "Bimap"

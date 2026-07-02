@@ -1042,7 +1042,7 @@ class AlamoTrainer(SurrogateTrainer):
             output_labels : list of str
                List of strings of the output_labels (in order)
             has_validation_data : bool
-                Bool indicating whether valdiation data was included in ALAMO run
+                Bool indicating whether validation data was included in ALAMO run
 
         Returns:
             trace_dict: contents of trace file as a dict

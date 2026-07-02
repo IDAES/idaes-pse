@@ -43,6 +43,32 @@ dotsens_available = SolverFactory("dot_sens").available(exception_flag=False)
     not dotsens_available, reason="The 'dot_sens' command is not available"
 )
 class TestUncertaintyPropagation:
+
+    variable_name = ["asymptote", "rate_constant"]
+
+    @staticmethod
+    def data():
+        return pd.DataFrame(
+            data=[[1, 8.3], [2, 10.3], [3, 19.0], [4, 16.0], [5, 15.6], [7, 19.8]],
+            columns=["hour", "y"],
+        )
+
+    @staticmethod
+    def model_uncertain():
+        m = ConcreteModel()
+        m.asymptote = Var(initialize=15)
+        m.rate_constant = Var(initialize=0.5)
+        m.obj = Objective(expr=m.asymptote * (1 - exp(-m.rate_constant * 10)))
+        return m
+
+    @staticmethod
+    def exp_list(data):
+        from pyomo.contrib.parmest.examples.rooney_biegler.rooney_biegler import (
+            RooneyBieglerExperiment,
+        )
+
+        return [RooneyBieglerExperiment(data.loc[i, :]) for i in range(data.shape[0])]
+
     @pytest.mark.unit
     def test_quantify_propagate_uncertainty1(self):
         """
@@ -53,12 +79,6 @@ class TestUncertaintyPropagation:
             rooney_biegler_model_opt,
         )
 
-        variable_name = ["asymptote", "rate_constant"]
-        data = pd.DataFrame(
-            data=[[1, 8.3], [2, 10.3], [3, 19.0], [4, 16.0], [5, 15.6], [7, 19.8]],
-            columns=["hour", "y"],
-        )
-
         def SSE(model, data):
             expr = sum(
                 (data.y[i] - model.response_function[data.hour[i]]) ** 2
@@ -67,7 +87,11 @@ class TestUncertaintyPropagation:
             return expr
 
         results = quantify_propagate_uncertainty(
-            rooney_biegler_model, rooney_biegler_model_opt, data, variable_name, SSE
+            rooney_biegler_model,
+            rooney_biegler_model_opt,
+            self.data(),
+            self.variable_name,
+            SSE,
         )
 
         assert results.obj == pytest.approx(4.331711213656886, abs=1e-8, rel=1e-8)
@@ -97,12 +121,6 @@ class TestUncertaintyPropagation:
             rooney_biegler_model,
         )
 
-        variable_name = ["asymptote", "rate_constant"]
-        data = pd.DataFrame(
-            data=[[1, 8.3], [2, 10.3], [3, 19.0], [4, 16.0], [5, 15.6], [7, 19.8]],
-            columns=["hour", "y"],
-        )
-
         def SSE(model, data):
             expr = sum(
                 (data.y[i] - model.response_function[data.hour[i]]) ** 2
@@ -110,16 +128,12 @@ class TestUncertaintyPropagation:
             )
             return expr
 
-        model_uncertain = ConcreteModel()
-        model_uncertain.asymptote = Var(initialize=15)
-        model_uncertain.rate_constant = Var(initialize=0.5)
-        model_uncertain.obj = Objective(
-            expr=model_uncertain.asymptote
-            * (1 - exp(-model_uncertain.rate_constant * 10)),
-        )
-
         results = quantify_propagate_uncertainty(
-            rooney_biegler_model, model_uncertain, data, variable_name, SSE
+            rooney_biegler_model,
+            self.model_uncertain(),
+            self.data(),
+            self.variable_name,
+            SSE,
         )
 
         assert results.obj == pytest.approx(4.331711213656886, abs=1e-8, rel=1e-8)
@@ -138,18 +152,153 @@ class TestUncertaintyPropagation:
         assert results.propagation_f == pytest.approx(5.45439337747349)
 
     @pytest.mark.component
+    def test_new_interface_quantify_propagate_uncertainty(self):
+        """
+        This is the same test as test_quantify_propagate_uncertainty2,
+        but with the new interface of ParmEst (i.e., Experiment class).
+        """
+
+        data = self.data()
+
+        # Create an experiment list
+        exp_list = self.exp_list(data)
+
+        results = quantify_propagate_uncertainty(
+            exp_list,
+            self.model_uncertain(),
+            self.variable_name,
+            obj_function="SSE",
+        )
+
+        assert results.obj == pytest.approx(4.331711213656886, abs=1e-4)
+        assert list(results.theta.keys()) == ["asymptote", "rate_constant"]
+        assert results.theta["asymptote"] == pytest.approx(
+            19.142575284617866,
+            abs=1e-4,
+        )
+        assert results.theta["rate_constant"] == pytest.approx(
+            0.53109137696521,
+            abs=1e-4,
+        )
+        np.testing.assert_array_almost_equal(
+            results.gradient_f, [0.99506259, 0.945148], decimal=4
+        )
+        assert list(results.propagation_c) == []
+        np.testing.assert_array_almost_equal(
+            results.dsdp.toarray(), [[1.0, 0.0], [0.0, 1.0]]
+        )
+        np.testing.assert_array_almost_equal(
+            results.cov,
+            np.array([[6.229612, -0.432265], [-0.432265, 0.041242]]),
+            decimal=4,
+        )
+        assert results.propagation_f == pytest.approx(5.392014308, abs=1e-4)
+
+    @pytest.mark.component
+    def test_obj_function_exception(self):
+        """
+        Tests the exception raised when the obj_function argument is a string
+        but is misspelled or is not one of the built-in objective functions.
+        """
+
+        data = self.data()
+
+        # Create an experiment list
+        exp_list = self.exp_list(data)
+
+        with pytest.raises(
+            ValueError,
+            match=r"Invalid objective function for parameter estimation. "
+            r"Please select from \['SSE', 'SSE_weighted'\]\.",
+        ):
+            results = quantify_propagate_uncertainty(
+                exp_list,
+                self.model_uncertain(),
+                self.variable_name,
+                obj_function="unsupported",
+            )
+
+    @pytest.mark.component
+    def test_cov_method_string_exception(self):
+        """
+        Tests the exception raised when the cov_method argument is not a string.
+        """
+
+        data = self.data()
+
+        # Create an experiment list
+        exp_list = self.exp_list(data)
+
+        with pytest.raises(
+            TypeError,
+            match="A string object is expected for the covariance method.",
+        ):
+            results = quantify_propagate_uncertainty(
+                exp_list,
+                self.model_uncertain(),
+                self.variable_name,
+                obj_function="SSE",
+                cov_method=True,
+            )
+
+    @pytest.mark.component
+    def test_cov_method_invalid_exception(self):
+        """
+        Tests the exception raised when the cov_method argument is a string
+        but is misspelled or is not one of the supported covariance methods.
+        """
+
+        data = self.data()
+
+        # Create an experiment list
+        exp_list = self.exp_list(data)
+
+        with pytest.raises(
+            ValueError,
+            match=r"Invalid method for covariance matrix calculation. "
+            r"Please select from "
+            r"\['finite_difference', "
+            r"'automatic_differentiation_kaug', "
+            r"'reduced_hessian'\]\.",
+        ):
+            results = quantify_propagate_uncertainty(
+                exp_list,
+                self.model_uncertain(),
+                self.variable_name,
+                obj_function="SSE",
+                cov_method="unsupported_method",
+            )
+
+    @pytest.mark.component
+    def test_cov_step_exception(self):
+        """
+        Tests the exception raised when the cov_step argument is a not a float.
+        """
+
+        data = self.data()
+
+        # Create an experiment list
+        exp_list = self.exp_list(data)
+
+        with pytest.raises(
+            TypeError,
+            match="Expected a float for the covariance step, e.g., 1e-2",
+        ):
+            results = quantify_propagate_uncertainty(
+                exp_list,
+                self.model_uncertain(),
+                self.variable_name,
+                obj_function="SSE",
+                cov_step=10,
+            )
+
+    @pytest.mark.component
     def test_propagate_uncertainty(self):
         """
         It tests the function propagate_uncertainty with rooney & biegler's model.
         """
         from idaes.apps.uncertainty_propagation.examples.rooney_biegler import (
             rooney_biegler_model,
-        )
-
-        variable_name = ["asymptote", "rate_constant"]
-        data = pd.DataFrame(
-            data=[[1, 8.3], [2, 10.3], [3, 19.0], [4, 16.0], [5, 15.6], [7, 19.8]],
-            columns=["hour", "y"],
         )
 
         def SSE(model, data):
@@ -160,19 +309,14 @@ class TestUncertaintyPropagation:
             return expr
 
         parmest_class = parmest.Estimator(
-            rooney_biegler_model, data, variable_name, SSE
+            rooney_biegler_model, self.data(), self.variable_name, SSE
         )
-        obj, theta, cov = parmest_class.theta_est(calc_cov=True, cov_n=len(data.index))
-        model_uncertain = ConcreteModel()
-        model_uncertain.asymptote = Var(initialize=15)
-        model_uncertain.rate_constant = Var(initialize=0.5)
-        model_uncertain.obj = Objective(
-            expr=model_uncertain.asymptote
-            * (1 - exp(-model_uncertain.rate_constant * 10)),
+        obj, theta, cov = parmest_class.theta_est(
+            calc_cov=True, cov_n=len(self.data().index)
         )
 
         propagate_results = propagate_uncertainty(
-            model_uncertain, theta, cov, variable_name
+            self.model_uncertain(), theta, cov, self.variable_name
         )
 
         np.testing.assert_array_almost_equal(
