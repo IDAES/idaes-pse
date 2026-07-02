@@ -381,7 +381,6 @@ def _get_derivative_differential_data_map(m, time):
             filtered_deriv_diff_list.append((deriv, diff))
     return ComponentMap(filtered_deriv_diff_list)
 
-
 def _sub_problem_scaling_suffix(m, t_block):
     """Copy scaling factors from the full model to the submodel.  This assumes
     the scaling suffixes could be in two places.  First check the parent block
