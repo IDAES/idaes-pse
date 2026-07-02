@@ -1,5 +1,5 @@
 """
-The NominalValueExpressionWalker and supporting functions.
+The NominalValueExtractionVisitor and supporting functions.
 
 Authors: Andrew Lee, Douglas Allan
 """
