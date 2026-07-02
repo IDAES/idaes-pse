@@ -296,6 +296,7 @@ class TestSuffixToFromDict:
     def scaled_model(self):
         m = _create_model()
         _scale_model(m)
+        return m
 
     @pytest.mark.unit
     def test_suffix_to_dict(self, scaled_model):
