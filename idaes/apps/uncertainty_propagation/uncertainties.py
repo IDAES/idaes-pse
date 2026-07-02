@@ -157,6 +157,7 @@ def quantify_propagate_uncertainty(
         experiment_list,
         obj_function=obj_function,
         tee=tee,
+        diagnostic_mode=diagnostic_mode,
         solver_options=solver_options,
     )
 
@@ -167,7 +168,15 @@ def quantify_propagate_uncertainty(
     cov = parmest_class.cov_est(method=cov_method, step=cov_step)
 
     return _propagate_and_package_results(
-        model_uncertain, theta_names, var_dic, variable_clean, obj, theta, cov, tee
+        model_uncertain,
+        theta_names,
+        var_dic,
+        variable_clean,
+        obj,
+        theta,
+        cov,
+        tee,
+        solver_options,
     )
 
 
@@ -265,12 +274,28 @@ def _deprecated_quantify_propagate_uncertainty(
     obj, theta, cov = parmest_class.theta_est(calc_cov=True, cov_n=covariance_n)
 
     return _propagate_and_package_results(
-        model_uncertain, theta_names, var_dic, variable_clean, obj, theta, cov, tee
+        model_uncertain,
+        theta_names,
+        var_dic,
+        variable_clean,
+        obj,
+        theta,
+        cov,
+        tee,
+        solver_options,
     )
 
 
 def _propagate_and_package_results(
-    model_uncertain, theta_names, var_dic, variable_clean, obj, theta, cov, tee
+    model_uncertain,
+    theta_names,
+    var_dic,
+    variable_clean,
+    obj,
+    theta,
+    cov,
+    tee=False,
+    solver_options=None,
 ):
     """
     Saves the uncertainty propagation results into a tuple
@@ -294,8 +319,11 @@ def _propagate_and_package_results(
     cov : pandas.DataFrame,
         DataFrame object containing the covariance matrix of
         the estimated parameters
-    tee : bool
-        Indicates that ef solver output should be teed
+    tee : bool, optional
+        Indicates that ef solver output should be teed, by default False
+    solver_options : dict, optional
+        Provides options to the solver (also the name of an attribute),
+        by default None
 
     Returns
     -------
@@ -347,7 +375,7 @@ def _propagate_and_package_results(
     else:
         theta_out = theta
     propagate_results = propagate_uncertainty(
-        model_uncertain, theta, cov, theta_names, tee
+        model_uncertain, theta, cov, theta_names, tee, solver_options
     )
 
     Output = namedtuple(
@@ -487,9 +515,11 @@ def propagate_uncertainty(
         model.find_component(var_dic[v]).setub(theta[v])
     # get gradient of the objective function, constraints,
     # and the column,row names
-    dsdp, col = get_dsdp(model, theta_names, theta, var_dic, tee)
+    dsdp, col = get_dsdp(model, theta_names, theta, var_dic, tee, solver_options)
     dsdp = dsdp.toarray().T  # change shape, Nvar by Ntheta
-    gradient_f, gradient_c, col, row, line_dic = get_dfds_dcds(model, theta_names, tee)
+    gradient_f, gradient_c, col, row, line_dic = get_dfds_dcds(
+        model, theta_names, tee, solver_options
+    )
     num_constraints = len(
         list(model.component_data_objects(Constraint, active=True, descend_into=True))
     )
