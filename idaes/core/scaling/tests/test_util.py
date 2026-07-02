@@ -37,6 +37,7 @@ from pyomo.common.fileutils import this_file_dir
 from pyomo.common.tempfiles import TempfileManager
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.contrib.pynumero.asl import AmplInterface
+from pyomo.util.subsystems import create_subsystem_block
 
 from idaes.core.scaling.util import (
     get_jacobian,
@@ -52,6 +53,7 @@ from idaes.core.scaling.util import (
     _set_block_suffixes_from_dict,
     list_unscaled_variables,
     list_unscaled_constraints,
+    propagate_scaling_factors_to_temporary_block,
     scaling_factors_to_dict,
     scaling_factors_from_dict,
     scaling_factors_to_json_file,
@@ -266,6 +268,25 @@ def _create_model():
     return m
 
 
+def _scale_model(m):
+    for bd in m.b.values():
+        bd.scaling_factor = Suffix(direction=Suffix.EXPORT)
+        bd.scaling_factor[bd.v2] = 10
+
+        bd.scaling_hint = Suffix(direction=Suffix.EXPORT)
+        for k in m.s:
+            bd.scaling_hint[bd.e2[k]] = 1 / k
+
+    m.scaling_factor = Suffix(direction=Suffix.EXPORT)
+    for i in m.s:
+        m.scaling_factor[m.v[i]] = 5 * i
+        m.scaling_factor[m.c[i]] = 5**i
+
+    m.scaling_hint = Suffix(direction=Suffix.EXPORT)
+    m.scaling_hint[m.e1] = 13
+    return m
+
+
 class TestSuffixToFromDict:
     @pytest.fixture
     def unscaled_model(self):
@@ -274,23 +295,7 @@ class TestSuffixToFromDict:
     @pytest.fixture
     def scaled_model(self):
         m = _create_model()
-
-        for bd in m.b.values():
-            bd.scaling_factor = Suffix(direction=Suffix.EXPORT)
-            bd.scaling_factor[bd.v2] = 10
-
-            bd.scaling_hint = Suffix(direction=Suffix.EXPORT)
-            for k in m.s:
-                bd.scaling_hint[bd.e2[k]] = 1 / k
-
-        m.scaling_factor = Suffix(direction=Suffix.EXPORT)
-        for i in m.s:
-            m.scaling_factor[m.v[i]] = 5 * i
-            m.scaling_factor[m.c[i]] = 5**i
-
-        m.scaling_hint = Suffix(direction=Suffix.EXPORT)
-        m.scaling_hint[m.e1] = 13
-        return m
+        _scale_model(m)
 
     @pytest.mark.unit
     def test_suffix_to_dict(self, scaled_model):
@@ -2741,3 +2746,39 @@ def test_correct_set_identification():
         assert get_scaling_factor(m.xdot_disc_eq[0, i]) == approx(0.2)
         assert get_scaling_factor(m.xdot_disc_eq[1, i]) == approx(0.3)
         assert get_scaling_factor(m.xdot_disc_eq[2, i]) == approx(0.5)
+
+
+@pytest.mark.unit
+def test_propagate_scaling_factors_to_temporary_block():
+    m = _create_model()
+    _scale_model(m)
+
+    blk = create_subsystem_block(
+        constraints=[m.c[1], m.c[3]],
+        variables=[m.v[1], m.b[2].v2],  # m.v[3] should be an input variable
+    )
+
+    assert not hasattr(blk, "scaling_factor")
+    propagate_scaling_factors_to_temporary_block(blk)
+    assert hasattr(blk, "scaling_factor")
+    assert len(blk.scaling_factor) == 5
+    assert blk.scaling_factor[m.v[1]] == 5
+    assert blk.scaling_factor[m.v[3]] == 15
+    assert blk.scaling_factor[m.b[2].v2] == 10
+    assert blk.scaling_factor[m.c[1]] == 5
+    assert blk.scaling_factor[m.c[3]] == 125
+
+    # Now test what happens if a scaling factor suffix already exits
+    set_scaling_factor(m.b[2].v2, 137, overwrite=True)
+    # If a scaling factor doesn't exist on the original model
+    # for a variable, it should leave the existing scaling factor
+    # on the temporary block
+    del_scaling_factor(m.v[3])
+    propagate_scaling_factors_to_temporary_block(blk)
+    assert hasattr(blk, "scaling_factor")
+    assert len(blk.scaling_factor) == 5
+    assert blk.scaling_factor[m.v[1]] == 5
+    assert blk.scaling_factor[m.v[3]] == 15
+    assert blk.scaling_factor[m.b[2].v2] == 137
+    assert blk.scaling_factor[m.c[1]] == 5
+    assert blk.scaling_factor[m.c[3]] == 125

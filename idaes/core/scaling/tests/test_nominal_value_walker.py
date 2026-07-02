@@ -21,7 +21,8 @@ import pytest
 import pyomo.environ as pyo
 from pyomo.contrib.pynumero.asl import AmplInterface
 
-from idaes.core.scaling.util import NominalValueExtractionVisitor, set_scaling_factor
+from idaes.core.scaling import set_scaling_factor
+from idaes.core.scaling.nominal_value_tools import NominalValueExtractionVisitor
 from idaes.models.properties.modular_properties.eos.ceos_common import (
     cubic_roots_available,
     CubicThermoExpressions,
