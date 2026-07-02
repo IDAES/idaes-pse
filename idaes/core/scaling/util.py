@@ -29,20 +29,11 @@ from scipy.sparse import diags
 from scipy.sparse.linalg import inv as spinv, norm as spnorm
 
 from pyomo.environ import (
-    Binary,
     Block,
     Boolean,
     Constraint,
     Expression,
-    NegativeIntegers,
-    NegativeReals,
-    NonNegativeIntegers,
-    NonNegativeReals,
-    NonPositiveIntegers,
-    NonPositiveReals,
     Objective,
-    PositiveIntegers,
-    PositiveReals,
     Reference,
     Suffix,
     value,
@@ -52,15 +43,11 @@ from pyomo.core.base.block import BlockData
 from pyomo.core.base.var import VarData
 from pyomo.core.base.constraint import ConstraintData
 from pyomo.core.base.expression import ExpressionData
-from pyomo.core.base.param import ParamData
-from pyomo.core import expr as EXPR
 from pyomo.core.base.suffix import SuffixFinder
-from pyomo.core.base.units_container import _PyomoUnit
 from pyomo.common.deprecation import relocated_module_attribute
 
 from pyomo.common.collections import ComponentSet
 from pyomo.common.modeling import unique_component_name
-from pyomo.common.numeric_types import native_types
 from pyomo.dae import DerivativeVar
 from pyomo.dae.flatten import slice_component_along_sets
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
