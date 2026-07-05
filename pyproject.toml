@@ -57,7 +57,7 @@ dependencies = [
 [project.optional-dependencies]
 ui = ["idaes-ui", "idaes-connectivity"]
 coolprop = [
-  "coolprop>=7.0,<8", # idaes.generic_models.properties.general.coolprop
+  "coolprop>=7.0", # idaes.generic_models.properties.general.coolprop
 ]
 grid = [
   "gridx-prescient>=2.2.3", # idaes.tests.prescient
