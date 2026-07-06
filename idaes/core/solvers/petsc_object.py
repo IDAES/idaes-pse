@@ -29,6 +29,7 @@ import idaes.logger as idaeslog
 import idaes.config as icfg
 
 from idaes.core.scaling import get_scaling_factor, set_scaling_factor
+from idaes.core.scaling.util import propagate_scaling_factors_to_temporary_block
 from idaes.core.solvers.petsc import (
     calculate_time_derivatives,
     DaeVarTypes,
@@ -59,38 +60,38 @@ CONFIG.declare(
             "used to write constraints that are an explicit function of time.",
     ),
 )
-# CONFIG.declare(
-#     "initial_constraints",
-#     ConfigValue(
-#         default=None,
-#         domain=ListOf(Constraint),
-#         description="Constraints to solve in the initial "
-#             "condition solve step.  Since the time-indexed constraints are picked "
-#             "up automatically, this generally includes non-time-indexed "
-#             "constraints.",
-#     )
-# )
-# CONFIG.declare(
-#     "initial_variables",
-#     ConfigValue(
-#         default=None,
-#         domain=ListOf(Var),
-#         description="initial_variables (list): This is a list of variables to fix after the "
-#             "initial condition solve step.  If these variables were originally "
-#             "unfixed, they will be unfixed at the end of the solve. This usually "
-#             "includes non-time-indexed variables that are calculated along with "
-#             "the initial conditions."
-#     )
-# )
-# CONFIG.declare(
-#     "detect_initial",
-#     ConfigValue(
-#         default=True,
-#         domain=bool,
-#         description="If True, add non-time-indexed variables and "
-#             "constraints to initial_variables and initial_constraints."
-#     )
-# )
+CONFIG.declare(
+    "initial_constraints",
+    ConfigValue(
+        default=None,
+        domain=ListOf(Constraint),
+        description="Constraints to solve in the initial "
+            "condition solve step.  Since the time-indexed constraints are picked "
+            "up automatically, this generally includes non-time-indexed "
+            "constraints.",
+    )
+)
+CONFIG.declare(
+    "initial_variables",
+    ConfigValue(
+        default=None,
+        domain=ListOf(Var),
+        description="initial_variables (list): This is a list of variables to fix after the "
+            "initial condition solve step.  If these variables were originally "
+            "unfixed, they will be unfixed at the end of the solve. This usually "
+            "includes non-time-indexed variables that are calculated along with "
+            "the initial conditions."
+    )
+)
+CONFIG.declare(
+    "detect_initial",
+    ConfigValue(
+        default=True,
+        domain=bool,
+        description="If True, add non-time-indexed variables and "
+            "constraints to initial_variables and initial_constraints."
+    )
+)
 # CONFIG.declare(
 #     "skip_initial",
 #     ConfigValue(
@@ -158,7 +159,7 @@ CONFIG.declare(
 CONFIG.declare(
     "calculate_derivatives",
     ConfigValue(
-        # TODO do we want to change this to True?
+        # TODO do we want to change the default to True?
         default=False,
         domain=bool,
         description="If True, calculate the derivative values "
@@ -364,7 +365,7 @@ class PETScIntegrator(object):
                 constraints,
                 variables,
             )
-            self._sub_problem_scaling_suffix(self._model, t_block)
+            propagate_scaling_factors_to_temporary_block(t_block)
         else:
             t_block = None
 
@@ -375,7 +376,11 @@ class PETScIntegrator(object):
         time_point: float = None,    
     ):
 
-        variables = [var[time_point] for var in self.time_variables]
+        variables = ComponentSet() 
+        for var in self.time_variables:
+            # Use a ComponentSet to avoid variables from being counted
+            # twice if a Reference to that variable exists
+            variables.add(var[time_point])
         constraints = []
         for con in self.time_constraints:
             if time_point in con and con[time_point] not in self._disc_condata:
@@ -386,11 +391,13 @@ class PETScIntegrator(object):
             wts=StoreSpec.isfixed(),
             return_dict=True
         )
-
-        t_block = create_subsystem_block(constraints, variables)
+        t_block = create_subsystem_block(constraints, list(variables))
+        # Fix input variables (which shouldn't be indexed by time)
+        for vardata in t_block.input_vars.values():
+            vardata.fix()
 
         # Set up the scaling factor suffix
-        _sub_problem_scaling_suffix(self._model, t_block)
+        propagate_scaling_factors_to_temporary_block(t_block)
         
         differential_vars = _set_dae_suffixes_from_variables(
             t_block,

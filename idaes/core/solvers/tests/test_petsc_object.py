@@ -18,12 +18,14 @@ import re
 import numpy as np
 import json
 import os
+from pyomo.common.collections import ComponentSet
 import pyomo.environ as pyo
 import pyomo.dae as pyodae
 from pyomo.util.subsystems import create_subsystem_block
 from idaes.core.scaling.util import set_scaling_factor
 from idaes.core.solvers.petsc_object import PETScIntegrator
-from idaes.core.solvers.petsc import petsc_available
+from idaes.core.solvers.petsc import petsc_available, PetscTrajectory
+from idaes.core.util import from_json, StoreSpec
 import idaes.logger as idaeslog
 
 
@@ -525,10 +527,66 @@ def test_copy_time():
 @pytest.mark.unit
 def test_petsc_initial_condition_problem():
     m, y1, y2, y3, y4, y5, y6 = dae_with_non_time_indexed_constraint()
-    m.y_ref = pyo.Reference(m.y) # Make sure references are handled appropriately
-    set_scaling_factor(y3, 7) # Make sure that scaling factors are copied over
-    petsc_obj = PETScIntegrator(m, time_set=m.t)
+    set_scaling_factor(m.y[0, 3], 7) # Make sure that scaling factors are copied over
+    set_scaling_factor(m.eq_Fin[0], 11)
 
+    petsc_obj = PETScIntegrator(m, time_set=m.t)
+    ic_block = petsc_obj.get_initial_condition_problem(0)
+    assert ic_block.scaling_factor[m.y[0, 3]] == 7
+    assert ic_block.scaling_factor[m.eq_Fin[0]] == 11
+
+    expected_var_set = ComponentSet([m.H, m.Fin[0]])
+    expected_con_set = ComponentSet([m.H_eqn, m.eq_Fin[0], m.eq_y6[0]])
+    for i in range(1, 7):
+        expected_var_set.add(m.y[0, i])
+        # ydot[6] comes along for the ride despite being in zero active constraints
+        expected_var_set.add(m.ydot[0, i])
+        if not i == 6:
+            expected_var_set.add(m.r[0, i])
+            expected_con_set.add(m.find_component(f"eq_ydot{i}")[0])
+            expected_con_set.add(m.find_component(f"eq_r{i}")[0])
+
+    actual_var_set = ComponentSet(vardata for vardata in ic_block.component_data_objects(ctype=pyo.Var))
+    actual_con_set = ComponentSet(condata for condata in ic_block.component_data_objects(ctype=pyo.Constraint))
+    assert expected_var_set == actual_var_set
+    assert expected_con_set == actual_con_set
+
+@pytest.mark.unit
+def test_petsc_timestep_problem():
+    m, y1, y2, y3, y4, y5, y6 = dae_with_non_time_indexed_constraint()
+    set_scaling_factor(m.y[180, 3], 7) # Make sure that scaling factors are copied over
+    set_scaling_factor(m.eq_Fin[180], 11)
+
+    petsc_obj = PETScIntegrator(m, time_set=m.t)
+    t_block, diff_vars, fixedness_json = petsc_obj.get_timestep_problem(180)
+    assert t_block.scaling_factor[m.y[180, 3]] == 7
+    assert t_block.scaling_factor[m.eq_Fin[180]] == 11
+
+    expected_var_set = ComponentSet([m.H, m.Fin[180]])
+    expected_con_set = ComponentSet([m.eq_Fin[180], m.eq_y6[180]])
+    expected_diff_var_set = ComponentSet()
+    for i in range(1, 7):
+        expected_var_set.add(m.y[180, i])
+        # ydot[6] comes along for the ride despite being in zero active constraints
+        expected_var_set.add(m.ydot[180, i])
+        if not i == 6:
+            expected_diff_var_set.add(m.y[180, i])
+            expected_var_set.add(m.r[180, i])
+            expected_con_set.add(m.find_component(f"eq_ydot{i}")[180])
+            expected_con_set.add(m.find_component(f"eq_r{i}")[180])
+
+    actual_var_set = ComponentSet(vardata for vardata in t_block.component_data_objects(ctype=pyo.Var))
+    actual_con_set = ComponentSet(condata for condata in t_block.component_data_objects(ctype=pyo.Constraint))
+    assert expected_var_set == actual_var_set
+    assert expected_con_set == actual_con_set
+    assert len(diff_vars) == len(ComponentSet(diff_vars)) # Don't want redundant diff vars.
+    assert expected_diff_var_set == ComponentSet(diff_vars)
+
+    assert m.H.fixed
+    input_var_set = ComponentSet(vardata for vardata in t_block.input_vars.values())
+    assert m.H in input_var_set
+    assert len(input_var_set) == 1
+    from_json(m, sd=fixedness_json, wts=StoreSpec.isfixed())
 
 @pytest.mark.unit
 @pytest.mark.skipif(not petsc_available(), reason="PETSc solver not available")
@@ -579,12 +637,12 @@ def test_petsc_read_trajectory():
     os.remove("some_testy_json.json")
 
     tj.to_json("some_testy_json.json.gz")
-    tj2 = petsc.PetscTrajectory(json="some_testy_json.json.gz")
+    tj2 = PetscTrajectory(json="some_testy_json.json.gz")
     assert tj2.vecs[str(m.y[180, 1])][-1] == pytest.approx(y1, rel=1e-3)
     assert tj2.vecs["_time"][-1] == pytest.approx(180)
     os.remove("some_testy_json.json.gz")
 
-    tj2 = petsc.PetscTrajectory(vecs=vecs)
+    tj2 = PetscTrajectory(vecs=vecs)
     assert tj2.vecs[str(m.y[180, 1])][-1] == pytest.approx(y1, rel=1e-3)
     assert tj2.vecs["_time"][-1] == pytest.approx(180)
 
@@ -600,17 +658,19 @@ def test_petsc_read_trajectory_parts():
     m.scaling_factor[m.y[180, 1]] = 10  # make sure unscale works
 
     m.y_ref = pyo.Reference(m.y)  # make sure references don't get unscaled twice
-    res = petsc.petsc_dae_by_time_element(
-        m,
-        time=m.t,
-        between=[m.t.first(), m.t.at(4), m.t.last()],
+
+    petsc_obj = PETScIntegrator(
+        model=m,
+        time_set=m.t,
         ts_options={
             "--ts_type": "cn",  # Crank–Nicolson
             "--ts_adapt_type": "basic",
             "--ts_dt": 0.01,
             "--ts_save_trajectory": 1,
-        },
+        }
     )
+
+    res = petsc_obj.dae_by_time_element(between=[m.t.first(), m.t.at(4), m.t.last()])
     assert pytest.approx(y1, rel=1e-3) == pyo.value(m.y[m.t.last(), 1])
     assert pytest.approx(y2, rel=1e-3) == pyo.value(m.y[m.t.last(), 2])
     assert pytest.approx(y3, rel=1e-3) == pyo.value(m.y[m.t.last(), 3])
@@ -633,11 +693,18 @@ def test_petsc_read_trajectory_parts():
 def test_rp_example():
 
     m = rp_example()
-    with pytest.raises(RuntimeError):
-        petsc.petsc_dae_by_time_element(
-            m,
-            time=m.time,
+    petsc_obj = PETScIntegrator(m, time_set=m.time)
+    with pytest.raises(
+        RuntimeError,
+        match=re.escape(
+            "Problem cannot contain a fixed differential variable and "
+            "unfixed derivative. Consider either fixing the "
+            "corresponding derivative or adding a constraint for the "
+            f"differential variable x[10.0] possibly using an "
+            "explicit time variable."
         )
+    ):
+        _ = petsc_obj.get_timestep_problem(10)
 
 
 @pytest.mark.unit
@@ -645,15 +712,16 @@ def test_rp_example():
 def test_rp_example2():
 
     m = rp_example2()
-    petsc.petsc_dae_by_time_element(
+    petsc_obj = PETScIntegrator(
         m,
-        time=m.time,
+        m.time,
         timevar=m.t,
         ts_options={
             "--ts_dt": 1,
             "--ts_adapt_type": "none",
         },
     )
+    petsc_obj.dae_by_time_element()
     assert pyo.value(m.u[10]) == pytest.approx(398)
     assert pyo.value(m.x[10]) == pytest.approx(20)
 
@@ -663,11 +731,17 @@ def test_rp_example2():
 def test_rp_example3():
 
     m = rp_example3()
-    with pytest.raises(RuntimeError):
-        petsc.petsc_dae_by_time_element(
-            m,
-            time=m.time,
+    petsc_obj = PETScIntegrator(m, m.time)
+    with pytest.raises(
+        RuntimeError,
+        match=re.escape(
+            "dxdt[10.0] is fixed to a nonzero value 2.0. This is "
+            "most likely a modeling error. Instead of fixing the "
+            "derivative consider adding a constraint like "
+            "dxdt = constant"
         )
+    ):
+        petsc_obj.get_timestep_problem(10)
 
 
 @pytest.mark.unit
