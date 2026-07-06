@@ -74,13 +74,13 @@ class DoubleLoopCoordinator:
 
         context.register_initialization_callback(self.initialize_customized_results)
         context.register_for_hourly_stats(self.push_hourly_stats_to_forecaster)
-        context.register_after_get_initial_actuals_model_for_sced_callback(
+        context.register_after_get_initial_model_for_sced_callback(
             self.update_static_params
         )
-        context.register_after_get_initial_actuals_model_for_simulation_actuals_callback(
+        context.register_after_get_initial_model_for_simulation_actuals_callback(
             self.update_static_params
         )
-        context.register_after_get_initial_forecast_model_for_ruc_callback(
+        context.register_after_get_initial_model_for_ruc_callback(
             self.update_static_params
         )
         context.register_before_ruc_solve_callback(self.bid_into_DAM)
