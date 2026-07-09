@@ -61,3 +61,7 @@ iy = "iy"
 
 # more chemE abbreviations
 HDA = "HDA"
+
+# False positives from 1.48.0
+iz = "iz"
+Bimap = "Bimap"
