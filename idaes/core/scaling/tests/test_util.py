@@ -2769,7 +2769,7 @@ def test_propagate_scaling_factors_to_temporary_block():
     assert blk.scaling_factor[m.c[1]] == 5
     assert blk.scaling_factor[m.c[3]] == 125
 
-    # Now test what happens if a scaling factor suffix already exits
+    # Now test what happens if a scaling factor suffix already exists
     set_scaling_factor(m.b[2].v2, 137, overwrite=True)
     # If a scaling factor doesn't exist on the original model
     # for a variable, it should leave the existing scaling factor
