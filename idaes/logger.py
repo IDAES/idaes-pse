@@ -10,6 +10,7 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+# This file contains code generated with the assistence of Gemini 3.5
 # TODO: Missing doc strings
 # pylint: disable=missing-module-docstring
 # pylint: disable=missing-class-docstring
@@ -291,5 +292,5 @@ def solver_log(logger, level=logging.ERROR):
     if not solver_capture() or on_windows_pytest:
         yield SolverLogInfo(tee=tee)
     else:
-        with capture_output(LogStream(level, logger), capture_fd=False):
+        with capture_output(LogStream(level, logger)):
             yield SolverLogInfo(tee=tee)
