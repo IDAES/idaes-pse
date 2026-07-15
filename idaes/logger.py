@@ -14,6 +14,7 @@
 # pylint: disable=missing-module-docstring
 # pylint: disable=missing-class-docstring
 
+import sys
 import logging
 from contextlib import contextmanager
 
@@ -285,8 +286,10 @@ class SolverLogInfo(object):
 def solver_log(logger, level=logging.ERROR):
     """Context manager to send solver output to a logger."""
     tee = logger.isEnabledFor(level)
-    if not solver_capture():
+    # Bypass capturing on Windows under Pytest to prevent crashes and deadlocks
+    on_windows_pytest = sys.platform.startswith("win") and "pytest" in sys.modules
+    if not solver_capture() or on_windows_pytest:
         yield SolverLogInfo(tee=tee)
     else:
-        with capture_output(LogStream(level, logger)):
+        with capture_output(LogStream(level, logger), capture_fd=False):
             yield SolverLogInfo(tee=tee)
