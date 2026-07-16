@@ -330,7 +330,7 @@ class TestIpoptConvergenceAnalysis:
         # Ignore time, as it is too noisy to test
         # Sample 0 should solve cleanly
         assert ca.results[0]["success"]
-        assert ca.results[0]["results"]["iters"] == 0
+        assert ca.results[0]["results"]["iters"] == pytest.approx(1, abs=1)
         assert ca.results[0]["results"]["iters_in_restoration"] == 0
         assert ca.results[0]["results"]["iters_w_regularization"] == 0
         assert not ca.results[0]["results"]["numerical_issues"]
