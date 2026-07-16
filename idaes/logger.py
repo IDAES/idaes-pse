@@ -10,7 +10,7 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-# This file contains code generated with the assistence of Gemini 3.5
+# This file contains code generated with the assistance of Gemini 3.5
 # TODO: Missing doc strings
 # pylint: disable=missing-module-docstring
 # pylint: disable=missing-class-docstring
