@@ -37,13 +37,14 @@ from pandas import DataFrame
 # Import Pyomo libraries
 from pyomo.environ import Reference
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-from pyomo.network import Port
 
 # Import IDAES cores
 from idaes.core import (
     declare_process_block_class,
+    InletPort,
     MaterialBalanceType,
     MomentumBalanceType,
+    OutletPort,
     UnitModelBlockData,
     useDefault,
 )
@@ -316,9 +317,10 @@ see property package for documentation.}""",
             name="liquid_inlet",
             block=self.liquid_inlet_state,
             doc="Liquid inlet to separator",
+            port_class=InletPort,
         )
-        self.recovered_liquid_outlet = Port(extends=self.split.recovered)
-        self.retained_liquid_outlet = Port(extends=self.split.retained)
+        self.recovered_liquid_outlet = OutletPort(extends=self.split.recovered)
+        self.retained_liquid_outlet = OutletPort(extends=self.split.retained)
 
         # Add liquid recovery
         self.liquid_recovery = Reference(self.split.split_fraction[:, "recovered"])

@@ -52,3 +52,4 @@ from .base.costing_base import (
 )
 from .base.var_like_expression import VarLikeExpression
 from .base.property_set import StandardPropertySet, ElectrolytePropertySet
+from .base.ports import InletPort, OutletPort

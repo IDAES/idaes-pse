@@ -35,6 +35,8 @@ from idaes.core import (
     useDefault,
     MaterialBalanceType,
     MaterialFlowBasis,
+    InletPort,
+    OutletPort,
 )
 from idaes.core.base.control_volume_base import ControlVolumeScalerBase
 from idaes.core.util.config import (
@@ -1009,8 +1011,15 @@ objects linked to all inlet states and the mixed state,
             # Add ports
             for p in inlet_list:
                 i_state = getattr(self, p + "_state")
-                self.add_port(name=p, block=i_state, doc="Inlet Port")
-            self.add_port(name="outlet", block=mixed_block, doc="Outlet Port")
+                self.add_port(
+                    name=p, block=i_state, doc="Inlet Port", port_class=InletPort
+                )
+            self.add_port(
+                name="outlet",
+                block=mixed_block,
+                doc="Outlet Port",
+                port_class=OutletPort,
+            )
 
     def model_check(blk):
         """

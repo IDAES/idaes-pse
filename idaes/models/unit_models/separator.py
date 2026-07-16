@@ -35,11 +35,13 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf, Bool
 
 from idaes.core import (
     declare_process_block_class,
-    UnitModelBlockData,
-    useDefault,
+    InletPort,
     MaterialBalanceType,
     MomentumBalanceType,
     MaterialFlowBasis,
+    OutletPort,
+    UnitModelBlockData,
+    useDefault,
     VarLikeExpression,
 )
 from idaes.core.util.config import (
@@ -1063,7 +1065,9 @@ objects linked the mixed state and all outlet states,
             None
         """
         if self.config.construct_ports is True:
-            self.add_port(name="inlet", block=mixed_block, doc="Inlet Port")
+            self.add_port(
+                name="inlet", block=mixed_block, doc="Inlet Port", port_class=InletPort
+            )
 
     def add_outlet_port_objects(self, outlet_list, outlet_blocks):
         """
@@ -1079,7 +1083,9 @@ objects linked the mixed state and all outlet states,
             # Add ports
             for p in outlet_list:
                 o_state = getattr(self, p + "_state")
-                self.add_port(name=p, block=o_state, doc="Outlet Port")
+                self.add_port(
+                    name=p, block=o_state, doc="Outlet Port", port_class=OutletPort
+                )
 
     def add_split_fractions(self, outlet_list, mixed_block):
         """
