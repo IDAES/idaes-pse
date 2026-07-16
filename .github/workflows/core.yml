@@ -185,9 +185,10 @@ jobs:
         uses: ./.github/actions/setup-idaes
         with:
           install-target: -r requirements-dev.txt
+      - name: Remove old IDAES extensions
+        run: rm -rf "$(idaes bin-directory)"
       - name: Install new IDAES extensions
         run: |
-          rm -rf ~/.idaes/bin
           echo '::group::Output of "idaes get-extensions" command'
           idaes get-extensions --release 4.0.0rc2 --verbose
           echo '::endgroup::'
