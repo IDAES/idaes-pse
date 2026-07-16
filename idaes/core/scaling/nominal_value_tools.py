@@ -45,8 +45,6 @@ import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
 
-TAB = " " * 4
-
 
 def get_nominal_value(component):
     """
