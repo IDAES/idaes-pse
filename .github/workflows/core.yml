@@ -192,6 +192,14 @@ jobs:
           echo '::group::Output of "idaes get-extensions" command'
           idaes get-extensions --release 4.0.0rc2 --verbose
           echo '::endgroup::'
+          echo '::group::Output of test commands for IDAES binaries'
+          echo 'List IDAES binaries directory'
+          ls -l "$(idaes bin-directory)"
+          echo 'Try to run ipopt'
+          "$(idaes bin-directory)"/ipopt -v
+          echo '::endgroup::'
+          echo "Let's try to install this again..."
+          pip --no-cache-dir install --progress-bar off --index-url https://pypi.ampl.com ampl-module-scip
       - name: Add pytest CLI options for coverage
         if: matrix.cov-report
         run: |
