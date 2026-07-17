@@ -12,6 +12,13 @@ inputs:
     description: pip install target (dist name and optionally version constraint) of AMPL SCIP solver to install
     required: false
     default: ampl-module-scip
+  version:
+    description: >-
+      IDAES extensions release to install (e.g. 4.0.0rc2). If unset, the default
+      release is installed. For releases 4.x and newer, the '--extra petsc'
+      option is omitted, since PETSc is bundled in the base package.
+    required: false
+    default: ''
 runs:
   using: "composite"
   steps:
@@ -42,9 +49,25 @@ runs:
         # idaes --version
     - name: Install extensions
       shell: bash -l {0}
+      env:
+        IDAES_EXT_VERSION: ${{ inputs.version }}
       run: |
+        # Build up the get-extensions arguments based on the requested release.
+        get_ext_args=()
+        major=""
+        if [ -n "$IDAES_EXT_VERSION" ]; then
+          get_ext_args+=(--release "$IDAES_EXT_VERSION")
+          # Extract the leading integer of the version (e.g. "4" from "4.0.0rc2")
+          major="${IDAES_EXT_VERSION%%.*}"
+        fi
+        # PETSc is bundled in the base package for 4.x+ releases, so only request
+        # it as an extra for older releases (or when no version is specified).
+        if [ -z "$major" ] || [ "$major" -lt 4 ]; then
+          get_ext_args+=(--extra petsc)
+        fi
+
         echo '::group::Output of "idaes get-extensions" command'
-        idaes get-extensions --extra petsc --verbose
+        idaes get-extensions "${get_ext_args[@]}" --verbose
         echo '::endgroup::'
 
         # extra dependencies must be installed on Ubuntu 24.04
@@ -60,8 +83,14 @@ runs:
         echo '::group::Output of test commands for IDAES binaries'
         echo 'List IDAES binaries directory'
         ls -l "$(idaes bin-directory)"
-        echo 'Try to run ipopt'
-        "$(idaes bin-directory)"/ipopt -v
+        # Skip the ipopt smoke test on macOS, where dynamic library path
+        # handling causes it to fail even when the binary is otherwise usable.
+        if [ "$RUNNER_OS" = "macOS" ]; then
+          echo 'Skipping "ipopt -v" on macOS'
+        else
+          echo 'Try to run ipopt'
+          "$(idaes bin-directory)"/ipopt -v
+        fi
         echo '::endgroup::'
     - name: Install AMPL SCIP (${{ inputs.ampl-scip-pip-target }})
       if: inputs.ampl-scip-pip-target
