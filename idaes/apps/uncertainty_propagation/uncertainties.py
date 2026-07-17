@@ -142,10 +142,10 @@ def quantify_propagate_uncertainty(
     if not isinstance(cov_step, float):
         raise TypeError("Expected a float for the covariance step, e.g., 1e-2")
     if not isinstance(tee, bool):
-        raise TypeError("tee  must be boolean.")
+        raise TypeError("tee must be boolean.")
     if not isinstance(diagnostic_mode, bool):
-        raise TypeError("diagnostic_mode  must be boolean.")
-    if not solver_options == None:
+        raise TypeError("diagnostic_mode must be boolean.")
+    if solver_options is not None:
         if not isinstance(solver_options, dict):
             raise TypeError("solver_options must be dictionary.")
 
@@ -241,14 +241,14 @@ def _deprecated_quantify_propagate_uncertainty(
         "(model_function, data, covariance_n). This interface will be removed "
         "in a future release. Please update to the new experiment-list "
         "interface.",
-        version="2.13.1",
+        version="2.13.0",
     )
 
     if not isinstance(tee, bool):
-        raise TypeError("tee  must be boolean.")
+        raise TypeError("tee must be boolean.")
     if not isinstance(diagnostic_mode, bool):
-        raise TypeError("diagnostic_mode  must be boolean.")
-    if not solver_options == None:
+        raise TypeError("diagnostic_mode must be boolean.")
+    if solver_options is not None:
         if not isinstance(solver_options, dict):
             raise TypeError("solver_options must be dictionary.")
     if covariance_n is None:

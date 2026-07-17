@@ -293,6 +293,77 @@ class TestUncertaintyPropagation:
             )
 
     @pytest.mark.component
+    def test_tee_exception(self):
+        """
+        Tests the exception raised when the tee argument is a not a Boolean.
+        """
+
+        data = self.data()
+
+        # Create an experiment list
+        exp_list = self.exp_list(data)
+
+        with pytest.raises(
+            TypeError,
+            match="tee must be boolean.",
+        ):
+            results = quantify_propagate_uncertainty(
+                exp_list,
+                self.model_uncertain(),
+                self.variable_name,
+                obj_function="SSE",
+                tee="True",
+            )
+
+    @pytest.mark.component
+    def test_diagnostic_mode_exception(self):
+        """
+        Tests the exception raised when the diagnostic_mode argument is a
+        not a Boolean.
+        """
+
+        data = self.data()
+
+        # Create an experiment list
+        exp_list = self.exp_list(data)
+
+        with pytest.raises(
+            TypeError,
+            match="diagnostic_mode must be boolean.",
+        ):
+            results = quantify_propagate_uncertainty(
+                exp_list,
+                self.model_uncertain(),
+                self.variable_name,
+                obj_function="SSE",
+                diagnostic_mode="False",
+            )
+
+    @pytest.mark.component
+    def test_solver_options_exception(self):
+        """
+        Tests the exception raised when the solver_options argument is a
+        not a dictionary.
+        """
+
+        data = self.data()
+
+        # Create an experiment list
+        exp_list = self.exp_list(data)
+
+        with pytest.raises(
+            TypeError,
+            match="solver_options must be dictionary.",
+        ):
+            results = quantify_propagate_uncertainty(
+                exp_list,
+                self.model_uncertain(),
+                self.variable_name,
+                obj_function="SSE",
+                solver_options=["True"],
+            )
+
+    @pytest.mark.component
     def test_propagate_uncertainty(self):
         """
         It tests the function propagate_uncertainty with rooney & biegler's model.
