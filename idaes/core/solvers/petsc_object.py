@@ -34,7 +34,6 @@ from idaes.core.solvers.petsc import (
     calculate_time_derivatives,
     DaeVarTypes,
     find_discretization_equations,
-    _get_derivative_differential_data_map,
     PetscDAEResults,
     PetscTrajectory,
     _set_dae_suffixes_from_variables,
@@ -48,6 +47,17 @@ from idaes.core.util.model_serializer import StoreSpec, from_json, to_json
 # pylint: disable=protected-access
 
 DAE_DISC_SUFFIX = "_disc_eq"
+
+
+def _validate_no_fixed_derivative_variables(m, time):
+    if deriv[idx].fixed and value(abs(deriv[idx])) > 1e-10:
+        raise RuntimeError(
+            f"{deriv[idx]} is fixed to a nonzero value "
+            f"{value(deriv[idx])}. This is "
+            f"most likely a modeling error. Instead of fixing the "
+            f"derivative consider adding a constraint like "
+            f"dxdt = constant"
+        )
 
 CONFIG = ConfigDict()
 
@@ -204,6 +214,9 @@ class PETScIntegrator(object):
             **kwargs
     ):
 
+        if not isinstance(time_set, ContinuousSet):
+            raise ValueError("Argument time_set is not a Pyomo ContinuousSet")
+
         self._model = model
         self._time_set = time_set
 
@@ -310,6 +323,46 @@ class PETScIntegrator(object):
     @initial_constraints.setter
     def initial_constraints(self, initial_constraints):
         self._initial_constraints = initial_constraints
+
+    def _get_derivative_differential_data_map(self):
+        """
+        Creates or updates the _derivative_differential_vardata_map attribute
+        to contain a map from data objects of derivative variables to the
+        corresponding data objects of differential variables. This function
+        should be run if the model structurally changes.
+        TODO what about derivative variables being fixed/unfixed?
+
+        """
+        # Get corresponding derivative and differential data objects,
+        # with no attention paid to fixed or active status.
+        deriv_diff_list = []
+        for var in self._model.component_objects(Var):
+            if isinstance(var, DerivativeVar) and self._time_set in ComponentSet(
+                var.get_continuousset_list()
+            ):
+                deriv = var
+                diffvar = deriv.get_state_var()
+                block = deriv.parent_block()
+                con_disc = block.find_component(var.local_name + DAE_DISC_SUFFIX)
+
+                for idx in var:
+                    if not (idx in con_disc and con_disc[idx].active):
+                        continue
+
+                    deriv_diff_list.append((deriv[idx], diffvar[idx]))
+        
+        # Get unfixed variables in active constraints
+        active_con_vars = ComponentSet()
+        for con in self._model.component_data_objects(Constraint, active=True):
+            for var in identify_variables(con.expr, include_fixed=False):
+                active_con_vars.add(var)
+
+        # Filter out derivatives that are fixed or not in an active constraint
+        filtered_deriv_diff_list = []
+        for deriv, diff in deriv_diff_list:
+            if deriv in active_con_vars:
+                filtered_deriv_diff_list.append((deriv, diff))
+        self._derivative_differential_vardata_map = ComponentMap(filtered_deriv_diff_list)
 
     def refresh_flattened_model(self):
         """
