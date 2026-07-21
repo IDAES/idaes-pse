@@ -570,6 +570,7 @@ def test_case_study_profiling():
     )
 
     results = sp.profile_scaling_methods()
+    results.display()
 
     for cmeth, stats in results.items():
         for vmeth in ["Manual", "Auto"]:
@@ -577,6 +578,7 @@ def test_case_study_profiling():
                 # Unscaled does not have data for auto
                 continue
             rstats = stats[vmeth]
+            print(rstats)
             xstats = expected_profile[cmeth][vmeth]
             assert rstats["condition_number"] == pytest.approx(
                 xstats["condition_number"], rel=1e-3
