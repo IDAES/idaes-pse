@@ -73,8 +73,8 @@ def _remove_ions(mea_dict: dict):
 
 # -----------------------------------------------------------------------------
 class TestStripperVaporFlow(object):
-    @classmethod
     @pytest.fixture(scope="class")
+    @classmethod
     def model(cls):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
@@ -298,8 +298,8 @@ class TestStripperVaporFlow(object):
 
 # -----------------------------------------------------------------------------
 class TestStripperHeatDuty(object):
-    @classmethod
     @pytest.fixture(scope="class")
+    @classmethod
     def model(cls):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
