@@ -118,8 +118,8 @@ class Test_TrayColumn_Performance(PerformanceBaseClass, unittest.TestCase):
 
 
 class TestBTXIdealFcTP:
-    @classmethod
     @pytest.fixture(scope="class")
+    @classmethod
     def btx_fctp(cls):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
@@ -220,8 +220,8 @@ class TestBTXIdealFcTP:
 
 
 class TestBTXIdealFTPz:
-    @classmethod
     @pytest.fixture(scope="class")
+    @classmethod
     def btx_ftpz(cls):
         return build_model_btx_ftpz()
 
@@ -297,8 +297,8 @@ class TestBTXIdealFTPz:
 
 
 class TestBTXIdealGeneric:
-    @classmethod
     @pytest.fixture(scope="class")
+    @classmethod
     def btx_ftpz_generic(cls):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
