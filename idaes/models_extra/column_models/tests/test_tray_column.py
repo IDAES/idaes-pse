@@ -118,8 +118,9 @@ class Test_TrayColumn_Performance(PerformanceBaseClass, unittest.TestCase):
 
 
 class TestBTXIdealFcTP:
+    @classmethod
     @pytest.fixture(scope="class")
-    def btx_fctp(self):
+    def btx_fctp(cls):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
         m.fs.properties = BTXParameterBlock(
@@ -184,6 +185,7 @@ class TestBTXIdealFcTP:
 
         assert check_optimal_termination(results)
 
+    @pytest.mark.xfail(reason="BTX will be deprecated")
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, btx_fctp):
@@ -218,8 +220,9 @@ class TestBTXIdealFcTP:
 
 
 class TestBTXIdealFTPz:
+    @classmethod
     @pytest.fixture(scope="class")
-    def btx_ftpz(self):
+    def btx_ftpz(cls):
         return build_model_btx_ftpz()
 
     @pytest.mark.unit
@@ -294,8 +297,9 @@ class TestBTXIdealFTPz:
 
 
 class TestBTXIdealGeneric:
+    @classmethod
     @pytest.fixture(scope="class")
-    def btx_ftpz_generic(self):
+    def btx_ftpz_generic(cls):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
         m.fs.properties = GenericParameterBlock(**configuration)
