@@ -165,8 +165,6 @@ jobs:
             runner-image: ubuntu-24.04
           - os: win64
             runner-image: windows-2022
-          - os: macos-arm64
-            runner-image: macos-15
 
     steps:
       - uses: actions/checkout@v6
