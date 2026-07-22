@@ -10,12 +10,15 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+import sys
 import pytest
 import idaes.logger as idaeslog
 import logging
 import pyomo.environ as pyo
 
 __author__ = "John Eslick"
+
+on_windows = sys.platform.startswith("win")
 
 
 @pytest.mark.unit
@@ -118,6 +121,10 @@ def test_solver_condition2():
 
 
 @pytest.mark.skipif(not pyo.SolverFactory("ipopt").available(False), reason="no Ipopt")
+@pytest.mark.skipif(
+    on_windows,
+    reason="Deadlock between Pyomo and Pytest stdout capture. See IDAES #1818",
+)
 @pytest.mark.unit
 def test_solver_log(caplog):
     solver = pyo.SolverFactory("ipopt")
