@@ -242,8 +242,8 @@ jobs:
       - name: Fetch and run examples
         uses: ./.github/actions/run-examples
         with:
-          examples-repository: dallan-keylogic/examples
-          examples-ref: idaes-ext-fix
+          examples-repository: IDAES/examples
+          examples-ref: main
           reinstall-target: -r requirements-dev.txt
           notebook-cell-exec-timeout: '600'
           working-dir: ${{ runner.temp }}
@@ -291,8 +291,8 @@ jobs:
       - name: Fetch and run examples
         uses: ./.github/actions/run-examples
         with:
-          examples-repository: dallan-keylogic/examples
-          examples-ref: idaes-ext-fix
+          examples-repository: IDAES/examples
+          examples-ref: main
           reinstall-target: -r requirements-dev.txt
           notebook-cell-exec-timeout: '600'
           working-dir: ${{ runner.temp }}
