@@ -157,8 +157,8 @@ jobs:
       - name: Run pytest (integration)
         run: pytest --pyargs idaes -m integration
 
-  new-release-pytest:
-    name: new-release-pytest (py${{ matrix.python-version }}/${{ matrix.os }}/integration)
+  pytest-new-extensions:
+    name: pytest-new-extensions (py${{ matrix.python-version }}/${{ matrix.os }}/integration)
     runs-on: ${{ matrix.runner-image }}
     needs: [precheck]
     if: >-
@@ -248,8 +248,8 @@ jobs:
           notebook-cell-exec-timeout: '600'
           working-dir: ${{ runner.temp }}
 
-  new-release-examples:
-    name: Run examples with new release (py${{ matrix.python-version }}/${{ matrix.os }})
+  examples-new-extensions:
+    name: Run examples with new extensions (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.runner-image }}
     needs: [precheck]
     if: >-
@@ -361,8 +361,8 @@ jobs:
           pip install pytest
           pytest --pyargs idaes -W ignore -rs
 
-  new-release-pytest-site-packages:
-    name: Run tests from site-packages (non-editable) installation with new release (${{ matrix.install-mode }}/${{ matrix.os }})
+  pytest-site-packages-new-extensions:
+    name: Run tests from site-packages (non-editable) installation with new extensions (${{ matrix.install-mode }}/${{ matrix.os }})
     # NOTE: using ubuntu-latest (20.04) instead of 18.04 results in failures in power_generation/carbon_capture/mea_solvent_system/unit_models/tests/test_column.py
     runs-on: ${{ matrix.runner-image }}
     needs: [precheck]
