@@ -287,7 +287,8 @@ class SolverLogInfo(object):
 def solver_log(logger, level=logging.ERROR):
     """Context manager to send solver output to a logger."""
     tee = logger.isEnabledFor(level)
-    # Bypass capturing on Windows under Pytest to prevent crashes and deadlocks
+    # Deadlock between Pyomo and Pytest stdout capture observed on 7/23/26.
+    # See IDAES #1818 for more details.
     on_windows_pytest = sys.platform.startswith("win") and "pytest" in sys.modules
     if not solver_capture() or on_windows_pytest:
         yield SolverLogInfo(tee=tee)
