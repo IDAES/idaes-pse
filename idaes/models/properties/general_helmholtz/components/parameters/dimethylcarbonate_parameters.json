@@ -1,0 +1,50 @@
+{
+    "nl_file": "dimethylcarbonate_expressions_eos.nl",
+    "expr_map": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        13,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        12,
+        11
+    ],
+    "var_map": [
+        0,
+        1,
+        1000,
+        1000
+    ],
+    "param": {
+        "R": 0.09230312873634933,
+        "MW": 90.0779,
+        "T_star": 557,
+        "rho_star": 360.3116,
+        "Tc": 557,
+        "rhoc": 360.3116,
+        "Pc": 4908.754890234092,
+        "Tt": 277.06,
+        "Pt": 2.226523727216828,
+        "rhot_l": 1090.9516121148945,
+        "rhot_v": 0.0871965806125704,
+        "P_min": 1e-05,
+        "P_max": 60000.0,
+        "rho_max": 364.3565821722544,
+        "T_min": 277.06,
+        "T_max": 600,
+        "reference_state_offset": [
+            0.0,
+            0.0
+        ]
+    },
+    "have_tcx": false,
+    "have_st": false,
+    "have_visc": false
+}
