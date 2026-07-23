@@ -83,14 +83,8 @@ runs:
         echo '::group::Output of test commands for IDAES binaries'
         echo 'List IDAES binaries directory'
         ls -l "$(idaes bin-directory)"
-        # Skip the ipopt smoke test on macOS, where dynamic library path
-        # handling causes it to fail even when the binary is otherwise usable.
-        if [ "$RUNNER_OS" = "macOS" ]; then
-          echo 'Skipping "ipopt -v" on macOS'
-        else
-          echo 'Try to run ipopt'
-          "$(idaes bin-directory)"/ipopt -v
-        fi
+        echo 'Try to run ipopt'
+        "$(idaes bin-directory)"/ipopt -v
         echo '::endgroup::'
     - name: Install AMPL SCIP (${{ inputs.ampl-scip-pip-target }})
       if: inputs.ampl-scip-pip-target
