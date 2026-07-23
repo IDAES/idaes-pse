@@ -580,7 +580,6 @@ def test_case_study_profiling():
                 # Unscaled does not have data for auto
                 continue
             rstats = stats[vmeth]
-            print(rstats)
             xstats = expected_profile[cmeth][vmeth]
             assert rstats["condition_number"] == pytest.approx(
                 xstats["condition_number"], rel=1e-3
