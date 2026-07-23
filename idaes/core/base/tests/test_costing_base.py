@@ -29,7 +29,7 @@ from idaes.core import (
     register_idaes_currency_units,
 )
 
-from idaes.core.base.costing_base import load_location_factor
+from idaes.core.base.costing_base import load_location_factors
 
 # TODO : Tests for cases with multiple costing packages
 pyunits.load_definitions_from_strings(["USD_test = [test_currency]"])
@@ -89,7 +89,7 @@ def test_register_idaes_currency_units():
 
 @pytest.mark.unit
 def test_all_valid_locations_have_factors():
-    location_data = load_location_factor()
+    location_data = load_location_factors()
     for entry in location_data:
         location = (entry["country"], entry["city"])
         factor = entry.get("location_factor", {}).get("average")
@@ -101,17 +101,17 @@ def test_all_valid_locations_have_factors():
 
 @pytest.mark.unit
 def test_invalid_country_raises_keyerror():
-    location_data = load_location_factor()
+    location_data = load_location_factors()
     valid_locations = {(entry["country"], entry["city"]) for entry in location_data}
     invalid_country = ("Brunei", None)
     assert (
         invalid_country not in valid_locations
     ), f"Test assumption failed: {invalid_country} unexpectedly exists in data"
 
-
+# TODO check defaults and why skip is needed
 @pytest.mark.unit
 def test_fallback_to_country_without_city():
-    location_data = load_location_factor()
+    location_data = load_location_factors()
     test_location = ("Austria", "Vienna")
     fallback_location = ("Austria", None)
 
@@ -129,10 +129,10 @@ def test_fallback_to_country_without_city():
     else:
         pytest.skip("Test conditions not met for fallback check.")
 
-
+# TODO check error raised and why skip is needed
 @pytest.mark.unit
 def test_invalid_city_without_fallback_raises_keyerror():
-    location_data = load_location_factor()
+    location_data = load_location_factors()
     test_location = ("United States", "Boston")
     locations = {(entry["country"], entry["city"]) for entry in location_data}
 

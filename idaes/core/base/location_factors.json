@@ -1619,7 +1619,7 @@
             "average": 1.05
         }
     },
-    {
+    { TODO add other US regions
         "country": "United States",
         "city": "Washington DC",
         "location_factor": {

@@ -56,7 +56,7 @@ from idaes.core import (
     register_idaes_currency_units,
 )
 
-from idaes.core.base.costing_base import load_location_factor
+from idaes.core.base.costing_base import load_location_factors
 
 import idaes.logger as idaeslog
 
@@ -211,7 +211,7 @@ class BlowerMaterial(StrEnum):
 class SSLWCostingData(FlowsheetCostingBlockData):
     # Register currency and conversion rates based on CE Index
     register_idaes_currency_units()
-    load_location_factor()
+    load_location_factors()
 
     def build_global_params(self):
         """

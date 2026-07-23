@@ -102,9 +102,9 @@ def register_idaes_currency_units():
         )
 
 
-def load_location_factor():
+def load_location_factors():
     """
-    Estimate the cost of constructing the same plant in different global locations using location factors.
+    Estimate the cost of constructing the same plant in different geographic regions using location factors.
 
     This method uses a location (or investment site) factor to adjust the total permanent investment (TPI)
     based on regional differences in labor costs, workforce efficiency, local regulations and customs,
@@ -208,7 +208,7 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         self.base_currency = None
         self.base_period = pyo.units.year
 
-        # Set the location factor
+        # Set the location factor, default U.S. Washington DC, location_factor = 1.00
         self.location_factor = ("United States", "Washington DC")
 
         # Register unit mapping
