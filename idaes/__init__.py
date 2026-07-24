@@ -100,8 +100,27 @@ def _ensure_external_functions_libs_in_env(
 ):
     libraries_str = os.environ.get(var_name, "")
     libraries = [lib for lib in libraries_str.split(sep) if lib.strip()]
+
+    # External function libraries may live in either the old flat layout
+    # (<data>/bin) or the new install-prefix layout (<data>/lib). Search both,
+    # then fall back to a bare lookup that relies on LD_LIBRARY_PATH/PATH having
+    # already been configured by config.setup_environment().
+    search_dirs = []
+    if bin_directory is not None:
+        lib_directory = os.path.join(os.path.dirname(bin_directory), "lib")
+        if os.path.isdir(lib_directory):
+            search_dirs.append(lib_directory)
+        search_dirs.append(bin_directory)
+
     for func_name in ext_funcs:
-        lib: Optional[str] = find_library(os.path.join(bin_directory, func_name))
+        lib: Optional[str] = None
+        for d in search_dirs:
+            lib = find_library(os.path.join(d, func_name))
+            if lib is not None:
+                break
+        if lib is None:
+            # Last resort: let find_library use the configured search paths.
+            lib = find_library(func_name)
         if lib is not None and lib not in libraries:
             libraries.append(lib)
     os.environ[var_name] = sep.join(libraries)

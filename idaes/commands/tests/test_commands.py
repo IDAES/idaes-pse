@@ -16,25 +16,21 @@ Tests for idaes.commands
 
 # stdlib
 from functools import partial
-import json
 import logging
 import os
 from pathlib import Path
 import re
 from shutil import rmtree
-import subprocess
 import sys
 from typing import Union
-import uuid
 
 # third-party
 from click.testing import CliRunner
 import pytest
 
 # package
-from idaes.commands import examples, extensions, convergence, config, env_info, base
+from idaes.commands import examples, extensions, config, env_info, base
 from . import create_module_scratch, rmtree_scratch
-import idaes
 
 __author__ = "Dan Gunter"
 

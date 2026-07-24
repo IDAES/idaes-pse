@@ -27,7 +27,7 @@ from pyomo.common.download import FileDownloader
 
 import idaes
 import idaes.logger as idaeslog
-from idaes.config import extra_binaries
+from idaes.config import release_major, base_platforms
 
 _log = idaeslog.getLogger(__name__)
 _release_base_url = idaes.config.release_base_url
@@ -77,12 +77,29 @@ def _get_arch_and_platform(fd, platform):
     return arch, platform
 
 
-def _get_release_platform(platform):
+def _map_legacy_distro(platform, release):
+    """
+    Map canonical distro names to the closest supported pre-4.x build target.
+    """
+    if release_major(release) >= 4:
+        return platform
+
+    legacy_distro_map = {
+        "ubuntu2404": "ubuntu2204",
+        "el9": "ubuntu2204",
+    }
+    return legacy_distro_map.get(platform, platform)
+
+
+def _get_release_platform(platform, release):
     # Check if platform (OS) maps to another platform
     platform = idaes.config.canonical_distro(platform)
 
+    # Apply release-specific fallback for older binary releases
+    platform = _map_legacy_distro(platform, release)
+
     # Get machine type (e.g. x86_64, ...)
-    mach = idaes.config.canonical_arch(machine())
+    mach = idaes.config.canonical_arch(machine(), release=release, platform=platform)
 
     # full platform name
     platform = f"{platform}-{mach}"
@@ -152,7 +169,54 @@ def _get_checksums(fd, to_path, release, nochecksum):
     return _read_checksum_file(check_to)
 
 
-def _create_download_package(platform, to_path, url, extra, extras_only, library_only):
+def _supported_extra_binaries(release):
+    major = release_major(release)
+    if major >= 4:
+        return {}
+    return {
+        "petsc": base_platforms,
+    }
+
+
+def _normalize_extras(extra, release, platform=None):
+    """
+    Filter requested extras to those supported for the given release,
+    optionally also filtering by platform.
+    This is mostly to support the 4.x series.
+    """
+    extra = tuple(extra)
+
+    if release_major(release) >= 4 and "petsc" in extra:
+        _log.info(
+            "Ignoring extra 'petsc' for IDAES %s: PETSc is included in the base package.",
+            release,
+        )
+
+    supported = _supported_extra_binaries(release)
+    kept = []
+
+    for e in extra:
+        if e not in supported:
+            _log.debug("Ignoring unknown or unsupported extra binary package '%s'", e)
+            continue
+        if platform is not None and platform not in supported[e]:
+            _log.debug(
+                "Ignoring extra binary package '%s' for unsupported platform '%s'",
+                e,
+                platform,
+            )
+            continue
+        kept.append(e)
+
+    return tuple(kept)
+
+
+def _create_download_package(
+    release, platform, to_path, url, extra, extras_only, library_only
+):
+    major = release_major(release)
+    extra = _normalize_extras(extra, release)
+
     pname = []
     ptar = []
     ftar = []
@@ -165,20 +229,18 @@ def _create_download_package(platform, to_path, url, extra, extras_only, library
         pname.append(name)
         furl.append("/".join([url, f]))
 
-    for e in extra:
-        if e not in extra_binaries:
-            _log.warning(f"Unknown extra package {e}, not installed.")
-            continue
-        if platform not in extra_binaries[e]:
-            _log.warning(
-                f"Extra package {e} not available for {platform}, not installed."
-            )
-            continue
-        _add_pack(e)  # you have to explicitly ask for extras so assume you want
-    if not extras_only:
-        _add_pack("lib")
-    if not library_only and not extras_only:
-        _add_pack("solvers")
+    if major >= 4:
+        if not extras_only:
+            if not library_only:
+                _add_pack("solvers")
+            _add_pack("functions")
+    else:
+        if not extras_only:
+            if not library_only:
+                _add_pack("solvers")
+            _add_pack("lib")
+        for e in extra:
+            _add_pack(e)
 
     return pname, ptar, ftar, furl
 
@@ -190,10 +252,10 @@ def _download_package(fd, name, frm, to, platform):
 
     try:
         fd.get_binary_file(frm)
-    except urllib.error.HTTPError:
+    except urllib.error.HTTPError as e:
         # PYLINT-TODO
         # pylint: disable-next=broad-exception-raised
-        raise Exception(f"{name} binaries are unavailable for {platform}")
+        raise Exception(f"{name} binaries are unavailable for {platform}. \nError: {e}")
 
 
 def _verify_checksums(checksum, pname, ptar, ftar):
@@ -213,7 +275,7 @@ def _splitpath(path):
 
     This routine is similar to str.split(), except when the pieces are
     re-joined by os.path.join(), the result will still be an absolute
-    path (if ``path`` was an absolute path).  Note that the path
+    path (if ``path`` was an absolute path). Note that the path
     elements are returned in reverse order (which is convenient for
     _resolve_path below)
 
@@ -268,10 +330,10 @@ def _verify_tar_member_targets(tar, to_path, links=None):
 
     Nominally, this would be a simple task: verify that every member of
     the tarfile (when converted to an absolute path and normalized)
-    starts with the to_path.  Unfortunately, symbolic links make this
-    more difficult.  It is not sufficient to just check the absolute
+    starts with the to_path. Unfortunately, symbolic links make this
+    more difficult. It is not sufficient to just check the absolute
     path of the link target, as sequences of links could walk out of the
-    target space.  In this routine, we attempt to identify symbolic
+    target space. In this routine, we attempt to identify symbolic
     links and resolve the actual location where each tar member would be
     stored on the filesystem.
 
@@ -293,7 +355,7 @@ def _verify_tar_member_targets(tar, to_path, links=None):
     links : dict[str, tuple[bytes, str]]
         dictionary that records "virtual" symbolic links; that is,
         symbolic links in the tarfile that have not yet been extracted,
-        but will exist during / after the extraction process.  This maps
+        but will exist during / after the extraction process. This maps
         the actual symbolic link location to a (type, target) tuple.
         The target is a resolved (absolute) path for hard links and a
         potentially relative path for soft links.
@@ -319,6 +381,35 @@ def _verify_tar_member_targets(tar, to_path, links=None):
             links[member_path] = (member.type, member.linkname)
         elif member.islnk() and member.name != member.linkname:
             links[member_path] = (member.type, os.path.join(to_path, member.linkname))
+
+
+def _warn_if_libraries_exist(release):
+    """
+    Warn when installing 4.x+ extensions over an environment that appears to
+    contain an older flat-layout binary installation.
+
+    In older releases, shared libraries lived directly in idaes.bin_directory.
+    In 4.x+, libraries move to idaes.data_directory/lib while executables remain
+    in idaes.data_directory/bin. If old files are still present in the old bin
+    directory, users may encounter overwritten binaries or runtime linking issues.
+    """
+    if release_major(release) < 4:
+        return
+
+    old_lib = os.path.join(idaes.bin_directory, "libpynumero_ASL.dylib")
+    if os.path.exists(old_lib):
+        # Setting this as error so it shows up by default. It's really a warning
+        # but I don't think it's worth it to change the logging level of the
+        # whole system just to print this message as a warning to then immediately
+        # change it back.
+        _log.error(
+            "Existing pre-4.x extension files were detected in %s. "
+            "IDAES 4.x+ extensions use a different install layout and may "
+            "overwrite existing binaries or conflict with older libraries. "
+            "Consider removing old extension files from %s before installing.",
+            idaes.bin_directory,
+            idaes.bin_directory,
+        )
 
 
 def download_binaries(
@@ -349,18 +440,25 @@ def download_binaries(
     """
     if verbose:
         _log.setLevel(idaeslog.DEBUG)
+    if release is None:
+        release = idaes.config.default_binary_release
     if no_download:
         nochecksum = True
+    else:
+        _warn_if_libraries_exist(release)
 
     # set the locations to download files to, to_path is an alternate
     # subdirectory of idaes.data_directory that can optionally be used to test
-    # this function without interfering with anything else.  It's a subdirectory
+    # this function without interfering with anything else. It's a subdirectory
     # of the data directory because that should be a safe place to store some
     # test files.
     if alt_path is not None:
         to_path = os.path.abspath(alt_path)
     if to_path is None:
-        to_path = idaes.bin_directory
+        if release_major(release) >= 4:
+            to_path = idaes.data_directory
+        else:
+            to_path = idaes.bin_directory
     else:
         to_path = os.path.join(idaes.data_directory, to_path)
     idaes._create_bin_dir(to_path)
@@ -372,7 +470,7 @@ def download_binaries(
     arch, platform = _get_arch_and_platform(  # pylint: disable=unused-variable
         fd, platform
     )
-    platform = _get_release_platform(platform)
+    platform = _get_release_platform(platform, release=release)
 
     # Get release url
     url = _get_release_url(release, url)
@@ -382,7 +480,7 @@ def download_binaries(
 
     # Set the binary file destinations
     pname, ptar, ftar, furl = _create_download_package(
-        platform, to_path, url, extra, extras_only, library_only
+        release, platform, to_path, url, extra, extras_only, library_only
     )
 
     if no_download:

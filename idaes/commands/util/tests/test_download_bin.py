@@ -27,6 +27,8 @@ import idaes.logger as idaeslog
 import idaes.config as idaes_config
 
 _log = idaeslog.getLogger(__name__)
+test_release_3 = "3.4.2"
+test_release_4 = "4.0.1"
 
 
 def _del_data_file(path):
@@ -75,7 +77,21 @@ def test_get_release_platform_mapping():
             continue
         if mach == "x86_64" and m == "darwin":
             continue
-        output = dlb._get_release_platform(p)
+        output = dlb._get_release_platform(p, test_release_3)
+        if m in ["el9", "ubuntu2404"]:
+            assert output.startswith("ubuntu2204")
+            continue
+        assert output.startswith(m)
+        assert output in idaes_config.base_platforms
+
+
+@pytest.mark.unit
+def test_get_release_platform_mapping_v4():
+    mach = idaes.config.canonical_arch(machine(), test_release_4)
+    for p, m in idaes_config.binary_distro_map.items():
+        if mach == "aarch64" and m == "el7":
+            continue
+        output = dlb._get_release_platform(p, test_release_4)
         assert output.startswith(m)
         assert output in idaes_config.base_platforms
 
@@ -165,17 +181,38 @@ def test_read_checksum():
 @pytest.mark.unit
 def test_create_download_package(platform):
     pname, ptar, ftar, furl = dlb._create_download_package(
-        platform, "foo", "bar", [], False, False
+        test_release_3, platform, "foo", "bar", [], False, False
     )
 
     assert len(ptar) == 2
     assert (os.path.join("foo", f"idaes-lib-{platform}.tar.gz")) in ptar
     assert (os.path.join("foo", f"idaes-solvers-{platform}.tar.gz")) in ptar
 
-    assert ftar == [f"idaes-lib-{platform}.tar.gz", f"idaes-solvers-{platform}.tar.gz"]
+    assert ftar == [f"idaes-solvers-{platform}.tar.gz", f"idaes-lib-{platform}.tar.gz"]
     assert furl == [
-        f"bar/idaes-lib-{platform}.tar.gz",
         f"bar/idaes-solvers-{platform}.tar.gz",
+        f"bar/idaes-lib-{platform}.tar.gz",
+    ]
+
+
+@pytest.mark.parametrize("platform", idaes_config.base_platforms)
+@pytest.mark.unit
+def test_create_download_package_v4(platform):
+    pname, ptar, ftar, furl = dlb._create_download_package(
+        test_release_4, platform, "foo", "bar", [], False, False
+    )
+
+    assert len(ptar) == 2
+    assert os.path.join("foo", f"idaes-functions-{platform}.tar.gz") in ptar
+    assert os.path.join("foo", f"idaes-solvers-{platform}.tar.gz") in ptar
+
+    assert ftar == [
+        f"idaes-solvers-{platform}.tar.gz",
+        f"idaes-functions-{platform}.tar.gz",
+    ]
+    assert furl == [
+        f"bar/idaes-solvers-{platform}.tar.gz",
+        f"bar/idaes-functions-{platform}.tar.gz",
     ]
 
 
@@ -183,7 +220,7 @@ def test_create_download_package(platform):
 @pytest.mark.unit
 def test_create_download_package_extras(platform):
     pname, ptar, ftar, furl = dlb._create_download_package(
-        platform, "foo", "bar", ["petsc", "baz"], False, False
+        test_release_3, platform, "foo", "bar", ["petsc", "baz"], False, False
     )
 
     # baz should be ignored as an unknown extra
@@ -193,14 +230,14 @@ def test_create_download_package_extras(platform):
     assert (os.path.join("foo", f"idaes-petsc-{platform}.tar.gz")) in ptar
 
     assert ftar == [
-        f"idaes-petsc-{platform}.tar.gz",
-        f"idaes-lib-{platform}.tar.gz",
         f"idaes-solvers-{platform}.tar.gz",
+        f"idaes-lib-{platform}.tar.gz",
+        f"idaes-petsc-{platform}.tar.gz",
     ]
     assert furl == [
-        f"bar/idaes-petsc-{platform}.tar.gz",
-        f"bar/idaes-lib-{platform}.tar.gz",
         f"bar/idaes-solvers-{platform}.tar.gz",
+        f"bar/idaes-lib-{platform}.tar.gz",
+        f"bar/idaes-petsc-{platform}.tar.gz",
     ]
 
 
@@ -208,7 +245,7 @@ def test_create_download_package_extras(platform):
 @pytest.mark.unit
 def test_create_download_package_extras_only(platform):
     pname, ptar, ftar, furl = dlb._create_download_package(
-        platform, "foo", "bar", ["petsc", "baz"], True, False
+        test_release_3, platform, "foo", "bar", ["petsc", "baz"], True, False
     )
 
     # baz should be ignored as an unknown extra
@@ -221,9 +258,24 @@ def test_create_download_package_extras_only(platform):
 
 @pytest.mark.parametrize("platform", idaes_config.base_platforms)
 @pytest.mark.unit
+def test_create_download_package_v4_extras_ignored(platform):
+    pname, ptar, ftar, furl = dlb._create_download_package(
+        test_release_4, platform, "foo", "bar", ["petsc", "baz"], False, False
+    )
+
+    assert len(ptar) == 2
+    assert os.path.join("foo", f"idaes-functions-{platform}.tar.gz") in ptar
+    assert os.path.join("foo", f"idaes-solvers-{platform}.tar.gz") in ptar
+
+    assert all("petsc" not in x for x in ftar)
+    assert all("baz" not in x for x in ftar)
+
+
+@pytest.mark.parametrize("platform", idaes_config.base_platforms)
+@pytest.mark.unit
 def test_create_download_package_library_only(platform):
     pname, ptar, ftar, furl = dlb._create_download_package(
-        platform, "foo", "bar", [], False, True
+        test_release_3, platform, "foo", "bar", [], False, True
     )
 
     assert len(ptar) == 1
@@ -231,6 +283,19 @@ def test_create_download_package_library_only(platform):
 
     assert ftar == [f"idaes-lib-{platform}.tar.gz"]
     assert furl == [f"bar/idaes-lib-{platform}.tar.gz"]
+
+
+@pytest.mark.parametrize("platform", idaes_config.base_platforms)
+@pytest.mark.unit
+def test_create_download_package_v4_library_only(platform):
+    pname, ptar, ftar, furl = dlb._create_download_package(
+        test_release_4, platform, "foo", "bar", [], False, True
+    )
+
+    assert len(ptar) == 1
+    assert os.path.join("foo", f"idaes-functions-{platform}.tar.gz") in ptar
+    assert ftar == [f"idaes-functions-{platform}.tar.gz"]
+    assert furl == [f"bar/idaes-functions-{platform}.tar.gz"]
 
 
 @pytest.mark.unit
@@ -249,6 +314,32 @@ def test_download_package():
     assert os.path.getsize(target) == 1
 
     shutil.rmtree(tmpdir)
+
+
+@pytest.mark.unit
+def test_download_binaries_no_download_v3_install_path():
+    d = dlb.download_binaries(
+        release=test_release_3,
+        no_download=True,
+        nochecksum=True,
+    )
+    for url, path in d.items():
+        if url in ("release", "platform"):
+            continue
+        assert path.startswith(idaes.bin_directory)
+
+
+@pytest.mark.unit
+def test_download_binaries_no_download_v4_install_path():
+    d = dlb.download_binaries(
+        release=test_release_4,
+        no_download=True,
+        nochecksum=True,
+    )
+    for url, path in d.items():
+        if url in ("release", "platform"):
+            continue
+        assert path.startswith(idaes.data_directory)
 
 
 @pytest.mark.unit
