@@ -13,7 +13,13 @@ from pyomo.common.collections import ComponentSet, ComponentMap
 from pyomo.core.expr.visitor import identify_variables
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.common import Executable
-from pyomo.common.config import ConfigDict, ConfigValue, document_kwargs_from_configdict, ListOf
+from pyomo.common.config import (
+    ConfigDict,
+    ConfigValue,
+    document_kwargs_from_configdict,
+    IsInstance,
+    ListOf,
+)
 from pyomo.dae.flatten import flatten_dae_components, slice_component_along_sets
 from pyomo.util.subsystems import (
     TemporarySubsystemManager,
@@ -33,7 +39,6 @@ from idaes.core.scaling.util import propagate_scaling_factors_to_temporary_block
 from idaes.core.solvers.petsc import (
     calculate_time_derivatives,
     DaeVarTypes,
-    find_discretization_equations,
     PetscDAEResults,
     PetscTrajectory,
     _set_dae_suffixes_from_variables,
@@ -47,17 +52,93 @@ from idaes.core.util.model_serializer import StoreSpec, from_json, to_json
 # pylint: disable=protected-access
 
 DAE_DISC_SUFFIX = "_disc_eq"
+DAE_CONT_SUFFIX = "_cont_eq"
 
 
-def _validate_no_fixed_derivative_variables(m, time):
-    if deriv[idx].fixed and value(abs(deriv[idx])) > 1e-10:
-        raise RuntimeError(
-            f"{deriv[idx]} is fixed to a nonzero value "
-            f"{value(deriv[idx])}. This is "
-            f"most likely a modeling error. Instead of fixing the "
-            f"derivative consider adding a constraint like "
-            f"dxdt = constant"
-        )
+def get_derivative_differential_vardata_map(
+    blk: BlockData,
+    cont_set: ContinuousSet,
+    raise_higher_derivative_exception: bool = False,
+):
+    """
+    Creates or updates the _derivative_differential_vardata_map attribute
+    to contain a map from data objects of derivative variables to the
+    corresponding data objects of differential variables, discretization
+    equations and/or continuity equations (for Lagrange Legendre collocation).
+    "Differential variables" are DerivativeVar objects who have a corresponding
+    active discretization or continuity equation.
+
+    This function should be re-run if the model structurally changes (i.e., a
+    variable is fixed or unfixed, or a constraint is activated/deactivated).
+
+    Args:
+        blk (Block): Block which will be searched for DerivativeVars
+        cont_set (ContinuousSet): This function searches for DerivativeVars
+            which have been differentiated by this set.
+        raise_higher_derivative_exception(Exception): Raise a ValueError if
+            this function encounters a derivative with respect to cont_set
+            that is of order greater than one. Higher derivatives
+            that do not involve cont_set are ignored.
+
+    Returns:
+        deriv_diff_map (ComponentMap): Map from derivative variables to a
+            dictionary containing several keys: "diff_var", which is mapped
+            to the corresponding differential variable, "disc_eqn", which
+            is mapped to the corresponding discretization equation (if it
+            exists), and "cont_eqn", which is mapped to a continuity equation
+            (if it exists).
+
+    """
+    cont_set_name = cont_set.name
+    deriv_diff_map = ComponentMap()
+    for var in blk.component_objects(Var):
+        if isinstance(var, DerivativeVar) and cont_set in var.get_continuousset_list():
+            if (
+                raise_higher_derivative_exception
+                and len(var.get_continuousset_list()) > 1
+            ):
+                raise ValueError(
+                    f"Unexpectedly encountered {var.name}, which is differentiated multiple times."
+                )
+
+            deriv = var
+            diffvar = deriv.get_state_var()
+            block = deriv.parent_block()
+            disc_eqn = block.find_component(var.local_name + DAE_DISC_SUFFIX)
+            cont_eqn = block.find_component(
+                diffvar.local_name + "_" + cont_set_name + DAE_CONT_SUFFIX
+            )
+
+            for idx in var:
+                out_map = {}
+                if (
+                    disc_eqn is not None
+                    and disc_eqn.active
+                    and idx in disc_eqn
+                    and disc_eqn[idx].active
+                ):
+                    out_map["disc_eqn"] = disc_eqn[idx]
+                if (
+                    cont_eqn is not None
+                    and cont_eqn.active
+                    and idx in cont_eqn
+                    and cont_eqn[idx].active
+                ):
+                    out_map["cont_eqn"] = cont_eqn[idx]
+                if out_map:
+                    out_map["diff_var"] = diffvar[idx]
+                    deriv_diff_map[deriv[idx]] = out_map
+
+    # The old function had a step to filter out derivative variables that
+    # are not present in active constraints. Checking the activity of the
+    # corresponding discretization equation should be sufficient to
+    # determine whether a variable is active. We have an edge case with
+    # Lagrange-Legendre collocation, because the presence of an active
+    # continuity equation does not guarantee the derivative variable appears
+    # in any equation. For now, assume that, if a continuity equation exists,
+    # the user will provide additional validation when appropriate.
+    return deriv_diff_map
+
 
 CONFIG = ConfigDict()
 
@@ -65,9 +146,9 @@ CONFIG.declare(
     "time_var",
     ConfigValue(
         default=None,
-        domain=Var,
+        domain=IsInstance(Var),
         description="Optional specification of a time variable, which can be"
-            "used to write constraints that are an explicit function of time.",
+        "used to write constraints that are an explicit function of time.",
     ),
 )
 CONFIG.declare(
@@ -76,10 +157,10 @@ CONFIG.declare(
         default=None,
         domain=ListOf(Constraint),
         description="Constraints to solve in the initial "
-            "condition solve step.  Since the time-indexed constraints are picked "
-            "up automatically, this generally includes non-time-indexed "
-            "constraints.",
-    )
+        "condition solve step.  Since the time-indexed constraints are picked "
+        "up automatically, this generally includes non-time-indexed "
+        "constraints.",
+    ),
 )
 CONFIG.declare(
     "initial_variables",
@@ -87,11 +168,11 @@ CONFIG.declare(
         default=None,
         domain=ListOf(Var),
         description="initial_variables (list): This is a list of variables to fix after the "
-            "initial condition solve step.  If these variables were originally "
-            "unfixed, they will be unfixed at the end of the solve. This usually "
-            "includes non-time-indexed variables that are calculated along with "
-            "the initial conditions."
-    )
+        "initial condition solve step.  If these variables were originally "
+        "unfixed, they will be unfixed at the end of the solve. This usually "
+        "includes non-time-indexed variables that are calculated along with "
+        "the initial conditions.",
+    ),
 )
 CONFIG.declare(
     "detect_initial",
@@ -99,8 +180,8 @@ CONFIG.declare(
         default=True,
         domain=bool,
         description="If True, add non-time-indexed variables and "
-            "constraints to initial_variables and initial_constraints."
-    )
+        "constraints to initial_variables and initial_constraints.",
+    ),
 )
 # CONFIG.declare(
 #     "skip_initial",
@@ -120,16 +201,16 @@ CONFIG.declare(
         default="petsc_snes",
         domain=str,
         description="The nonlinear equations solver "
-            "to use for the initial conditions (e.g. petsc_snes, ipopt, ...).",
-    )
+        "to use for the initial conditions (e.g. petsc_snes, ipopt, ...).",
+    ),
 )
 CONFIG.declare(
     "initial_solver_options",
     ConfigValue(
         default=None,
         domain=dict,
-        description="Solver options to use with initial_solver."
-    )
+        description="Solver options to use with initial_solver.",
+    ),
 )
 CONFIG.declare(
     "initial_solver_writer_config",
@@ -137,16 +218,16 @@ CONFIG.declare(
         default=None,
         domain=dict,
         description="Configurations to use with the .nl writer "
-            "in the initial condition problem."
-    )
+        "in the initial condition problem.",
+    ),
 )
 CONFIG.declare(
     "ts_options",
     ConfigValue(
         default=None,
         domain=dict,
-        description="Options to use with the PETSc integrator TS."
-    )
+        description="Options to use with the PETSc integrator TS.",
+    ),
 )
 # CONFIG.declare(
 #     "between",
@@ -163,8 +244,8 @@ CONFIG.declare(
         default=True,
         domain=bool,
         description="If True and trajectory is read, interpolate model "
-            "values from the trajectory"
-    )
+        "values from the trajectory",
+    ),
 )
 CONFIG.declare(
     "calculate_derivatives",
@@ -173,9 +254,9 @@ CONFIG.declare(
         default=False,
         domain=bool,
         description="If True, calculate the derivative values "
-            "based on the values of the differential variables in the discretized "
-            "Pyomo model."
-    )
+        "based on the values of the differential variables in the discretized "
+        "Pyomo model.",
+    ),
 )
 # CONFIG.declare(
 #     "previous_trajectory",
@@ -192,26 +273,27 @@ CONFIG.declare(
         default=None,
         domain=float,
         description="Time when all equations necessary to solve DAE are active. Often equations need "
-            "to be deactivated for the initial condition problem (for example, mole fractions summing to one) "
-            "because state variables (the individual mole fractions) are fixed. representative_time is a time "
-            "after the initial condition problem is solved and these equations are reactivated. Note that the "
-            "equations not active at this point are excluded from the DAE at future points. If no "
-            "representative_time is specified, it is assumed to be the second element of between. "
-            "Must be an element of between."
-    )
+        "to be deactivated for the initial condition problem (for example, mole fractions summing to one) "
+        "because state variables (the individual mole fractions) are fixed. representative_time is a time "
+        "after the initial condition problem is solved and these equations are reactivated. Note that the "
+        "equations not active at this point are excluded from the DAE at future points. If no "
+        "representative_time is specified, it is assumed to be the second element of between. "
+        "Must be an element of between.",
+    ),
 )
+
 
 @document_kwargs_from_configdict(CONFIG)
 class PETScIntegrator(object):
 
     def __init__(
-            self,
-            model: BlockData,
-            time_set: ContinuousSet,
-            detect_initial: bool=True,
-            initial_variables: list=None,
-            initial_constraints: list=None,
-            **kwargs
+        self,
+        model: BlockData,
+        time_set: ContinuousSet,
+        detect_initial: bool = True,
+        initial_variables: list = None,
+        initial_constraints: list = None,
+        **kwargs,
     ):
 
         if not isinstance(time_set, ContinuousSet):
@@ -233,7 +315,9 @@ class PETScIntegrator(object):
         self.config = CONFIG(kwargs)
 
         if self.config.representative_time is None:
-            self.config.representative_time = time_set.at(2) # 2 because Pyomo sets start at 1
+            self.config.representative_time = time_set.at(
+                2
+            )  # 2 because Pyomo sets start at 1
 
         if self.config.interpolate_results:
             if self.config.ts_options is None:
@@ -248,7 +332,7 @@ class PETScIntegrator(object):
                         "In order to interpolate model values from the PETSc trajectory, "
                         "the trajectory must be saved. Either set interpolate = False in the "
                         "config or set '--ts_save_trajectory' = 1 in the ts_options dictionary."
-                    ) 
+                    )
 
                 self.config.ts_options["--ts_save_trajectory"] = 1
 
@@ -261,8 +345,7 @@ class PETScIntegrator(object):
         # use case that I am not aware of.
         self._symbolic_solver_labels = True
 
-
-        self.refresh_flattened_model()
+        self.refresh_model()
 
         if initial_variables is None:
             initial_variables = []
@@ -273,24 +356,17 @@ class PETScIntegrator(object):
         if detect_initial:
             self.detect_initial_variables_and_constraints(
                 initial_variables=initial_variables,
-                initial_constraints=initial_constraints
+                initial_constraints=initial_constraints,
             )
         else:
             self._initial_variables = initial_variables
             self._initial_constraints = initial_constraints
 
-        tdisc = find_discretization_equations(self._model, self._time_set)
-
-        # Workaround for Pyomo bug in which the context manager activates
-        # all ConstraintData children of IndexedConstraint object upon
-        # exit of the context manager. See Pyomo issue #3734
         disc_condata = []
-        for con in tdisc:
-            for condata in con.values():
-                disc_condata.append(condata)
+        for data_dict in self._derivative_differential_vardata_map.values():
+            if "disc_eqn" in data_dict:
+                disc_condata.append(data_dict["disc_eqn"])
         self._disc_condata = disc_condata
-
-        self._derivative_differential_vardata_map = _get_derivative_differential_data_map(model, time_set)
 
     @property
     def atemporal_variables(self):
@@ -299,11 +375,11 @@ class PETScIntegrator(object):
     @property
     def time_variables(self):
         return self._time_variables.copy()
-    
+
     @property
     def atemporal_constraints(self):
         return self._atemporal_constraints.copy()
-    
+
     @property
     def time_constraints(self):
         return self._time_constraints.copy()
@@ -311,7 +387,7 @@ class PETScIntegrator(object):
     @property
     def initial_variables(self):
         return self._initial_variables.copy()
-    
+
     @initial_variables.setter
     def initial_variables(self, initial_variables):
         self._initial_variables = initial_variables
@@ -319,76 +395,119 @@ class PETScIntegrator(object):
     @property
     def initial_constraints(self):
         return self._initial_constraints.copy()
-    
+
     @initial_constraints.setter
     def initial_constraints(self, initial_constraints):
         self._initial_constraints = initial_constraints
 
-    def _get_derivative_differential_data_map(self):
-        """
-        Creates or updates the _derivative_differential_vardata_map attribute
-        to contain a map from data objects of derivative variables to the
-        corresponding data objects of differential variables. This function
-        should be run if the model structurally changes.
-        TODO what about derivative variables being fixed/unfixed?
+    def _validate_no_fixed_nonzero_derivatives(self):
+        for deriv_vardata in self._derivative_differential_vardata_map.keys():
+            if deriv_vardata.fixed and value(deriv_vardata) != 0:
+                raise RuntimeError(
+                    f"{deriv_vardata} is fixed to a nonzero value {value(deriv_vardata)}. "
+                    "This is most likely a modeling error. Instead of fixing the "
+                    "derivative consider adding a constraint like dxdt = constant."
+                )
 
+    def _set_dae_suffixes_from_variables(self, blk, variables):
+        """Write suffixes used by the solver to identify different variable types
+        and associated derivative and differential variables.
+
+        Args:
+            m: model to search for variables and write suffixes to
+            variables (list): List of time indexed variables at a specific time
+                point
+            deriv_diff_map (ComponentMap): Maps DerivativeVar data objects to
+                differential variable data objects
+
+        Returns:
+            None
         """
-        # Get corresponding derivative and differential data objects,
-        # with no attention paid to fixed or active status.
-        deriv_diff_list = []
-        for var in self._model.component_objects(Var):
-            if isinstance(var, DerivativeVar) and self._time_set in ComponentSet(
-                var.get_continuousset_list()
-            ):
+        # The dae_suffix provides the solver information about variables types
+        # algebraic, differential, derivative, or time, see DaeVarTypes
+        blk.dae_suffix = Suffix(
+            direction=Suffix.EXPORT,
+            datatype=Suffix.INT,
+        )
+        # The dae_link suffix provides the solver a link between the differential
+        # and derivative variable, by assigning the pair a unique integer index.
+        blk.dae_link = Suffix(
+            direction=Suffix.EXPORT,
+            datatype=Suffix.INT,
+        )
+        dae_var_link_index = 1
+        differential_vars = []
+        i = 0
+        for var in variables:
+            if var in self._derivative_differential_vardata_map:
                 deriv = var
-                diffvar = deriv.get_state_var()
-                block = deriv.parent_block()
-                con_disc = block.find_component(var.local_name + DAE_DISC_SUFFIX)
+                diffvar = self._derivative_differential_vardata_map[deriv]["diff_var"]
+                blk.dae_suffix[diffvar] = int(DaeVarTypes.DIFFERENTIAL)
+                blk.dae_suffix[deriv] = int(DaeVarTypes.DERIVATIVE)
+                blk.dae_link[diffvar] = dae_var_link_index
+                blk.dae_link[deriv] = dae_var_link_index
+                i += 1
+                dae_var_link_index += 1
+                if not diffvar.fixed:
+                    differential_vars.append(diffvar)
+                else:
+                    raise RuntimeError(
+                        f"Problem cannot contain a fixed differential variable and "
+                        f"unfixed derivative. Consider either fixing the "
+                        f"corresponding derivative or adding a constraint for the "
+                        f"differential variable {diffvar} possibly using an "
+                        f"explicit time variable."
+                    )
+        return differential_vars
 
-                for idx in var:
-                    if not (idx in con_disc and con_disc[idx].active):
-                        continue
-
-                    deriv_diff_list.append((deriv[idx], diffvar[idx]))
-        
-        # Get unfixed variables in active constraints
-        active_con_vars = ComponentSet()
-        for con in self._model.component_data_objects(Constraint, active=True):
-            for var in identify_variables(con.expr, include_fixed=False):
-                active_con_vars.add(var)
-
-        # Filter out derivatives that are fixed or not in an active constraint
-        filtered_deriv_diff_list = []
-        for deriv, diff in deriv_diff_list:
-            if deriv in active_con_vars:
-                filtered_deriv_diff_list.append((deriv, diff))
-        self._derivative_differential_vardata_map = ComponentMap(filtered_deriv_diff_list)
-
-    def refresh_flattened_model(self):
+    def refresh_model(self):
         """
-        Flatten the DAE model. Reflattening the model is 
-        necessary if components have been activated or deactivated.
+        Flatten the DAE model and recreates the derivative-differential variable map.
+        Refreshing the model is necessary if variables have been fixed or unfixed or
+        components have been activated or deactivated.
         """
         atemporal_variables, time_variables = flatten_dae_components(
-            self._model, self._time_set, Var, active=True, indices=(self.config.representative_time,)
+            self._model,
+            self._time_set,
+            Var,
+            active=True,
+            indices=(self.config.representative_time,),
         )
         self._atemporal_variables = atemporal_variables
         self._time_variables = time_variables
 
         atemporal_constraints, time_constraints = flatten_dae_components(
-            self._model, self._time_set, Constraint, active=True, indices=(self.config.representative_time,)
+            self._model,
+            self._time_set,
+            Constraint,
+            active=True,
+            indices=(self.config.representative_time,),
         )
         self._atemporal_constraints = atemporal_constraints
         self._time_constraints = time_constraints
 
+        try:
+            self._derivative_differential_vardata_map = (
+                get_derivative_differential_vardata_map(
+                    self._model, self._time_set, True
+                )
+            )
+        except ValueError as err:
+            if "differentiated multiple times" in str(err):
+                raise NotImplementedError(
+                    "IDAES presently does not support PETSc for second order or higher derivatives "
+                    "that are differentiated at least once with respect to time. Please reformulate your model so "
+                    "it does not contain such a derivative (such as by introducing intermediate variables)."
+                ) from err
+            else:
+                raise err
+
     def detect_initial_variables_and_constraints(
-            self,
-            initial_variables: list=None,
-            initial_constraints: list=None
-        ):
+        self, initial_variables: list = None, initial_constraints: list = None
+    ):
         """
         Finds variables and constraints that are not indexed by time and
-        adds them to user-specified variables and constraints that are included in the 
+        adds them to user-specified variables and constraints that are included in the
         initial condition problem but fixed and deactivated, respectively, in the
         time stepping problem.
         """
@@ -398,21 +517,25 @@ class PETScIntegrator(object):
 
         acset = ComponentSet(self._atemporal_constraints)
         icset = ComponentSet(initial_constraints)
-        self.initial_constraints = list(icset | acset)        
+        self.initial_constraints = list(icset | acset)
 
     def get_initial_condition_problem(
         self,
         time_point: float = None,
     ):
         if time_point is None:
-            time_point = self._time_set.at(1)  # One because Pyomo sets use one-based indexing
+            time_point = self._time_set.at(
+                1
+            )  # One because Pyomo sets use one-based indexing
 
-        constraints = self.initial_constraints # Returns a copy
+        constraints = self.initial_constraints  # Returns a copy
         for con in self.time_constraints:
             if time_point in con and con[time_point] not in self._disc_condata:
                 constraints.append(con[time_point])
 
-        variables = [var[time_point] for var in self.time_variables] + self.initial_variables
+        variables = [
+            var[time_point] for var in self.time_variables
+        ] + self.initial_variables
         if len(constraints) > 0:
             t_block = create_subsystem_block(
                 constraints,
@@ -423,13 +546,14 @@ class PETScIntegrator(object):
             t_block = None
 
         return t_block
-    
+
     def get_timestep_problem(
         self,
-        time_point: float = None,    
+        time_point: float = None,
     ):
+        self._validate_no_fixed_nonzero_derivatives()
 
-        variables = ComponentSet() 
+        variables = ComponentSet()
         for var in self.time_variables:
             # Use a ComponentSet to avoid variables from being counted
             # twice if a Reference to that variable exists
@@ -440,9 +564,7 @@ class PETScIntegrator(object):
                 constraints.append(con[time_point])
 
         variable_fixedness = to_json(
-            self._model,
-            wts=StoreSpec.isfixed(),
-            return_dict=True
+            self._model, wts=StoreSpec.isfixed(), return_dict=True
         )
         t_block = create_subsystem_block(constraints, list(variables))
         # Fix input variables (which shouldn't be indexed by time)
@@ -451,11 +573,10 @@ class PETScIntegrator(object):
 
         # Set up the scaling factor suffix
         propagate_scaling_factors_to_temporary_block(t_block)
-        
-        differential_vars = _set_dae_suffixes_from_variables(
+
+        differential_vars = self._set_dae_suffixes_from_variables(
             t_block,
             variables,
-            self._derivative_differential_vardata_map,
         )
         # We need to check if there are derivatives in the problem before
         # sending this to the solver.  We'll assume that if you are using
@@ -467,7 +588,7 @@ class PETScIntegrator(object):
             )
         if self.config.time_var is not None:
             t_block.dae_suffix[self.config.time_var[time_point]] = int(DaeVarTypes.TIME)
-        
+
         return t_block, differential_vars, variable_fixedness
 
     def _copy_time(self, t_from, t_to):
@@ -496,7 +617,9 @@ class PETScIntegrator(object):
             if not v[t_to].fixed:
                 v[t_to].value = v[t_from].value
 
-    def dae_by_time_element(self, between=None, skip_initial=False, previous_trajectory=None):
+    def dae_by_time_element(
+        self, between=None, skip_initial=False, previous_trajectory=None
+    ):
         if between is None:
             between = self._time_set
         else:
@@ -546,7 +669,9 @@ class PETScIntegrator(object):
             if t == between.first():
                 # t == between.first() was handled above
                 continue
-            timestep_block, differential_vars, variable_fixedness = self.get_timestep_problem(t)
+            timestep_block, differential_vars, variable_fixedness = (
+                self.get_timestep_problem(t)
+            )
             self._copy_time(tprev, t)
 
             with idaeslog.solver_log(solve_log, idaeslog.INFO) as slc:
@@ -565,7 +690,7 @@ class PETScIntegrator(object):
                     timestep_block=timestep_block,
                     time_point=t,
                     previous_trajectory=trajectory,
-                    previous_variables=variables_prev
+                    previous_variables=variables_prev,
                 )
 
             # Revert variable fixedness after solving the timestep
@@ -580,7 +705,9 @@ class PETScIntegrator(object):
 
         return PetscDAEResults(results=res_list, trajectory=trajectory)
 
-    def _save_trajectory(self, timestep_block, time_point, previous_trajectory, previous_variables):
+    def _save_trajectory(
+        self, timestep_block, time_point, previous_trajectory, previous_variables
+    ):
         tj = PetscTrajectory(
             stub="tmp_vars_stub",
             delete_on_read=True,
@@ -618,7 +745,7 @@ class PETScIntegrator(object):
                 tj._set_vec(v, vec_prev + vec)
             tj._set_time_vec(previous_trajectory.time + tj.time)
         return tj, variables
-    
+
     def _interpolate_results(self, between, trajectory):
         t0 = between.first()
         tlast = between.last()

@@ -18,12 +18,28 @@ import re
 import numpy as np
 import json
 import os
-from pyomo.common.collections import ComponentSet
-import pyomo.environ as pyo
-import pyomo.dae as pyodae
+from pyomo.common.collections import ComponentSet, ComponentMap
+from pyomo.environ import (
+    Block,
+    ConcreteModel,
+    Constraint,
+    ConstraintList,
+    Objective,
+    Param,
+    Reference,
+    Set,
+    Suffix,
+    TransformationFactory,
+    value,
+    Var,
+)
+from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.util.subsystems import create_subsystem_block
 from idaes.core.scaling.util import set_scaling_factor
-from idaes.core.solvers.petsc_object import PETScIntegrator
+from idaes.core.solvers.petsc_object import (
+    PETScIntegrator,
+    get_derivative_differential_vardata_map,
+)
 from idaes.core.solvers.petsc import petsc_available, PetscTrajectory
 from idaes.core.util import from_json, StoreSpec
 import idaes.logger as idaeslog
@@ -39,19 +55,19 @@ def rp_example():
     will not correctly link a fixed differential variable (at non-initial time
     points) with a time derivative.
     """
-    m = pyo.ConcreteModel()
+    m = ConcreteModel()
 
-    m.time = pyodae.ContinuousSet(initialize=(0.0, 10.0))
-    m.x = pyo.Var(m.time)
-    m.u = pyo.Var(m.time)
-    m.dxdt = pyodae.DerivativeVar(m.x, wrt=m.time)
+    m.time = ContinuousSet(initialize=(0.0, 10.0))
+    m.x = Var(m.time)
+    m.u = Var(m.time)
+    m.dxdt = DerivativeVar(m.x, wrt=m.time)
 
     def diff_eq_rule(m, t):
         return m.dxdt[t] == m.x[t] ** 2 - m.u[t]
 
-    m.diff_eq = pyo.Constraint(m.time, rule=diff_eq_rule)
+    m.diff_eq = Constraint(m.time, rule=diff_eq_rule)
 
-    discretizer = pyo.TransformationFactory("dae.finite_difference")
+    discretizer = TransformationFactory("dae.finite_difference")
     discretizer.apply_to(m, nfe=1, scheme="BACKWARD")
 
     for t in m.time:
@@ -72,25 +88,25 @@ def rp_example2():
     for the fully discretized problem. This works as an alternative to the
     fixed differential variable.
     """
-    m = pyo.ConcreteModel()
+    m = ConcreteModel()
 
-    m.time = pyodae.ContinuousSet(initialize=(0.0, 10.0))
-    m.x = pyo.Var(m.time)
-    m.u = pyo.Var(m.time)
-    m.t = pyo.Var(m.time)
-    m.dxdt = pyodae.DerivativeVar(m.x, wrt=m.time)
+    m.time = ContinuousSet(initialize=(0.0, 10.0))
+    m.x = Var(m.time)
+    m.u = Var(m.time)
+    m.t = Var(m.time)
+    m.dxdt = DerivativeVar(m.x, wrt=m.time)
 
     def diff_eq_rule(m, t):
         return m.dxdt[t] == m.x[t] ** 2 - m.u[t]
 
-    m.diff_eq = pyo.Constraint(m.time, rule=diff_eq_rule)
+    m.diff_eq = Constraint(m.time, rule=diff_eq_rule)
 
     def x_eq_rule(m, t):
         return m.x[t] == 2.0 * m.t[t]
 
-    m.x_eq = pyo.Constraint(m.time, rule=x_eq_rule)
+    m.x_eq = Constraint(m.time, rule=x_eq_rule)
 
-    discretizer = pyo.TransformationFactory("dae.finite_difference")
+    discretizer = TransformationFactory("dae.finite_difference")
     discretizer.apply_to(m, nfe=1, scheme="BACKWARD")
 
     m.u[0].fix(1.0)
@@ -111,19 +127,19 @@ def rp_example3():
     this formulation may be unexpected, the PETSc utilities will raise an
     exception if derivatives are fixed to anything other than 0.
     """
-    m = pyo.ConcreteModel()
+    m = ConcreteModel()
 
-    m.time = pyodae.ContinuousSet(initialize=(0.0, 10.0))
-    m.x = pyo.Var(m.time)
-    m.u = pyo.Var(m.time)
-    m.dxdt = pyodae.DerivativeVar(m.x, wrt=m.time)
+    m.time = ContinuousSet(initialize=(0.0, 10.0))
+    m.x = Var(m.time)
+    m.u = Var(m.time)
+    m.dxdt = DerivativeVar(m.x, wrt=m.time)
 
     def diff_eq_rule(m, t):
         return m.dxdt[t] == m.x[t] ** 2 - m.u[t]
 
-    m.diff_eq = pyo.Constraint(m.time, rule=diff_eq_rule)
+    m.diff_eq = Constraint(m.time, rule=diff_eq_rule)
 
-    discretizer = pyo.TransformationFactory("dae.finite_difference")
+    discretizer = TransformationFactory("dae.finite_difference")
     discretizer.apply_to(m, nfe=1, scheme="BACKWARD")
 
     m.u[0].fix(1.0)
@@ -141,24 +157,24 @@ def rp_example4():
     derivative.  This should work as intended for both the fully
     time-discretized problem and integrator.
     """
-    m = pyo.ConcreteModel()
+    m = ConcreteModel()
 
-    m.time = pyodae.ContinuousSet(initialize=(0.0, 10.0))
-    m.x = pyo.Var(m.time, initialize=1)
-    m.u = pyo.Var(m.time, initialize=1)
-    m.dxdt = pyodae.DerivativeVar(m.x, wrt=m.time)
+    m.time = ContinuousSet(initialize=(0.0, 10.0))
+    m.x = Var(m.time, initialize=1)
+    m.u = Var(m.time, initialize=1)
+    m.dxdt = DerivativeVar(m.x, wrt=m.time)
 
     def diff_eq1_rule(m, t):
         return m.dxdt[t] == m.x[t] ** 2 - m.u[t]
 
-    m.diff_eq1 = pyo.Constraint(m.time, rule=diff_eq1_rule)
+    m.diff_eq1 = Constraint(m.time, rule=diff_eq1_rule)
 
     def diff_eq2_rule(m, t):
         return m.dxdt[t] == 2.0
 
-    m.diff_eq2 = pyo.Constraint(m.time, rule=diff_eq2_rule)
+    m.diff_eq2 = Constraint(m.time, rule=diff_eq2_rule)
 
-    discretizer = pyo.TransformationFactory("dae.finite_difference")
+    discretizer = TransformationFactory("dae.finite_difference")
     discretizer.apply_to(m, nfe=1, scheme="BACKWARD")
 
     m.u[0].fix(1.0)
@@ -170,25 +186,25 @@ def rp_example4():
 
 def rp_example5():
     """This example is used to test ramping only in a subset of time."""
-    m = pyo.ConcreteModel()
+    m = ConcreteModel()
 
-    m.time = pyodae.ContinuousSet(initialize=(0.0, 10.0))
-    m.x = pyo.Var(m.time)
-    m.u = pyo.Var(m.time)
-    m.ramp = pyo.Var(m.time)
-    m.dxdt = pyodae.DerivativeVar(m.x, wrt=m.time)
+    m.time = ContinuousSet(initialize=(0.0, 10.0))
+    m.x = Var(m.time)
+    m.u = Var(m.time)
+    m.ramp = Var(m.time)
+    m.dxdt = DerivativeVar(m.x, wrt=m.time)
 
     def diff_eq_rule(m, t):
         return m.dxdt[t] == m.x[t] ** 2 - m.u[t]
 
-    m.diff_eq = pyo.Constraint(m.time, rule=diff_eq_rule)
+    m.diff_eq = Constraint(m.time, rule=diff_eq_rule)
 
     def diff_eq2_rule(m, t):
         return m.dxdt[t] == m.ramp[t]
 
-    m.diff_eq2 = pyo.Constraint(m.time, rule=diff_eq2_rule)
+    m.diff_eq2 = Constraint(m.time, rule=diff_eq2_rule)
 
-    discretizer = pyo.TransformationFactory("dae.finite_difference")
+    discretizer = TransformationFactory("dae.finite_difference")
     discretizer.apply_to(m, nfe=10, scheme="BACKWARD")
 
     m.x[0].fix(0.0)
@@ -198,17 +214,17 @@ def rp_example5():
         else:
             v.fix(0)
 
-    assert pyo.value(m.ramp[0]) == 0
-    assert pyo.value(m.ramp[1]) == 0
-    assert pyo.value(m.ramp[2]) == 0
-    assert pyo.value(m.ramp[3]) == 0
-    assert pyo.value(m.ramp[4]) == 4
-    assert pyo.value(m.ramp[5]) == 4
-    assert pyo.value(m.ramp[6]) == 0
-    assert pyo.value(m.ramp[7]) == 0
-    assert pyo.value(m.ramp[8]) == 0
-    assert pyo.value(m.ramp[9]) == 0
-    assert pyo.value(m.ramp[10]) == 0
+    assert value(m.ramp[0]) == 0
+    assert value(m.ramp[1]) == 0
+    assert value(m.ramp[2]) == 0
+    assert value(m.ramp[3]) == 0
+    assert value(m.ramp[4]) == 4
+    assert value(m.ramp[5]) == 4
+    assert value(m.ramp[6]) == 0
+    assert value(m.ramp[7]) == 0
+    assert value(m.ramp[8]) == 0
+    assert value(m.ramp[9]) == 0
+    assert value(m.ramp[10]) == 0
 
     return m
 
@@ -217,44 +233,44 @@ def car_example():
     """This is to test problems where a differential variable doesn't appear in
     a constraint this is based on a Pyomo example here:
     https://github.com/Pyomo/pyomo/blob/main/examples/dae/car_example.py"""
-    m = pyo.ConcreteModel()
+    m = ConcreteModel()
 
-    m.R = pyo.Param(initialize=0.001)  #  Friction factor
-    m.L = pyo.Param(initialize=100.0)  #  Final position
+    m.R = Param(initialize=0.001)  #  Friction factor
+    m.L = Param(initialize=100.0)  #  Final position
 
-    m.tau = pyodae.ContinuousSet(bounds=(0, 1))  # Unscaled time
-    m.time = pyo.Var(m.tau)  # Scaled time
-    m.tf = pyo.Var()
-    m.x = pyo.Var(m.tau, bounds=(0, m.L + 50))
-    m.v = pyo.Var(m.tau, bounds=(0, None))
-    m.a = pyo.Var(m.tau, bounds=(-3.0, 1.0), initialize=0)
+    m.tau = ContinuousSet(bounds=(0, 1))  # Unscaled time
+    m.time = Var(m.tau)  # Scaled time
+    m.tf = Var()
+    m.x = Var(m.tau, bounds=(0, m.L + 50))
+    m.v = Var(m.tau, bounds=(0, None))
+    m.a = Var(m.tau, bounds=(-3.0, 1.0), initialize=0)
 
-    m.dtime = pyodae.DerivativeVar(m.time)
-    m.dx = pyodae.DerivativeVar(m.x)
-    m.dv = pyodae.DerivativeVar(m.v)
+    m.dtime = DerivativeVar(m.time)
+    m.dx = DerivativeVar(m.x)
+    m.dv = DerivativeVar(m.v)
 
-    m.obj = pyo.Objective(expr=m.tf)
+    m.obj = Objective(expr=m.tf)
 
     def _ode1(m, i):
         if i == 0:
-            return pyo.Constraint.Skip
+            return Constraint.Skip
         return m.dx[i] == m.tf * m.v[i]
 
-    m.ode1 = pyo.Constraint(m.tau, rule=_ode1)
+    m.ode1 = Constraint(m.tau, rule=_ode1)
 
     def _ode2(m, i):
         if i == 0:
-            return pyo.Constraint.Skip
+            return Constraint.Skip
         return m.dv[i] == m.tf * (m.a[i] - m.R * m.v[i] ** 2)
 
-    m.ode2 = pyo.Constraint(m.tau, rule=_ode2)
+    m.ode2 = Constraint(m.tau, rule=_ode2)
 
     def _ode3(m, i):
         if i == 0:
-            return pyo.Constraint.Skip
+            return Constraint.Skip
         return m.dtime[i] == m.tf
 
-    m.ode3 = pyo.Constraint(m.tau, rule=_ode3)
+    m.ode3 = Constraint(m.tau, rule=_ode3)
 
     def _init(m):
         yield m.x[0] == 0
@@ -263,9 +279,9 @@ def car_example():
         yield m.v[1] == 0
         yield m.time[0] == 0
 
-    m.initcon = pyo.ConstraintList(rule=_init)
+    m.initcon = ConstraintList(rule=_init)
 
-    discretizer = pyo.TransformationFactory("dae.finite_difference")
+    discretizer = TransformationFactory("dae.finite_difference")
     discretizer.apply_to(m, nfe=1, scheme="BACKWARD")
     return m
 
@@ -291,29 +307,29 @@ def dae_with_non_time_indexed_constraint(
     Returns:
         (tuple): Pyomo ConcreteModel, correct solved value for y[1] to y[6]
     """
-    model = pyo.ConcreteModel(name="chemakzo")
+    model = ConcreteModel(name="chemakzo")
 
     # Set problem parameter values
-    model.k = pyo.Param([1, 2, 3, 4], initialize={1: 18.7, 2: 0.58, 3: 0.09, 4: 0.42})
-    model.Ke = pyo.Param(initialize=34.4)
-    model.klA = pyo.Param(initialize=3.3)
-    model.Ks = pyo.Param(initialize=115.83)
-    model.pCO2 = pyo.Param(initialize=0.9)
+    model.k = Param([1, 2, 3, 4], initialize={1: 18.7, 2: 0.58, 3: 0.09, 4: 0.42})
+    model.Ke = Param(initialize=34.4)
+    model.klA = Param(initialize=3.3)
+    model.Ks = Param(initialize=115.83)
+    model.pCO2 = Param(initialize=0.9)
     # The following parameter H, is best made a parameter, but will use a
     # variable and constraint instead to test non-time-indexed constraints
-    # model.H = pyo.Param(initialize=737)
+    # model.H = Param(initialize=737)
 
     # Problem variables ydot = dy/dt,
     #    (dy6/dt is not explicitly in the equations, so only 5 ydots)
-    model.H = pyo.Var(initialize=737)
-    model.t = pyodae.ContinuousSet(bounds=(0, 180))
-    model.y = pyo.Var(model.t, [1, 2, 3, 4, 5, 6], initialize=1.0)  #
-    model.ydot = pyodae.DerivativeVar(model.y, wrt=model.t)  # dy/dt
-    model.r = pyo.Var(model.t, [1, 2, 3, 4, 5], initialize=1.0)
-    model.Fin = pyo.Var(model.t, initialize=1.0)
+    model.H = Var(initialize=737)
+    model.t = ContinuousSet(bounds=(0, 180))
+    model.y = Var(model.t, [1, 2, 3, 4, 5, 6], initialize=1.0)  #
+    model.ydot = DerivativeVar(model.y, wrt=model.t)  # dy/dt
+    model.r = Var(model.t, [1, 2, 3, 4, 5], initialize=1.0)
+    model.Fin = Var(model.t, initialize=1.0)
 
     # Non-time indexed constraint (just for testing)
-    model.H_eqn = pyo.Constraint(expr=model.H == 737)
+    model.H_eqn = Constraint(expr=model.H == 737)
 
     # Equations
     @model.Constraint(model.t)
@@ -377,12 +393,15 @@ def dae_with_non_time_indexed_constraint(
         model.eq_ydot4[0].deactivate()
         model.eq_ydot5[0].deactivate()
 
-    discretizer = pyo.TransformationFactory(transformation_method)
+    discretizer = TransformationFactory(transformation_method)
     if transformation_method == "dae.collocation":
         discretizer.apply_to(model, nfe=nfe, ncp=ncp, scheme=scheme)
     else:
         discretizer.apply_to(model, nfe=nfe, scheme=scheme)
+    # y6 has been converted into an algebraic variable. Therefore, we need to
+    # deactivate the corresponding discretization equations.
     model.ydot[:, 6].fix(0)
+    model.ydot_disc_eq[:, 6].deactivate()
 
     return (
         model,
@@ -393,6 +412,167 @@ def dae_with_non_time_indexed_constraint(
         0.1708010885264404e-1,
         0.4873531310307455e-2,
     )
+
+
+class TestGetDerivativeDifferentialVardataMap(object):
+    @pytest.mark.unit
+    def test_get_derivative_differential_vardata_map_basic_finite_difference(self):
+        # Tests basic mapping with a single-index ContinuousSet using Finite Difference
+        m = ConcreteModel()
+        m.t = ContinuousSet(bounds=(0, 10))
+        m.x = Var(m.t)
+        m.dxdt = DerivativeVar(m.x, wrt=m.t)
+
+        TransformationFactory("dae.finite_difference").apply_to(
+            m, nfe=2, scheme="BACKWARD"
+        )
+
+        deriv_map = get_derivative_differential_vardata_map(m, m.t)
+
+        # The derivative at zero won't be mapped because it
+        # doesn't have an associated discretization equation
+        assert len(deriv_map) == len(m.t) - 1
+        for idx in m.t:
+            deriv_data = m.dxdt[idx]
+            if idx == 0:
+                assert deriv_data not in deriv_map
+            else:
+                assert deriv_data in deriv_map
+                assert deriv_map[deriv_data]["diff_var"] is m.x[idx]
+                # Finite difference generates discretization equations
+                assert deriv_map[deriv_data]["disc_eqn"] is m.dxdt_disc_eq[idx]
+                assert "cont_eqn" not in deriv_map[deriv_data]
+
+    @pytest.mark.unit
+    def test_get_derivative_differential_vardata_map_multidimensional_indexing(self):
+        # Tests multidimensional indexing:
+        # 1. Non-continuous set 'i' is the first index, ContinuousSet 't' is second
+        # 2. ContinuousSet 't' is first, non-continuous set 'i' is second
+        m = ConcreteModel()
+        m.t = ContinuousSet(bounds=(0, 10))
+        m.i = Set(initialize=[1, 2])
+
+        m.x = Var(m.i, m.t)
+        m.dxdt = DerivativeVar(m.x, wrt=m.t)
+
+        m.y = Var(m.t, m.i)
+        m.dydt = DerivativeVar(m.y, wrt=m.t)
+
+        TransformationFactory("dae.finite_difference").apply_to(
+            m, nfe=1, scheme="BACKWARD"
+        )
+
+        # 1. Map for x (i first, t second)
+        deriv_map_x = get_derivative_differential_vardata_map(m, m.t)
+        for idx in m.i:
+            for t_val in m.t:
+                deriv_data = m.dxdt[idx, t_val]
+                if t_val == 0:
+                    # No discretization equation at t=0 for backward difference
+                    assert deriv_data not in deriv_map_x
+                else:
+                    assert deriv_data in deriv_map_x
+                    assert deriv_map_x[deriv_data]["diff_var"] is m.x[idx, t_val]
+                    assert (
+                        deriv_map_x[deriv_data]["disc_eqn"]
+                        is m.dxdt_disc_eq[idx, t_val]
+                    )
+
+        # 2. Map for y (t first, i second)
+        deriv_map_y = get_derivative_differential_vardata_map(m, m.t)
+        for t_val in m.t:
+            for idx in m.i:
+                deriv_data = m.dydt[t_val, idx]
+                if t_val == 0:
+                    # No discretization equation at t=0 for backward difference
+                    assert deriv_data not in deriv_map_y
+                else:
+                    assert deriv_data in deriv_map_y
+                    assert deriv_map_y[deriv_data]["diff_var"] is m.y[t_val, idx]
+                    assert (
+                        deriv_map_y[deriv_data]["disc_eqn"]
+                        is m.dydt_disc_eq[t_val, idx]
+                    )
+
+    @pytest.mark.unit
+    def test_get_derivative_differential_vardata_map_deactivation(self):
+        # Tests exclusion when constraint components or specific index data are deactivated
+        m = ConcreteModel()
+        m.t = ContinuousSet(bounds=(0, 10))
+        m.x = Var(m.t)
+        m.dxdt = DerivativeVar(m.x, wrt=m.t)
+
+        m.y = Var(m.t)
+        m.dydt = DerivativeVar(m.y, wrt=m.t)
+
+        TransformationFactory("dae.finite_difference").apply_to(
+            m, nfe=2, scheme="BACKWARD"
+        )
+
+        # Deactivate the entire discretization constraint component for x
+        m.dxdt_disc_eq.deactivate()
+
+        # Deactivate a single constraint data index for y (at t = 5.0)
+        m.dydt_disc_eq[5.0].deactivate()
+
+        deriv_map = get_derivative_differential_vardata_map(m, m.t)
+
+        # x should have no active mappings because the entire constraint component is inactive
+        for idx in m.t:
+            assert m.dxdt[idx] not in deriv_map
+
+        # y should have an active mapping only at t = 10
+        for idx in m.t:
+            deriv_data = m.dydt[idx]
+            if idx == pytest.approx(10):
+                assert deriv_data in deriv_map
+                assert deriv_map[deriv_data]["diff_var"] is m.y[idx]
+                assert deriv_map[deriv_data]["disc_eqn"] is m.dydt_disc_eq[idx]
+            else:
+                assert deriv_data not in deriv_map
+
+    @pytest.mark.unit
+    def test_get_derivative_differential_vardata_map_collocation_lagrange_legendre(
+        self,
+    ):
+        # Tests Lagrange-Legendre collocation, which generates both
+        # discretization equations and continuity equations.
+        m = ConcreteModel()
+        m.t = ContinuousSet(bounds=(0, 10))
+        m.x = Var(m.t)
+        # For extra fun, put the DerivativeVar on a
+        # different block to ensure that both the
+        # continuity equation and discretization equation
+        # are created on the same block as the DerivativeVar
+        m.blk = Block()
+        m.blk.dxdt = DerivativeVar(m.x, wrt=m.t)
+
+        TransformationFactory("dae.collocation").apply_to(
+            m, nfe=2, ncp=2, scheme="LAGRANGE-LEGENDRE"
+        )
+
+        deriv_map = get_derivative_differential_vardata_map(m, m.t)
+
+        # In Lagrange-Legendre collocation:
+        # - Collocation points have discretization equations (disc_eqn).
+        # - Finite element boundaries (except the first point) have continuity equations (cont_eqn).
+        for idx in m.t:
+            deriv_data = m.blk.dxdt[idx]
+
+            has_disc = hasattr(m.blk, "dxdt_disc_eq") and idx in m.blk.dxdt_disc_eq
+            has_cont = hasattr(m.blk, "x_t_cont_eq") and idx in m.blk.x_t_cont_eq
+
+            if has_disc or has_cont:
+                assert deriv_data in deriv_map
+                assert deriv_map[deriv_data]["diff_var"] is m.x[idx]
+
+                if has_disc:
+                    assert deriv_map[deriv_data]["disc_eqn"] is m.blk.dxdt_disc_eq[idx]
+                if has_cont:
+                    assert deriv_map[deriv_data]["cont_eqn"] is m.blk.x_t_cont_eq[idx]
+            else:
+                # Point has neither constraint, so it should not be mapped
+                assert deriv_data not in deriv_map
 
 
 @pytest.mark.unit
@@ -411,14 +591,14 @@ def test_car():
             "--ts_adapt_type": "basic",
             "--ts_dt": 0.01,
         },
-        calculate_derivatives=True      
+        calculate_derivatives=True,
     )
     petsc_obj.dae_by_time_element()
 
-    assert pyo.value(m.x[1]) == pytest.approx(131.273, rel=1e-2)
-    assert pyo.value(m.dtime[1]) == pytest.approx(pyo.value(m.time[1] - m.time[0]))
-    assert pyo.value(m.dx[1]) == pytest.approx(pyo.value(m.x[1] - m.x[0]))
-    assert pyo.value(m.dv[1]) == pytest.approx(pyo.value(m.v[1] - m.v[0]))
+    assert value(m.x[1]) == pytest.approx(131.273, rel=1e-2)
+    assert value(m.dtime[1]) == pytest.approx(value(m.time[1] - m.time[0]))
+    assert value(m.dx[1]) == pytest.approx(value(m.x[1] - m.x[0]))
+    assert value(m.dv[1]) == pytest.approx(value(m.v[1] - m.v[0]))
 
 
 @pytest.mark.unit
@@ -426,10 +606,10 @@ def test_copy_time():
     """test the time copy function.  When this is used, the model is flattened
     and only indexed by time, so testing is pretty simple"""
 
-    m = pyo.ConcreteModel()
+    m = ConcreteModel()
     t = [1, 2]
-    m.x = pyo.Var(t)
-    m.y = pyo.Var(t)
+    m.x = Var(t)
+    m.y = Var(t)
 
     m.x[1] = 1
     m.x[2] = 2
@@ -441,93 +621,14 @@ def test_copy_time():
 
     PETScIntegrator._copy_time(dummy_integrator(), 1, 2)
 
-    assert pyo.value(m.x[2]) == 1
-    assert pyo.value(m.y[2]) == 3
+    assert value(m.x[2]) == 1
+    assert value(m.y[2]) == 3
 
-
-# find_discretization_equations hasn't been duplicated in the PETSc object yet
-# @pytest.mark.unit
-# def test_gen_time_disc_eqns():
-#     m, y1, y2, y3, y4, y5, y6 = dae_with_non_time_indexed_constraint()
-
-#     # The model has one time element and derivatives for y[1] to y[5]
-#     # the final time is 180, so create a list of what the time discretization
-#     # constraints should be.
-#     disc_eq = [
-#         id(m.ydot_disc_eq[180, 1]),
-#         id(m.ydot_disc_eq[180, 2]),
-#         id(m.ydot_disc_eq[180, 3]),
-#         id(m.ydot_disc_eq[180, 4]),
-#         id(m.ydot_disc_eq[180, 5]),
-#     ]
-
-#     n = 0
-#     for cs in petsc.find_discretization_equations(m, m.t):
-#         for c in cs.values():
-#             if c.index()[1] == 6:
-#                 continue
-#             assert id(c) in disc_eq
-#             n += 1
-
-#     assert len(disc_eq) == n
-
-
-# @pytest.mark.unit
-# def test_set_dae_suffix():
-#     m, y1, y2, y3, y4, y5, y6 = dae_with_non_time_indexed_constraint()
-#     regular_vars, time_vars = pyodae.flatten.flatten_dae_components(m, m.t, pyo.Var)
-#     regular_cons, time_cons = pyodae.flatten.flatten_dae_components(
-#         m, m.t, pyo.Constraint
-#     )
-#     t = 180
-#     m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
-#     m.scaling_factor[m.ydot[180, 2]] = 10
-#     constraints = [con[t] for con in time_cons if t in con]
-#     variables = [var[t] for var in time_vars]
-#     t_block = create_subsystem_block(constraints, variables)
-#     deriv_diff_map = petsc._get_derivative_differential_data_map(m, m.t)
-#     petsc._set_dae_suffixes_from_variables(t_block, variables, deriv_diff_map)
-#     petsc._sub_problem_scaling_suffix(m, t_block)
-
-#     assert t_block.dae_suffix[m.ydot[180, 1]] == 2
-#     assert t_block.dae_suffix[m.ydot[180, 2]] == 2
-#     assert t_block.dae_suffix[m.ydot[180, 3]] == 2
-#     assert t_block.dae_suffix[m.ydot[180, 4]] == 2
-#     assert t_block.dae_suffix[m.ydot[180, 5]] == 2
-#     assert t_block.scaling_factor[m.ydot[180, 2]] == 10
-#     assert t_block.dae_suffix[m.y[180, 1]] == 1
-#     assert t_block.dae_suffix[m.y[180, 2]] == 1
-#     assert t_block.dae_suffix[m.y[180, 3]] == 1
-#     assert t_block.dae_suffix[m.y[180, 4]] == 1
-#     assert t_block.dae_suffix[m.y[180, 5]] == 1
-
-#     # Make sure deactivating a differential equation makes the variable that
-#     # would have been differential go algebraic
-#     m, y1, y2, y3, y4, y5, y6 = dae_with_non_time_indexed_constraint()
-#     # discretization equations would be deactivated in normal PETSc solve
-#     for con in petsc.find_discretization_equations(m, m.t):
-#         con.deactivate()
-#     # deactivate a differential equation making y4 be algebraic
-#     m.eq_ydot4[180].deactivate()
-#     regular_vars, time_vars = pyodae.flatten.flatten_dae_components(m, m.t, pyo.Var)
-#     regular_cons, time_cons = pyodae.flatten.flatten_dae_components(
-#         m, m.t, pyo.Constraint
-#     )
-#     t = 180
-#     constraints = [con[t] for con in time_cons if t in con]
-#     variables = [var[t] for var in time_vars]
-#     t_block = create_subsystem_block(constraints, variables)
-#     deriv_diff_map = petsc._get_derivative_differential_data_map(m, m.t)
-#     petsc._set_dae_suffixes_from_variables(t_block, variables, deriv_diff_map)
-#     petsc._sub_problem_scaling_suffix(m, t_block)
-
-#     assert m.y[t, 4] not in t_block.dae_suffix
-#     assert m.ydot[t, 4] not in t_block.dae_suffix
 
 @pytest.mark.unit
 def test_petsc_initial_condition_problem():
     m, y1, y2, y3, y4, y5, y6 = dae_with_non_time_indexed_constraint()
-    set_scaling_factor(m.y[0, 3], 7) # Make sure that scaling factors are copied over
+    set_scaling_factor(m.y[0, 3], 7)  # Make sure that scaling factors are copied over
     set_scaling_factor(m.eq_Fin[0], 11)
 
     petsc_obj = PETScIntegrator(m, time_set=m.t)
@@ -546,15 +647,20 @@ def test_petsc_initial_condition_problem():
             expected_con_set.add(m.find_component(f"eq_ydot{i}")[0])
             expected_con_set.add(m.find_component(f"eq_r{i}")[0])
 
-    actual_var_set = ComponentSet(vardata for vardata in ic_block.component_data_objects(ctype=pyo.Var))
-    actual_con_set = ComponentSet(condata for condata in ic_block.component_data_objects(ctype=pyo.Constraint))
+    actual_var_set = ComponentSet(
+        vardata for vardata in ic_block.component_data_objects(ctype=Var)
+    )
+    actual_con_set = ComponentSet(
+        condata for condata in ic_block.component_data_objects(ctype=Constraint)
+    )
     assert expected_var_set == actual_var_set
     assert expected_con_set == actual_con_set
+
 
 @pytest.mark.unit
 def test_petsc_timestep_problem():
     m, y1, y2, y3, y4, y5, y6 = dae_with_non_time_indexed_constraint()
-    set_scaling_factor(m.y[180, 3], 7) # Make sure that scaling factors are copied over
+    set_scaling_factor(m.y[180, 3], 7)  # Make sure that scaling factors are copied over
     set_scaling_factor(m.eq_Fin[180], 11)
 
     petsc_obj = PETScIntegrator(m, time_set=m.t)
@@ -575,11 +681,17 @@ def test_petsc_timestep_problem():
             expected_con_set.add(m.find_component(f"eq_ydot{i}")[180])
             expected_con_set.add(m.find_component(f"eq_r{i}")[180])
 
-    actual_var_set = ComponentSet(vardata for vardata in t_block.component_data_objects(ctype=pyo.Var))
-    actual_con_set = ComponentSet(condata for condata in t_block.component_data_objects(ctype=pyo.Constraint))
+    actual_var_set = ComponentSet(
+        vardata for vardata in t_block.component_data_objects(ctype=Var)
+    )
+    actual_con_set = ComponentSet(
+        condata for condata in t_block.component_data_objects(ctype=Constraint)
+    )
     assert expected_var_set == actual_var_set
     assert expected_con_set == actual_con_set
-    assert len(diff_vars) == len(ComponentSet(diff_vars)) # Don't want redundant diff vars.
+    assert len(diff_vars) == len(
+        ComponentSet(diff_vars)
+    )  # Don't want redundant diff vars.
     assert expected_diff_var_set == ComponentSet(diff_vars)
 
     assert m.H.fixed
@@ -588,6 +700,7 @@ def test_petsc_timestep_problem():
     assert len(input_var_set) == 1
     from_json(m, sd=fixedness_json, wts=StoreSpec.isfixed())
 
+
 @pytest.mark.unit
 @pytest.mark.skipif(not petsc_available(), reason="PETSc solver not available")
 def test_petsc_read_trajectory():
@@ -595,10 +708,10 @@ def test_petsc_read_trajectory():
     Check that the PETSc DAE solver works.
     """
     m, y1, y2, y3, y4, y5, y6 = dae_with_non_time_indexed_constraint()
-    m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
+    m.scaling_factor = Suffix(direction=Suffix.EXPORT)
     m.scaling_factor[m.y[180, 1]] = 10  # make sure unscale works
 
-    m.y_ref = pyo.Reference(m.y)  # make sure references don't get unscaled twice
+    m.y_ref = Reference(m.y)  # make sure references don't get unscaled twice
     petsc_obj = PETScIntegrator(
         m,
         time_set=m.t,
@@ -609,15 +722,14 @@ def test_petsc_read_trajectory():
             "--ts_save_trajectory": 1,
             "--ts_trajectory_type": "visualization",
         },
-
     )
     res = petsc_obj.dae_by_time_element()
-    assert pytest.approx(y1, rel=1e-3) == pyo.value(m.y[m.t.last(), 1])
-    assert pytest.approx(y2, rel=1e-3) == pyo.value(m.y[m.t.last(), 2])
-    assert pytest.approx(y3, rel=1e-3) == pyo.value(m.y[m.t.last(), 3])
-    assert pytest.approx(y4, rel=1e-3) == pyo.value(m.y[m.t.last(), 4])
-    assert pytest.approx(y5, rel=1e-3) == pyo.value(m.y[m.t.last(), 5])
-    assert pytest.approx(y6, rel=1e-3) == pyo.value(m.y[m.t.last(), 6])
+    assert pytest.approx(y1, rel=1e-3) == value(m.y[m.t.last(), 1])
+    assert pytest.approx(y2, rel=1e-3) == value(m.y[m.t.last(), 2])
+    assert pytest.approx(y3, rel=1e-3) == value(m.y[m.t.last(), 3])
+    assert pytest.approx(y4, rel=1e-3) == value(m.y[m.t.last(), 4])
+    assert pytest.approx(y5, rel=1e-3) == value(m.y[m.t.last(), 5])
+    assert pytest.approx(y6, rel=1e-3) == value(m.y[m.t.last(), 6])
 
     tj = res.trajectory
     assert tj.get_dt()[0] == pytest.approx(0.01)  # if small enough shouldn't be cut
@@ -654,10 +766,10 @@ def test_petsc_read_trajectory_parts():
     Check that the PETSc DAE solver works.
     """
     m, y1, y2, y3, y4, y5, y6 = dae_with_non_time_indexed_constraint(nfe=10)
-    m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
+    m.scaling_factor = Suffix(direction=Suffix.EXPORT)
     m.scaling_factor[m.y[180, 1]] = 10  # make sure unscale works
 
-    m.y_ref = pyo.Reference(m.y)  # make sure references don't get unscaled twice
+    m.y_ref = Reference(m.y)  # make sure references don't get unscaled twice
 
     petsc_obj = PETScIntegrator(
         model=m,
@@ -667,16 +779,16 @@ def test_petsc_read_trajectory_parts():
             "--ts_adapt_type": "basic",
             "--ts_dt": 0.01,
             "--ts_save_trajectory": 1,
-        }
+        },
     )
 
     res = petsc_obj.dae_by_time_element(between=[m.t.first(), m.t.at(4), m.t.last()])
-    assert pytest.approx(y1, rel=1e-3) == pyo.value(m.y[m.t.last(), 1])
-    assert pytest.approx(y2, rel=1e-3) == pyo.value(m.y[m.t.last(), 2])
-    assert pytest.approx(y3, rel=1e-3) == pyo.value(m.y[m.t.last(), 3])
-    assert pytest.approx(y4, rel=1e-3) == pyo.value(m.y[m.t.last(), 4])
-    assert pytest.approx(y5, rel=1e-3) == pyo.value(m.y[m.t.last(), 5])
-    assert pytest.approx(y6, rel=1e-3) == pyo.value(m.y[m.t.last(), 6])
+    assert pytest.approx(y1, rel=1e-3) == value(m.y[m.t.last(), 1])
+    assert pytest.approx(y2, rel=1e-3) == value(m.y[m.t.last(), 2])
+    assert pytest.approx(y3, rel=1e-3) == value(m.y[m.t.last(), 3])
+    assert pytest.approx(y4, rel=1e-3) == value(m.y[m.t.last(), 4])
+    assert pytest.approx(y5, rel=1e-3) == value(m.y[m.t.last(), 5])
+    assert pytest.approx(y6, rel=1e-3) == value(m.y[m.t.last(), 6])
 
     tj = res.trajectory
     assert tj.get_vec(m.y[180, 1])[-1] == pytest.approx(y1, rel=1e-3)
@@ -684,8 +796,8 @@ def test_petsc_read_trajectory_parts():
     y1_trj = tj.interpolate_vec(m.t, m.y[180, 1])
     y4_trj = tj.interpolate_vec(m.t, m.y[180, 4])
     for i, t in enumerate(m.t):
-        assert y1_trj[i] == pytest.approx(pyo.value(m.y[t, 1]))
-        assert y4_trj[i] == pytest.approx(pyo.value(m.y[t, 4]))
+        assert y1_trj[i] == pytest.approx(value(m.y[t, 1]))
+        assert y4_trj[i] == pytest.approx(value(m.y[t, 4]))
 
 
 @pytest.mark.unit
@@ -702,7 +814,7 @@ def test_rp_example():
             "corresponding derivative or adding a constraint for the "
             f"differential variable x[10.0] possibly using an "
             "explicit time variable."
-        )
+        ),
     ):
         _ = petsc_obj.get_timestep_problem(10)
 
@@ -722,8 +834,8 @@ def test_rp_example2():
         },
     )
     petsc_obj.dae_by_time_element()
-    assert pyo.value(m.u[10]) == pytest.approx(398)
-    assert pyo.value(m.x[10]) == pytest.approx(20)
+    assert value(m.u[10]) == pytest.approx(398)
+    assert value(m.x[10]) == pytest.approx(20)
 
 
 @pytest.mark.unit
@@ -739,7 +851,7 @@ def test_rp_example3():
             "most likely a modeling error. Instead of fixing the "
             "derivative consider adding a constraint like "
             "dxdt = constant"
-        )
+        ),
     ):
         petsc_obj.get_timestep_problem(10)
 
@@ -758,8 +870,8 @@ def test_rp_example4():
         },
     )
     petsc_obj.dae_by_time_element()
-    assert pyo.value(m.u[10]) == pytest.approx(398)
-    assert pyo.value(m.x[10]) == pytest.approx(20)
+    assert value(m.u[10]) == pytest.approx(398)
+    assert value(m.x[10]) == pytest.approx(20)
 
 
 @pytest.mark.unit
@@ -778,29 +890,29 @@ def test_rp_example5a():
     )
     petsc_obj.dae_by_time_element(between=[0, 3, 5, 10])
 
-    assert pyo.value(m.x[0]) == pytest.approx(0)
-    assert pyo.value(m.x[1]) == pytest.approx(0)
-    assert pyo.value(m.x[2]) == pytest.approx(0)
-    assert pyo.value(m.x[3]) == pytest.approx(0)
-    assert pyo.value(m.x[4]) == pytest.approx(4)
-    assert pyo.value(m.x[5]) == pytest.approx(8)
-    assert pyo.value(m.x[6]) == pytest.approx(8)
-    assert pyo.value(m.x[7]) == pytest.approx(8)
-    assert pyo.value(m.x[8]) == pytest.approx(8)
-    assert pyo.value(m.x[9]) == pytest.approx(8)
-    assert pyo.value(m.x[10]) == pytest.approx(8)
+    assert value(m.x[0]) == pytest.approx(0)
+    assert value(m.x[1]) == pytest.approx(0)
+    assert value(m.x[2]) == pytest.approx(0)
+    assert value(m.x[3]) == pytest.approx(0)
+    assert value(m.x[4]) == pytest.approx(4)
+    assert value(m.x[5]) == pytest.approx(8)
+    assert value(m.x[6]) == pytest.approx(8)
+    assert value(m.x[7]) == pytest.approx(8)
+    assert value(m.x[8]) == pytest.approx(8)
+    assert value(m.x[9]) == pytest.approx(8)
+    assert value(m.x[10]) == pytest.approx(8)
 
-    assert pyo.value(m.u[0]) == pytest.approx(0)
-    assert pyo.value(m.u[1]) == pytest.approx(0)
-    assert pyo.value(m.u[2]) == pytest.approx(0)
-    assert pyo.value(m.u[3]) == pytest.approx(0)
-    assert pyo.value(m.u[4]) == pytest.approx(12)
-    assert pyo.value(m.u[5]) == pytest.approx(60)
-    assert pyo.value(m.u[6]) == pytest.approx(64)
-    assert pyo.value(m.u[7]) == pytest.approx(64)
-    assert pyo.value(m.u[8]) == pytest.approx(64)
-    assert pyo.value(m.u[9]) == pytest.approx(64)
-    assert pyo.value(m.u[10]) == pytest.approx(64)
+    assert value(m.u[0]) == pytest.approx(0)
+    assert value(m.u[1]) == pytest.approx(0)
+    assert value(m.u[2]) == pytest.approx(0)
+    assert value(m.u[3]) == pytest.approx(0)
+    assert value(m.u[4]) == pytest.approx(12)
+    assert value(m.u[5]) == pytest.approx(60)
+    assert value(m.u[6]) == pytest.approx(64)
+    assert value(m.u[7]) == pytest.approx(64)
+    assert value(m.u[8]) == pytest.approx(64)
+    assert value(m.u[9]) == pytest.approx(64)
+    assert value(m.u[10]) == pytest.approx(64)
 
 
 @pytest.mark.unit
@@ -816,7 +928,7 @@ def test_rp_example5b():
             "--ts_save_trajectory": 1,
         },
     )
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ValueError):
         petsc_obj.dae_by_time_element(between=[0, 3.5, 5, 10])
 
 
@@ -824,44 +936,43 @@ def test_rp_example5b():
 @pytest.mark.skipif(not petsc_available(), reason="PETSc solver not available")
 def test_mixed_derivative_exception():
     # Test exception when mixed space/time derivatives appear in problem
-    m = pyo.ConcreteModel()
+    m = ConcreteModel()
 
-    m.R = pyo.Param(initialize=0.001)  #  Friction factor
-    m.L = pyo.Param(initialize=100.0)  #  Final position
+    m.R = Param(initialize=0.001)  #  Friction factor
+    m.L = Param(initialize=100.0)  #  Final position
 
-    m.t = pyodae.ContinuousSet(bounds=(0, 1))
-    m.x = pyodae.ContinuousSet(bounds=(0, 1))
+    m.t = ContinuousSet(bounds=(0, 1))
+    m.x = ContinuousSet(bounds=(0, 1))
 
-    m.temperature = pyo.Var(m.t, m.x)
-    m.d2T_dtdx = pyodae.DerivativeVar(m.temperature, wrt=(m.t, m.x))
+    m.temperature = Var(m.t, m.x)
+    m.d2T_dtdx = DerivativeVar(m.temperature, wrt=(m.t, m.x))
 
     # This problem isn't well-posed, but that shouldn't matter
     @m.Constraint(m.t, m.x)
     def constraint_eqn(b, t, x):
         return b.d2T_dtdx[t, x] == b.temperature[t, x] + 1
 
-    discretizer = pyo.TransformationFactory("dae.finite_difference")
+    discretizer = TransformationFactory("dae.finite_difference")
     discretizer.apply_to(m, nfe=3, scheme="BACKWARD", wrt=m.t)
     discretizer.apply_to(m, nfe=3, scheme="BACKWARD", wrt=m.x)
 
-    petsc_obj = PETScIntegrator(
-        m,
-        time_set=m.t,
-        ts_options={
-            "--ts_dt": 1,
-            "--ts_adapt_type": "none",
-            "--ts_save_trajectory": 1,
-        },
-    )
     with pytest.raises(
         NotImplementedError,
         match=re.escape(
-            "IDAES presently does not support PETSc for second order or higher derivatives like d2T_dtdx "
+            "IDAES presently does not support PETSc for second order or higher derivatives "
             "that are differentiated at least once with respect to time. Please reformulate your model so "
             "it does not contain such a derivative (such as by introducing intermediate variables)."
         ),
     ):
-        petsc_obj.dae_by_time_element(between=[0, 1])
+        petsc_obj = PETScIntegrator(
+            m,
+            time_set=m.t,
+            ts_options={
+                "--ts_dt": 1,
+                "--ts_adapt_type": "none",
+                "--ts_save_trajectory": 1,
+            },
+        )
 
 
 @pytest.mark.unit
@@ -896,12 +1007,12 @@ def test_petsc_skip_initial_solve():
     )
     res = petsc_obj.dae_by_time_element(skip_initial=True)
 
-    assert pytest.approx(y1, rel=1e-3) == pyo.value(m.y[m.t.last(), 1])
-    assert pytest.approx(y2, rel=1e-3) == pyo.value(m.y[m.t.last(), 2])
-    assert pytest.approx(y3, rel=1e-3) == pyo.value(m.y[m.t.last(), 3])
-    assert pytest.approx(y4, rel=1e-3) == pyo.value(m.y[m.t.last(), 4])
-    assert pytest.approx(y5, rel=1e-3) == pyo.value(m.y[m.t.last(), 5])
-    assert pytest.approx(y6, rel=1e-3) == pyo.value(m.y[m.t.last(), 6])
+    assert pytest.approx(y1, rel=1e-3) == value(m.y[m.t.last(), 1])
+    assert pytest.approx(y2, rel=1e-3) == value(m.y[m.t.last(), 2])
+    assert pytest.approx(y3, rel=1e-3) == value(m.y[m.t.last(), 3])
+    assert pytest.approx(y4, rel=1e-3) == value(m.y[m.t.last(), 4])
+    assert pytest.approx(y5, rel=1e-3) == value(m.y[m.t.last(), 5])
+    assert pytest.approx(y6, rel=1e-3) == value(m.y[m.t.last(), 6])
 
 
 @pytest.mark.unit
@@ -928,7 +1039,7 @@ def test_petsc_traj_previous():
 
     # Next do it in two steps
     res = petsc_obj.dae_by_time_element(between=[m.t.first(), m.t.at(4)])
-    
+
     # Fix initial condition for second leg of trajectory
     for j in range(1, 6):
         m.y[m.t.at(4), j].fix()
@@ -938,12 +1049,12 @@ def test_petsc_traj_previous():
         previous_trajectory=res.trajectory,
     )
 
-    assert pytest.approx(y1, rel=1e-3) == pyo.value(m.y[m.t.last(), 1])
-    assert pytest.approx(y2, rel=1e-3) == pyo.value(m.y[m.t.last(), 2])
-    assert pytest.approx(y3, rel=1e-3) == pyo.value(m.y[m.t.last(), 3])
-    assert pytest.approx(y4, rel=1e-3) == pyo.value(m.y[m.t.last(), 4])
-    assert pytest.approx(y5, rel=1e-3) == pyo.value(m.y[m.t.last(), 5])
-    assert pytest.approx(y6, rel=1e-3) == pyo.value(m.y[m.t.last(), 6])
+    assert pytest.approx(y1, rel=1e-3) == value(m.y[m.t.last(), 1])
+    assert pytest.approx(y2, rel=1e-3) == value(m.y[m.t.last(), 2])
+    assert pytest.approx(y3, rel=1e-3) == value(m.y[m.t.last(), 3])
+    assert pytest.approx(y4, rel=1e-3) == value(m.y[m.t.last(), 4])
+    assert pytest.approx(y5, rel=1e-3) == value(m.y[m.t.last(), 5])
+    assert pytest.approx(y6, rel=1e-3) == value(m.y[m.t.last(), 6])
 
     tj = res.trajectory
     assert tj.get_vec(m.y[180, 1])[-1] == pytest.approx(y1, rel=1e-3)
@@ -951,8 +1062,8 @@ def test_petsc_traj_previous():
     y1_trj = tj.interpolate_vec(m.t, m.y[180, 1])
     y4_trj = tj.interpolate_vec(m.t, m.y[180, 4])
     for i, t in enumerate(m.t):
-        assert y1_trj[i] == pytest.approx(pyo.value(m.y[t, 1]))
-        assert y4_trj[i] == pytest.approx(pyo.value(m.y[t, 4]))
+        assert y1_trj[i] == pytest.approx(value(m.y[t, 1]))
+        assert y4_trj[i] == pytest.approx(value(m.y[t, 4]))
 
     t_vec = np.linspace(0, 180, 101)
     y2_tj0 = tj0.interpolate_vec(t_vec, m.y[180, 2])
@@ -968,11 +1079,11 @@ def test_petsc_traj_previous():
 @pytest.mark.unit
 @pytest.mark.skipif(not petsc_available(), reason="PETSc solver not available")
 def test_not_ContinuousSet():
-    m = pyo.ConcreteModel()
+    m = ConcreteModel()
 
-    m.time = pyo.Set(initialize=(0.0, 10.0))
-    m.x = pyo.Var(m.time)
-    m.u = pyo.Var(m.time)
+    m.time = Set(initialize=(0.0, 10.0))
+    m.x = Var(m.time)
+    m.u = Var(m.time)
 
     with pytest.raises(ValueError, match="ContinuousSet"):
         PETScIntegrator(
@@ -984,17 +1095,17 @@ def test_not_ContinuousSet():
 @pytest.mark.unit
 @pytest.mark.skipif(not petsc_available(), reason="PETSc solver not available")
 def test_not_discretized():
-    m = pyo.ConcreteModel()
+    m = ConcreteModel()
 
-    m.time = pyodae.ContinuousSet(initialize=(0.0, 10.0))
-    m.x = pyo.Var(m.time)
-    m.u = pyo.Var(m.time)
-    m.dxdt = pyodae.DerivativeVar(m.x, wrt=m.time)
+    m.time = ContinuousSet(initialize=(0.0, 10.0))
+    m.x = Var(m.time)
+    m.u = Var(m.time)
+    m.dxdt = DerivativeVar(m.x, wrt=m.time)
 
     def diff_eq_rule(m, t):
         return m.dxdt[t] == m.x[t] ** 2 - m.u[t]
 
-    m.diff_eq = pyo.Constraint(m.time, rule=diff_eq_rule)
+    m.diff_eq = Constraint(m.time, rule=diff_eq_rule)
 
     with pytest.raises(RuntimeError, match="discretized"):
         PETScIntegrator(
@@ -1003,23 +1114,22 @@ def test_not_discretized():
         )
 
 
-
 @pytest.mark.unit
 @pytest.mark.skipif(not petsc_available(), reason="PETSc solver not available")
 def test_calculate_derivatives():
-    m = pyo.ConcreteModel()
+    m = ConcreteModel()
 
-    m.time = pyodae.ContinuousSet(initialize=(0.0, 1.0, 2.0))
-    m.x = pyo.Var(m.time)
-    m.u = pyo.Var(m.time)
-    m.dxdt = pyodae.DerivativeVar(m.x, wrt=m.time)
+    m.time = ContinuousSet(initialize=(0.0, 1.0, 2.0))
+    m.x = Var(m.time)
+    m.u = Var(m.time)
+    m.dxdt = DerivativeVar(m.x, wrt=m.time)
 
     def diff_eq_rule(m, t):
         return m.dxdt[t] == m.x[t] ** 2 - m.u[t]
 
-    m.diff_eq = pyo.Constraint(m.time, rule=diff_eq_rule)
+    m.diff_eq = Constraint(m.time, rule=diff_eq_rule)
 
-    discretizer = pyo.TransformationFactory("dae.finite_difference")
+    discretizer = TransformationFactory("dae.finite_difference")
     discretizer.apply_to(m, nfe=2, scheme="BACKWARD")
 
     m.u.fix(1.0)
@@ -1042,26 +1152,26 @@ def test_calculate_derivatives():
     # No value assigned at 0 because there's no corresponding discretization equation
     assert m.dxdt[0].value is None
     # It should backfill values for interpolated points like t=1
-    assert pyo.value(m.dxdt[1]) == pytest.approx(-0.7580125427537873, rel=1e-3)
-    assert pyo.value(m.dxdt[2]) == pytest.approx(-0.2034733131369807, rel=1e-3)
+    assert value(m.dxdt[1]) == pytest.approx(-0.7580125427537873, rel=1e-3)
+    assert value(m.dxdt[2]) == pytest.approx(-0.2034733131369807, rel=1e-3)
 
 
 @pytest.mark.unit
 @pytest.mark.skipif(not petsc_available(), reason="PETSc solver not available")
 def test_calculate_derivatives_integrate_first_half():
-    m = pyo.ConcreteModel()
+    m = ConcreteModel()
 
-    m.time = pyodae.ContinuousSet(initialize=(0.0, 1.0, 2.0))
-    m.x = pyo.Var(m.time)
-    m.u = pyo.Var(m.time)
-    m.dxdt = pyodae.DerivativeVar(m.x, wrt=m.time)
+    m.time = ContinuousSet(initialize=(0.0, 1.0, 2.0))
+    m.x = Var(m.time)
+    m.u = Var(m.time)
+    m.dxdt = DerivativeVar(m.x, wrt=m.time)
 
     def diff_eq_rule(m, t):
         return m.dxdt[t] == m.x[t] ** 2 - m.u[t]
 
-    m.diff_eq = pyo.Constraint(m.time, rule=diff_eq_rule)
+    m.diff_eq = Constraint(m.time, rule=diff_eq_rule)
 
-    discretizer = pyo.TransformationFactory("dae.finite_difference")
+    discretizer = TransformationFactory("dae.finite_difference")
     discretizer.apply_to(m, nfe=2, scheme="BACKWARD")
 
     m.u.fix(1.0)
@@ -1083,26 +1193,26 @@ def test_calculate_derivatives_integrate_first_half():
     )
     # No value assigned at 0 because there's no corresponding discretization equation
     assert m.dxdt[0].value is None
-    assert pyo.value(m.dxdt[1]) == pytest.approx(-0.7580125427537873, rel=1e-3)
+    assert value(m.dxdt[1]) == pytest.approx(-0.7580125427537873, rel=1e-3)
     assert m.dxdt[2].value is None
 
 
 @pytest.mark.unit
 @pytest.mark.skipif(not petsc_available(), reason="PETSc solver not available")
 def test_calculate_derivatives_integrate_second_half():
-    m = pyo.ConcreteModel()
+    m = ConcreteModel()
 
-    m.time = pyodae.ContinuousSet(initialize=(0.0, 1.0, 2.0))
-    m.x = pyo.Var(m.time)
-    m.u = pyo.Var(m.time)
-    m.dxdt = pyodae.DerivativeVar(m.x, wrt=m.time)
+    m.time = ContinuousSet(initialize=(0.0, 1.0, 2.0))
+    m.x = Var(m.time)
+    m.u = Var(m.time)
+    m.dxdt = DerivativeVar(m.x, wrt=m.time)
 
     def diff_eq_rule(m, t):
         return m.dxdt[t] == m.x[t] ** 2 - m.u[t]
 
-    m.diff_eq = pyo.Constraint(m.time, rule=diff_eq_rule)
+    m.diff_eq = Constraint(m.time, rule=diff_eq_rule)
 
-    discretizer = pyo.TransformationFactory("dae.finite_difference")
+    discretizer = TransformationFactory("dae.finite_difference")
     discretizer.apply_to(m, nfe=2, scheme="BACKWARD")
 
     m.u.fix(1.0)
@@ -1125,25 +1235,25 @@ def test_calculate_derivatives_integrate_second_half():
     # No value assigned at 0 because there's no corresponding discretization equation
     assert m.dxdt[0].value is None
     assert m.dxdt[1].value is None
-    assert pyo.value(m.dxdt[2]) == pytest.approx(-0.2034733131369807, rel=1e-3)
+    assert value(m.dxdt[2]) == pytest.approx(-0.2034733131369807, rel=1e-3)
 
 
 @pytest.mark.unit
 @pytest.mark.skipif(not petsc_available(), reason="PETSc solver not available")
 def test_calculate_derivatives_collocation_lr():
-    m = pyo.ConcreteModel()
+    m = ConcreteModel()
 
-    m.time = pyodae.ContinuousSet(initialize=(0.0, 1.0, 2.0))
-    m.x = pyo.Var(m.time)
-    m.u = pyo.Var(m.time)
-    m.dxdt = pyodae.DerivativeVar(m.x, wrt=m.time)
+    m.time = ContinuousSet(initialize=(0.0, 1.0, 2.0))
+    m.x = Var(m.time)
+    m.u = Var(m.time)
+    m.dxdt = DerivativeVar(m.x, wrt=m.time)
 
     def diff_eq_rule(m, t):
         return m.dxdt[t] == m.x[t] ** 2 - m.u[t]
 
-    m.diff_eq = pyo.Constraint(m.time, rule=diff_eq_rule)
+    m.diff_eq = Constraint(m.time, rule=diff_eq_rule)
 
-    discretizer = pyo.TransformationFactory("dae.collocation")
+    discretizer = TransformationFactory("dae.collocation")
     discretizer.apply_to(m, nfe=2, scheme="LAGRANGE-RADAU")
 
     m.u.fix(1.0)
@@ -1165,26 +1275,26 @@ def test_calculate_derivatives_collocation_lr():
 
     assert m.dxdt[0].value is None
     # It should backfill values for interpolated points like t=1
-    assert pyo.value(m.dxdt[1]) == pytest.approx(-0.3787483909827891, rel=1e-3)
-    assert pyo.value(m.dxdt[2]) == pytest.approx(-0.07952012649572815, rel=1e-3)
+    assert value(m.dxdt[1]) == pytest.approx(-0.3787483909827891, rel=1e-3)
+    assert value(m.dxdt[2]) == pytest.approx(-0.07952012649572815, rel=1e-3)
 
 
 @pytest.mark.unit
 @pytest.mark.skipif(not petsc_available(), reason="PETSc solver not available")
 def test_exception_forward_difference():
-    m = pyo.ConcreteModel()
+    m = ConcreteModel()
 
-    m.time = pyodae.ContinuousSet(initialize=(0.0, 1.0, 2.0))
-    m.x = pyo.Var(m.time)
-    m.u = pyo.Var(m.time)
-    m.dxdt = pyodae.DerivativeVar(m.x, wrt=m.time)
+    m.time = ContinuousSet(initialize=(0.0, 1.0, 2.0))
+    m.x = Var(m.time)
+    m.u = Var(m.time)
+    m.dxdt = DerivativeVar(m.x, wrt=m.time)
 
     def diff_eq_rule(m, t):
         return m.dxdt[t] == m.x[t] ** 2 - m.u[t]
 
-    m.diff_eq = pyo.Constraint(m.time, rule=diff_eq_rule)
+    m.diff_eq = Constraint(m.time, rule=diff_eq_rule)
 
-    discretizer = pyo.TransformationFactory("dae.finite_difference")
+    discretizer = TransformationFactory("dae.finite_difference")
     discretizer.apply_to(m, nfe=2, scheme="FORWARD")
 
     m.u.fix(1.0)
@@ -1209,19 +1319,19 @@ def test_exception_forward_difference():
 @pytest.mark.unit
 @pytest.mark.skipif(not petsc_available(), reason="PETSc solver not available")
 def test_exception_central_difference():
-    m = pyo.ConcreteModel()
+    m = ConcreteModel()
 
-    m.time = pyodae.ContinuousSet(initialize=(0.0, 1.0, 2.0))
-    m.x = pyo.Var(m.time)
-    m.u = pyo.Var(m.time)
-    m.dxdt = pyodae.DerivativeVar(m.x, wrt=m.time)
+    m.time = ContinuousSet(initialize=(0.0, 1.0, 2.0))
+    m.x = Var(m.time)
+    m.u = Var(m.time)
+    m.dxdt = DerivativeVar(m.x, wrt=m.time)
 
     def diff_eq_rule(m, t):
         return m.dxdt[t] == m.x[t] ** 2 - m.u[t]
 
-    m.diff_eq = pyo.Constraint(m.time, rule=diff_eq_rule)
+    m.diff_eq = Constraint(m.time, rule=diff_eq_rule)
 
-    discretizer = pyo.TransformationFactory("dae.finite_difference")
+    discretizer = TransformationFactory("dae.finite_difference")
     discretizer.apply_to(m, nfe=2, scheme="CENTRAL")
 
     m.u.fix(1.0)
@@ -1248,19 +1358,19 @@ def test_exception_central_difference():
 @pytest.mark.unit
 @pytest.mark.skipif(not petsc_available(), reason="PETSc solver not available")
 def test_exception_collocation_ll():
-    m = pyo.ConcreteModel()
+    m = ConcreteModel()
 
-    m.time = pyodae.ContinuousSet(initialize=(0.0, 1.0, 2.0))
-    m.x = pyo.Var(m.time)
-    m.u = pyo.Var(m.time)
-    m.dxdt = pyodae.DerivativeVar(m.x, wrt=m.time)
+    m.time = ContinuousSet(initialize=(0.0, 1.0, 2.0))
+    m.x = Var(m.time)
+    m.u = Var(m.time)
+    m.dxdt = DerivativeVar(m.x, wrt=m.time)
 
     def diff_eq_rule(m, t):
         return m.dxdt[t] == m.x[t] ** 2 - m.u[t]
 
-    m.diff_eq = pyo.Constraint(m.time, rule=diff_eq_rule)
+    m.diff_eq = Constraint(m.time, rule=diff_eq_rule)
 
-    discretizer = pyo.TransformationFactory("dae.collocation")
+    discretizer = TransformationFactory("dae.collocation")
     discretizer.apply_to(m, nfe=2, scheme="LAGRANGE-LEGENDRE")
 
     m.u.fix(1.0)
@@ -1283,32 +1393,33 @@ def test_exception_collocation_ll():
             calculate_derivatives=True,
         )
 
+
 # def make_index_reduction_model(disc_method, nfe):
-#     m = pyo.ConcreteModel()
-#     m.time = pyodae.ContinuousSet(initialize=(0.0, 1.0))
+#     m = ConcreteModel()
+#     m.time = ContinuousSet(initialize=(0.0, 1.0))
 #     m.comp_set = ["A", "B"]
-#     m.n = pyo.Var(
+#     m.n = Var(
 #         m.time,
 #         m.comp_set,
 #         initialize=1,
 #     )
-#     m.dn_dt = pyodae.DerivativeVar(m.n, initialize=0)
-#     m.C_in = pyo.Param(
+#     m.dn_dt = DerivativeVar(m.n, initialize=0)
+#     m.C_in = Param(
 #         m.time,
 #         m.comp_set,
 #         initialize=1,
 #         mutable=True
 #     )
-#     m.F_in = pyo.Param(m.time, initialize=1, mutable=True)
-#     m.V = pyo.Param(initialize=1)
-#     m.V_bar = pyo.Param(
+#     m.F_in = Param(m.time, initialize=1, mutable=True)
+#     m.V = Param(initialize=1)
+#     m.V_bar = Param(
 #         m.comp_set,
 #         initialize={
 #             "A": 1,
 #             "B": 2
 #         }
 #     )
-#     m.F_out = pyo.Var(m.time, initialize=1)
+#     m.F_out = Var(m.time, initialize=1)
 
 #     @m.Constraint(m.time, m.comp_set)
 #     def material_balance_eqn(b, t, j):
@@ -1320,8 +1431,8 @@ def test_exception_collocation_ll():
 #     @m.Constraint(m.time)
 #     def volume_eqn(b, t):
 #         return sum(b.n[t, j] * b.V_bar[j] for j in b.comp_set) == b.V
-    
-#     discretizer = pyo.TransformationFactory(disc_method)
+
+#     discretizer = TransformationFactory(disc_method)
 #     if disc_method == "dae.collocation":
 #         discretizer.apply_to(m, nfe=nfe, ncp=2, scheme="LAGRANGE-RADAU")
 #     else:
