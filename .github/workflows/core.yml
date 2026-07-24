@@ -123,6 +123,7 @@ jobs:
         uses: ./.github/actions/setup-idaes
         with:
           install-target: -r requirements-dev.txt
+          version: '4.0.0rc2'
       - name: Add pytest CLI options for coverage
         if: matrix.cov-report
         run: |
@@ -146,59 +147,6 @@ jobs:
           python-version: ${{ matrix.python-version }}
           os: ${{ matrix.os }}
           job-name: pytest
-
-  pytest-new-extensions:
-    # description: Run pytest with dev dependencies with new releases
-    name: pytest-new-extensions (py${{ matrix.python-version }}/${{ matrix.os }})
-    runs-on: ${{ matrix.runner-image }}
-    needs: [code-formatting, spell-check]
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.12"]
-        os:
-          - linux
-          - win64
-        include:
-          - os: linux
-            runner-image: ubuntu-24.04
-          - os: win64
-            runner-image: windows-2022
-
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-      - uses: ./.github/actions/display-debug-info
-      - name: Set up Conda environment
-        uses: conda-incubator/setup-miniconda@v4
-        with:
-          activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
-          python-version: ${{ matrix.python-version }}
-          miniforge-version: latest
-          channels: conda-forge
-          conda-remove-defaults: 'true'
-      - name: Set up idaes
-        uses: ./.github/actions/setup-idaes
-        with:
-          install-target: -r requirements-dev.txt
-          version: '4.0.0rc2'
-      - name: Add pytest CLI options for coverage
-        if: matrix.cov-report
-        run: |
-          echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov --cov-report=xml" >> "$GITHUB_ENV"
-      - name: Install pandoc
-        run: conda install -c conda-forge pandoc
-      - name: Run pytest (not integration)
-        run: |
-          python -m pytest --cov=idaes --pyargs idaes -m "not integration"
-      - name: Upload coverage report as GHA workflow artifact
-        if: matrix.cov-report
-        uses: actions/upload-artifact@v7
-        with:
-          name: coverage-report-${{ matrix.os }}
-          path: coverage.xml
-          if-no-files-found: error
 
   upload-coverage:
     name: Upload coverage report (Codecov)

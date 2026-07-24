@@ -31,4 +31,4 @@ addheader>=0.2.2
 # to customize this (e.g. to install a local clone of the Pyomo git repository), add the desired alternate requirements below
 
 # for flowsheet_processor
-idaes-flowsheet-processor>=0.1.dev4
+idaes-flowsheet-processor @ git+https://github.com/dallan-keylogic/idaes-flowsheet-processor.git@deferred-import
