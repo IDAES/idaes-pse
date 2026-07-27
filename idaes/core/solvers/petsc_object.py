@@ -72,7 +72,7 @@ def get_derivative_differential_vardata_map(
     variable is fixed or unfixed, or a constraint is activated/deactivated).
 
     Args:
-        blk (Block): Block which will be searched for DerivativeVars
+        blk (BlockData): Block which will be searched for DerivativeVars
         cont_set (ContinuousSet): This function searches for DerivativeVars
             which have been differentiated by this set.
         raise_higher_derivative_exception(Exception): Raise a ValueError if
@@ -285,6 +285,28 @@ CONFIG.declare(
 
 @document_kwargs_from_configdict(CONFIG)
 class PETScIntegrator(object):
+    """
+    Class to interface with the PETSc TS integrator.
+
+    Args:
+        model (BlockData): Pyomo model or block which will be integrated.
+        time_set (ContinuousSet): The set over which the model will be integrated.
+            This is typically time, but a length domain could also be used.
+        detect_initial (bool): Whether to guess which variables and constraints
+            should go on the initial condition problem or whether only those set
+            by the user should be added. See the detect_initial method for more
+            information. Default is True.
+        initial_variables (list): This is a list of variables to fix after the
+            initial condition solve step.  If these variables were originally
+            unfixed, they will be unfixed at the end of the solve. This usually
+            includes non-time-indexed variables that are calculated along with
+            the initial conditions.
+        initial_constraints (list): Constraints to solve in the initial
+            condition solve step.  Since the time-indexed constraints are picked
+            up automatically, this generally includes non-time-indexed
+            constraints.
+
+    """
 
     def __init__(
         self,
@@ -465,6 +487,11 @@ class PETScIntegrator(object):
         Flatten the DAE model and recreates the derivative-differential variable map.
         Refreshing the model is necessary if variables have been fixed or unfixed or
         components have been activated or deactivated.
+
+        Args:
+            None
+        Returns:
+            None
         """
         atemporal_variables, time_variables = flatten_dae_components(
             self._model,
@@ -509,7 +536,16 @@ class PETScIntegrator(object):
         Finds variables and constraints that are not indexed by time and
         adds them to user-specified variables and constraints that are included in the
         initial condition problem but fixed and deactivated, respectively, in the
-        time stepping problem.
+        time stepping problem. It stores these values on the initial_variables
+        and initial_constraints attributes.
+
+        Args:
+            initial_variables (list): List of user-specified variables to include in
+                initial condition problem.
+            initial_constraints (list): List of user-specified constraints to include
+                in the initial condition problem.
+        Returns:
+            None
         """
         rvset = ComponentSet(self._atemporal_variables)
         ivset = ComponentSet(initial_variables)
@@ -523,6 +559,30 @@ class PETScIntegrator(object):
         self,
         time_point: float = None,
     ):
+        """
+        From the cached, flattened model, construct an inital condition
+        problem at a given time point. Solving this problem allows us
+        to ensure that atemporal constraints are satisfied (such as those
+        involving unit geometry, which does not change over time) as well
+        as ensuring all the algebraic equations are satisfied at the
+        initial condition. This includes the variables specified on
+        the initial_variables and initial_constraint attributes, as well
+        as all time-indexed variables at time_point.
+
+        This function is useful for diagnosing failures during solution
+        of the initial condition problem.
+
+        Args:
+            time_point (float): Time point at which to create initial
+                condition problem
+
+        Returns:
+            Block: Subsystem block containing References to the variables and
+                constraints used in the initial condition problem. This block
+                also contains the scaling_factor Suffix containing variable
+                and constraint scaling factors from the original model.
+
+        """
         if time_point is None:
             time_point = self._time_set.at(
                 1
@@ -551,6 +611,39 @@ class PETScIntegrator(object):
         self,
         time_point: float = None,
     ):
+        """
+        From the cached, flattened model, construct a problem to solve
+        for (time) derivative variables and algebraic variables at a
+        given time point. Any atemporal variables that are included
+        in the constraints are fixed.  If the user fixes the
+        differential variables (which are not fixed by default), the
+        block should constitute a square system which can be solved
+        for the (time) derivative variables and algebraic variables.
+
+        This function is useful for diagnosing model issues when
+        the TS integrator fails to solve or says the model is nonsquare.
+
+        Args:
+            time_point (float): Time at which to create the timestep
+                problem.
+
+        Returns:
+            t_block (BlockData): Pyomo block with the variables and
+                constraints necessary to solve the initial condition
+                problem as References. Variables that occur in these
+                constraints that do not occur at this time point are
+                included in the input_vars list and fixed.
+            differential_vars (List): List of differential variables
+                at this time. If these are fixed by the user, t_block
+                should contain a square system.
+            variable_fixedness (dict): Dictionary serialization of the
+                model containing the fixedness status of all variables
+                and constraints. This can be used with the from_json
+                function from idaes.core.util in order to restore the
+                fixedness of the input_vars. The differential_vars
+                are not fixed by this function.
+
+        """
         self._validate_no_fixed_nonzero_derivatives()
 
         # Use a ComponentSet to avoid variables from being counted
@@ -596,17 +689,14 @@ class PETScIntegrator(object):
         # TODO this can probably be made public
         # but we should take stock of the number of near-identical
         # functions propagated through the codebase
-        """PRIVATE FUNCTION:
-
-        This is used on the flattened (indexed only by time) variable
+        """
+        This is used on the cached, flattened (indexed only by time) variable
         representations to copy variable values that are unfixed at the "to" time
         from the value at the "from" time. The PETSc DAE solver uses the initial
         variable values as the initial condition, so this is used to copy the
         previous time in as the initial condition for the next step.
 
         Args:
-            time_vars (list): list of variables or references to variables indexed
-                only by time
             t_from (float): time point to copy from
             t_to (float): time point to copy to, only unfixed vars will be
                 overwritten
@@ -621,6 +711,23 @@ class PETScIntegrator(object):
     def dae_by_time_element(
         self, between=None, skip_initial=False, previous_trajectory=None
     ):
+        """Solve a DAE problem step by step using the PETSc DAE solver.  This
+        integrates from one time point to the next.
+
+        Args:
+            between (list or tuple): List of time points to integrate between. If
+                None use all time points in the model.
+            skip_initial (bool): Don't do the initial condition calculation step,
+                and assume that the initial condition values have already been
+                calculated. This can be useful, for example, if you read initial
+                conditions from a separately solved steady state problem, or
+                otherwise know the initial conditions.
+            previous_trajectory: (PetscTrajectory) Trajectory from previous integration
+                of this model. New results will be appended to this trajectory object.
+
+        Returns (PetscDAEResults):
+            See PetscDAEResults documentation for more information.
+        """
         if between is None:
             between = self._time_set
         else:
