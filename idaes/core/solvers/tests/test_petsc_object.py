@@ -45,190 +45,6 @@ from idaes.core.util import from_json, StoreSpec
 import idaes.logger as idaeslog
 
 
-def rp_example():
-    """This example is done multiple ways to test a few common errors where the
-    integrator and fully time-discretized problem differ and alternative working
-    formulations.
-
-    The PETSc utilities raise an exception when a differential variable is fixed.
-    While this is okay for the fully time-discretized problem, the integrator
-    will not correctly link a fixed differential variable (at non-initial time
-    points) with a time derivative.
-    """
-    m = ConcreteModel()
-
-    m.time = ContinuousSet(initialize=(0.0, 10.0))
-    m.x = Var(m.time)
-    m.u = Var(m.time)
-    m.dxdt = DerivativeVar(m.x, wrt=m.time)
-
-    def diff_eq_rule(m, t):
-        return m.dxdt[t] == m.x[t] ** 2 - m.u[t]
-
-    m.diff_eq = Constraint(m.time, rule=diff_eq_rule)
-
-    discretizer = TransformationFactory("dae.finite_difference")
-    discretizer.apply_to(m, nfe=1, scheme="BACKWARD")
-
-    for t in m.time:
-        m.x[t].fix(2.0 * t)
-
-    m.u[0].fix(1.0)
-
-    return m
-
-
-def rp_example2():
-    """This example is done multiple ways to test a few common errors where the
-    integrator and fully time-discretized problem differ, and alternative working
-    formulations.
-
-    Rather than fixing a differential variable, we can add an explicit time
-    variable for the integrator and fix the time variable to the time index
-    for the fully discretized problem. This works as an alternative to the
-    fixed differential variable.
-    """
-    m = ConcreteModel()
-
-    m.time = ContinuousSet(initialize=(0.0, 10.0))
-    m.x = Var(m.time)
-    m.u = Var(m.time)
-    m.t = Var(m.time)
-    m.dxdt = DerivativeVar(m.x, wrt=m.time)
-
-    def diff_eq_rule(m, t):
-        return m.dxdt[t] == m.x[t] ** 2 - m.u[t]
-
-    m.diff_eq = Constraint(m.time, rule=diff_eq_rule)
-
-    def x_eq_rule(m, t):
-        return m.x[t] == 2.0 * m.t[t]
-
-    m.x_eq = Constraint(m.time, rule=x_eq_rule)
-
-    discretizer = TransformationFactory("dae.finite_difference")
-    discretizer.apply_to(m, nfe=1, scheme="BACKWARD")
-
-    m.u[0].fix(1.0)
-    # For fully discretized fix all times at time index
-    m.t[0].fix(m.time.first())
-
-    return m
-
-
-def rp_example3():
-    """This example is done multiple ways to test a few common errors where the
-    integrator and fully time-discretized problem differ, and alternative working
-    formulations.
-
-    Another way to formulate this problem is to fix the derivative. This doesn't
-    work for the integrator because it loses the association between the
-    differential variable and its derivative.  Since for users, the result of
-    this formulation may be unexpected, the PETSc utilities will raise an
-    exception if derivatives are fixed to anything other than 0.
-    """
-    m = ConcreteModel()
-
-    m.time = ContinuousSet(initialize=(0.0, 10.0))
-    m.x = Var(m.time)
-    m.u = Var(m.time)
-    m.dxdt = DerivativeVar(m.x, wrt=m.time)
-
-    def diff_eq_rule(m, t):
-        return m.dxdt[t] == m.x[t] ** 2 - m.u[t]
-
-    m.diff_eq = Constraint(m.time, rule=diff_eq_rule)
-
-    discretizer = TransformationFactory("dae.finite_difference")
-    discretizer.apply_to(m, nfe=1, scheme="BACKWARD")
-
-    m.u[0].fix(1.0)
-    m.dxdt[:].fix(2.0)
-
-    return m
-
-
-def rp_example4():
-    """This example is done multiple ways to test a few common errors where the
-    integrator and fully time-discretized problem differ, and alternative working
-    formulations.
-
-    Rather than fixing the derivative, we can add a constraint to set the
-    derivative.  This should work as intended for both the fully
-    time-discretized problem and integrator.
-    """
-    m = ConcreteModel()
-
-    m.time = ContinuousSet(initialize=(0.0, 10.0))
-    m.x = Var(m.time, initialize=1)
-    m.u = Var(m.time, initialize=1)
-    m.dxdt = DerivativeVar(m.x, wrt=m.time)
-
-    def diff_eq1_rule(m, t):
-        return m.dxdt[t] == m.x[t] ** 2 - m.u[t]
-
-    m.diff_eq1 = Constraint(m.time, rule=diff_eq1_rule)
-
-    def diff_eq2_rule(m, t):
-        return m.dxdt[t] == 2.0
-
-    m.diff_eq2 = Constraint(m.time, rule=diff_eq2_rule)
-
-    discretizer = TransformationFactory("dae.finite_difference")
-    discretizer.apply_to(m, nfe=1, scheme="BACKWARD")
-
-    m.u[0].fix(1.0)
-    m.x[0].fix(0.0)
-    m.diff_eq2[0].deactivate()
-
-    return m
-
-
-def rp_example5():
-    """This example is used to test ramping only in a subset of time."""
-    m = ConcreteModel()
-
-    m.time = ContinuousSet(initialize=(0.0, 10.0))
-    m.x = Var(m.time)
-    m.u = Var(m.time)
-    m.ramp = Var(m.time)
-    m.dxdt = DerivativeVar(m.x, wrt=m.time)
-
-    def diff_eq_rule(m, t):
-        return m.dxdt[t] == m.x[t] ** 2 - m.u[t]
-
-    m.diff_eq = Constraint(m.time, rule=diff_eq_rule)
-
-    def diff_eq2_rule(m, t):
-        return m.dxdt[t] == m.ramp[t]
-
-    m.diff_eq2 = Constraint(m.time, rule=diff_eq2_rule)
-
-    discretizer = TransformationFactory("dae.finite_difference")
-    discretizer.apply_to(m, nfe=10, scheme="BACKWARD")
-
-    m.x[0].fix(0.0)
-    for t, v in m.ramp.items():
-        if t > 3 and t <= 5:
-            v.fix(4)
-        else:
-            v.fix(0)
-
-    assert value(m.ramp[0]) == 0
-    assert value(m.ramp[1]) == 0
-    assert value(m.ramp[2]) == 0
-    assert value(m.ramp[3]) == 0
-    assert value(m.ramp[4]) == 4
-    assert value(m.ramp[5]) == 4
-    assert value(m.ramp[6]) == 0
-    assert value(m.ramp[7]) == 0
-    assert value(m.ramp[8]) == 0
-    assert value(m.ramp[9]) == 0
-    assert value(m.ramp[10]) == 0
-
-    return m
-
-
 def car_example():
     """This is to test problems where a differential variable doesn't appear in
     a constraint this is based on a Pyomo example here:
@@ -800,136 +616,298 @@ def test_petsc_read_trajectory_parts():
         assert y4_trj[i] == pytest.approx(value(m.y[t, 4]))
 
 
-@pytest.mark.unit
 @pytest.mark.skipif(not petsc_available(), reason="PETSc solver not available")
-def test_rp_example():
+class TestRPExamples:
+    """This example is done multiple ways to test a few common errors where the
+    integrator and fully time-discretized problem differ, and alternative working
+    formulations.
+    """
 
-    m = rp_example()
-    petsc_obj = PETScIntegrator(m, time_set=m.time)
-    with pytest.raises(
-        RuntimeError,
-        match=re.escape(
-            "Problem cannot contain a fixed differential variable and "
-            "unfixed derivative. Consider either fixing the "
-            "corresponding derivative or adding a constraint for the "
-            f"differential variable x[10.0] possibly using an "
-            "explicit time variable."
-        ),
-    ):
-        _ = petsc_obj.get_timestep_problem(10)
+    def make_rp_example(self, time_set=None, nfe=None):
+        if time_set is None:
+            time_set = [0.0, 10.0]
+        if nfe is None:
+            nfe = len(time_set) - 1
+        m = ConcreteModel()
 
+        m.time = ContinuousSet(initialize=time_set)
+        m.x = Var(m.time, initialize=0)
+        m.u = Var(m.time, initialize=0)
+        m.dxdt = DerivativeVar(m.x, wrt=m.time)
 
-@pytest.mark.unit
-@pytest.mark.skipif(not petsc_available(), reason="PETSc solver not available")
-def test_rp_example2():
+        def diff_eq_rule(m, t):
+            return m.dxdt[t] == m.x[t] ** 2 - m.u[t]
 
-    m = rp_example2()
-    petsc_obj = PETScIntegrator(
-        m,
-        m.time,
-        time_var=m.t,
-        ts_options={
-            "--ts_dt": 1,
-            "--ts_adapt_type": "none",
-        },
-    )
-    petsc_obj.dae_by_time_element()
-    assert value(m.u[10]) == pytest.approx(398)
-    assert value(m.x[10]) == pytest.approx(20)
+        m.diff_eq = Constraint(m.time, rule=diff_eq_rule)
 
+        discretizer = TransformationFactory("dae.finite_difference")
+        discretizer.apply_to(m, nfe=nfe, scheme="BACKWARD")
+        return m
 
-@pytest.mark.unit
-@pytest.mark.skipif(not petsc_available(), reason="PETSc solver not available")
-def test_rp_example3():
+    @pytest.mark.unit
+    def test_fixed_state_variable(self):
+        """
+        The PETSc utilities raise an exception when a differential variable is fixed.
+        While this is okay for the fully time-discretized problem, the integrator
+        will not correctly link a fixed differential variable (at non-initial time
+        points) with a time derivative.
+        """
+        m = self.make_rp_example()
+        for t in m.time:
+            m.x[t].fix(2.0 * t)
 
-    m = rp_example3()
-    petsc_obj = PETScIntegrator(m, m.time)
-    with pytest.raises(
-        RuntimeError,
-        match=re.escape(
-            "dxdt[10.0] is fixed to a nonzero value 2.0. This is "
-            "most likely a modeling error. Instead of fixing the "
-            "derivative consider adding a constraint like "
-            "dxdt = constant"
-        ),
-    ):
-        petsc_obj.get_timestep_problem(10)
+        m.u[0].fix(1.0)
 
+        petsc_obj = PETScIntegrator(m, time_set=m.time)
+        with pytest.raises(
+            RuntimeError,
+            match=re.escape(
+                "Problem cannot contain a fixed differential variable and "
+                "unfixed derivative. Consider either fixing the "
+                "corresponding derivative or adding a constraint for the "
+                f"differential variable x[10.0] possibly using an "
+                "explicit time variable."
+            ),
+        ):
+            _ = petsc_obj.get_timestep_problem(10)
 
-@pytest.mark.unit
-@pytest.mark.skipif(not petsc_available(), reason="PETSc solver not available")
-def test_rp_example4():
+    # TODO Do we want to continue to support this behavior? Because x is given as
+    # an explicit function of time, it has effectively become an algebraic equation.
+    # TS reports a nonsquare timestep problem, but it solves anyway.
+    @pytest.mark.unit
+    def test_fixed_time_variable(self):
+        """Rather than fixing a differential variable, we can add an explicit time
+        variable for the integrator and fix the time variable to the time index
+        for the fully discretized problem. This works as an alternative to the
+        fixed differential variable.
+        """
+        m = self.make_rp_example()
+        m.t = Var(m.time)
 
-    m = rp_example4()
-    petsc_obj = PETScIntegrator(
-        m,
-        time_set=m.time,
-        ts_options={
-            "--ts_dt": 1,
-            "--ts_adapt_type": "none",
-        },
-    )
-    petsc_obj.dae_by_time_element()
-    assert value(m.u[10]) == pytest.approx(398)
-    assert value(m.x[10]) == pytest.approx(20)
+        @m.Constraint(m.time)
+        def x_eq(m, t):
+            return m.x[t] == 2.0 * m.t[t]
 
+        m.u[0].fix(1.0)
+        # For fully discretized fix all times at time index
+        m.t[0].fix(m.time.first())
 
-@pytest.mark.unit
-@pytest.mark.skipif(not petsc_available(), reason="PETSc solver not available")
-def test_rp_example5a():
+        petsc_obj = PETScIntegrator(
+            m,
+            m.time,
+            time_var=m.t,
+            ts_options={
+                "--ts_dt": 1,
+                "--ts_adapt_type": "none",
+            },
+        )
+        petsc_obj.dae_by_time_element()
+        assert value(m.u[10]) == pytest.approx(398)
+        assert value(m.x[10]) == pytest.approx(20)
 
-    m = rp_example5()
-    petsc_obj = PETScIntegrator(
-        m,
-        time_set=m.time,
-        ts_options={
-            "--ts_dt": 1,
-            "--ts_adapt_type": "none",
-            "--ts_save_trajectory": 1,
-        },
-    )
-    petsc_obj.dae_by_time_element(between=[0, 3, 5, 10])
+    @pytest.mark.unit
+    def test_fixed_derivative(self):
+        """Another way to formulate this problem is to fix the derivative. This doesn't
+        work for the integrator because it loses the association between the
+        differential variable and its derivative.  Since for users, the result of
+        this formulation may be unexpected, the PETSc utilities will raise an
+        exception if derivatives are fixed to anything other than 0.
+        """
+        m = self.make_rp_example()
+        m.u[0].fix(1.0)
+        m.dxdt[:].fix(2.0)
 
-    assert value(m.x[0]) == pytest.approx(0)
-    assert value(m.x[1]) == pytest.approx(0)
-    assert value(m.x[2]) == pytest.approx(0)
-    assert value(m.x[3]) == pytest.approx(0)
-    assert value(m.x[4]) == pytest.approx(4)
-    assert value(m.x[5]) == pytest.approx(8)
-    assert value(m.x[6]) == pytest.approx(8)
-    assert value(m.x[7]) == pytest.approx(8)
-    assert value(m.x[8]) == pytest.approx(8)
-    assert value(m.x[9]) == pytest.approx(8)
-    assert value(m.x[10]) == pytest.approx(8)
+        petsc_obj = PETScIntegrator(m, m.time)
+        with pytest.raises(
+            RuntimeError,
+            match=re.escape(
+                "dxdt[10.0] is fixed to a nonzero value 2.0. This is "
+                "most likely a modeling error. Instead of fixing the "
+                "derivative consider adding a constraint like "
+                "dxdt = constant"
+            ),
+        ):
+            petsc_obj.get_timestep_problem(10)
 
-    assert value(m.u[0]) == pytest.approx(0)
-    assert value(m.u[1]) == pytest.approx(0)
-    assert value(m.u[2]) == pytest.approx(0)
-    assert value(m.u[3]) == pytest.approx(0)
-    assert value(m.u[4]) == pytest.approx(12)
-    assert value(m.u[5]) == pytest.approx(60)
-    assert value(m.u[6]) == pytest.approx(64)
-    assert value(m.u[7]) == pytest.approx(64)
-    assert value(m.u[8]) == pytest.approx(64)
-    assert value(m.u[9]) == pytest.approx(64)
-    assert value(m.u[10]) == pytest.approx(64)
+    @pytest.mark.unit
+    def test_constrained_derivative(self):
+        """Rather than fixing the derivative, we can add a constraint to set the
+        derivative.  This should work as intended for both the fully
+        time-discretized problem and integrator.
+        """
+        m = self.make_rp_example()
 
+        @m.Constraint(m.time)
+        def ramp_eq(m, t):
+            return m.dxdt[t] == 2.0
 
-@pytest.mark.unit
-@pytest.mark.skipif(not petsc_available(), reason="PETSc solver not available")
-def test_rp_example5b():
-    m = rp_example5()
-    petsc_obj = PETScIntegrator(
-        m,
-        time_set=m.time,
-        ts_options={
-            "--ts_dt": 1,
-            "--ts_adapt_type": "none",
-            "--ts_save_trajectory": 1,
-        },
-    )
-    with pytest.raises(ValueError):
-        petsc_obj.dae_by_time_element(between=[0, 3.5, 5, 10])
+        m.u[0].fix(1.0)
+        m.x[0].fix(0.0)
+        m.ramp_eq[0].deactivate()
+
+        petsc_obj = PETScIntegrator(
+            m,
+            time_set=m.time,
+            ts_options={
+                "--ts_dt": 1,
+                "--ts_adapt_type": "none",
+            },
+        )
+        petsc_obj.dae_by_time_element()
+        assert value(m.u[10]) == pytest.approx(398)
+        assert value(m.x[10]) == pytest.approx(20)
+
+    @pytest.mark.unit
+    def test_ramping_subset(self):
+        """Test ramping for a subset of time points"""
+        m = self.make_rp_example(nfe=10)
+        m.ramp = Var(m.time)
+
+        @m.Constraint(m.time)
+        def ramp_eq(m, t):
+            return m.dxdt[t] == m.ramp[t]
+
+        m.x[0].fix(0.0)
+        for t, v in m.ramp.items():
+            if t > 3 and t <= 5:
+                v.fix(4)
+            else:
+                v.fix(0)
+
+        petsc_obj = PETScIntegrator(
+            m,
+            time_set=m.time,
+            ts_options={
+                "--ts_dt": 1,
+                "--ts_adapt_type": "none",
+                "--ts_save_trajectory": 1,
+            },
+        )
+        petsc_obj.dae_by_time_element(between=[0, 3, 5, 10])
+
+        for t in m.time:
+            if t < 4:
+                assert value(m.ramp[t]) == 0
+                assert value(m.x[t]) == pytest.approx(0)
+                assert value(m.u[t]) == pytest.approx(0)
+            elif t == 4:
+                assert value(m.ramp[t]) == 4
+                assert value(m.x[t]) == pytest.approx(4)
+                assert value(m.u[t]) == pytest.approx(12)
+            elif t == 5:
+                assert value(m.ramp[t]) == 4
+                assert value(m.x[t]) == pytest.approx(8)
+                assert value(m.u[t]) == pytest.approx(60)
+            else:  # t > 5
+                assert value(m.ramp[t]) == 0
+                assert value(m.x[t]) == pytest.approx(8)
+                assert value(m.u[t]) == pytest.approx(64)
+
+    @pytest.mark.unit
+    def test_between_not_in_time_set(self):
+        m = self.make_rp_example()
+        petsc_obj = PETScIntegrator(
+            m,
+            time_set=m.time,
+            ts_options={
+                "--ts_dt": 1,
+                "--ts_adapt_type": "none",
+                "--ts_save_trajectory": 1,
+            },
+        )
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                "Elements of the 'between' argument must be in the time set"
+            ),
+        ):
+            petsc_obj.dae_by_time_element(between=[0, 5, 10])
+
+    @pytest.mark.unit
+    def test_calculate_derivatives(self):
+        m = self.make_rp_example(time_set=[0, 1, 2], nfe=2)
+
+        m.u.fix(1.0)
+        m.x[0].fix(0.0)
+        m.diff_eq[0].deactivate()
+
+        petsc_obj = PETScIntegrator(
+            m,
+            time_set=m.time,
+            ts_options={
+                "--ts_type": "beuler",
+                "--ts_dt": 3e-2,
+            },
+            calculate_derivatives=True,
+        )
+        res = petsc_obj.dae_by_time_element(
+            between=[0.0, 2.0],
+            skip_initial=True,  # With u and x fixed, no variables to solve for at t0
+        )
+        # No value assigned at 0 because there's no corresponding discretization equation
+        assert m.dxdt[0].value is None
+        # It should backfill values for interpolated points like t=1
+        assert value(m.dxdt[1]) == pytest.approx(-0.7580125427537873, rel=1e-3)
+        assert value(m.dxdt[2]) == pytest.approx(-0.2034733131369807, rel=1e-3)
+
+    @pytest.mark.unit
+    def test_calculate_derivatives_integrate_first_half(self):
+        m = self.make_rp_example(time_set=[0.0, 1.0, 2.0], nfe=2)
+
+        m.u.fix(1.0)
+        m.x[0].fix(0.0)
+        m.diff_eq[0].deactivate()
+
+        petsc_obj = PETScIntegrator(
+            m,
+            time_set=m.time,
+            ts_options={
+                "--ts_type": "beuler",
+                "--ts_dt": 3e-2,
+            },
+            calculate_derivatives=True,
+        )
+        res = petsc_obj.dae_by_time_element(
+            between=[0.0, 1.0],
+            skip_initial=True,  # With u and x fixed, no variables to solve for at t0
+        )
+        # No value assigned at 0 because there's no corresponding discretization equation
+        assert m.dxdt[0].value is None
+        assert value(m.dxdt[1]) == pytest.approx(-0.7580125427537873, rel=1e-3)
+        assert m.dxdt[2].value is None
+
+    @pytest.mark.unit
+    def test_calculate_derivatives_integrate_second_half(self):
+        m = self.make_rp_example(time_set=[0.0, 1.0, 2.0], nfe=2)
+
+        # Test expects None values
+        for t in m.time:
+            m.x[t].set_value(None)
+            m.u[t].set_value(None)
+            m.dxdt[t].set_value(None)
+
+        m.u.fix(1.0)
+        m.x[1].fix(-0.7580125427537873)
+        m.diff_eq[0].deactivate()
+
+        petsc_obj = PETScIntegrator(
+            m,
+            time_set=m.time,
+            ts_options={
+                "--ts_type": "beuler",
+                "--ts_dt": 3e-2,
+            },
+            calculate_derivatives=True,
+        )
+
+        res = petsc_obj.dae_by_time_element(
+            between=[1.0, 2.0],
+            skip_initial=True,  # With u and x fixed, no variables to solve for at t0
+        )
+        # No value assigned at 0 because there's no corresponding discretization equation
+        assert m.dxdt[0].value is None
+        assert m.dxdt[1].value is None
+        assert value(m.dxdt[2]) == pytest.approx(-0.2034733131369807, rel=1e-3)
 
 
 @pytest.mark.unit
@@ -937,9 +915,6 @@ def test_rp_example5b():
 def test_mixed_derivative_exception():
     # Test exception when mixed space/time derivatives appear in problem
     m = ConcreteModel()
-
-    m.R = Param(initialize=0.001)  #  Friction factor
-    m.L = Param(initialize=100.0)  #  Final position
 
     m.t = ContinuousSet(bounds=(0, 1))
     m.x = ContinuousSet(bounds=(0, 1))
@@ -1112,130 +1087,6 @@ def test_not_discretized():
             m,
             time_set=m.time,
         )
-
-
-@pytest.mark.unit
-@pytest.mark.skipif(not petsc_available(), reason="PETSc solver not available")
-def test_calculate_derivatives():
-    m = ConcreteModel()
-
-    m.time = ContinuousSet(initialize=(0.0, 1.0, 2.0))
-    m.x = Var(m.time)
-    m.u = Var(m.time)
-    m.dxdt = DerivativeVar(m.x, wrt=m.time)
-
-    def diff_eq_rule(m, t):
-        return m.dxdt[t] == m.x[t] ** 2 - m.u[t]
-
-    m.diff_eq = Constraint(m.time, rule=diff_eq_rule)
-
-    discretizer = TransformationFactory("dae.finite_difference")
-    discretizer.apply_to(m, nfe=2, scheme="BACKWARD")
-
-    m.u.fix(1.0)
-    m.x[0].fix(0.0)
-    m.diff_eq[0].deactivate()
-
-    petsc_obj = PETScIntegrator(
-        m,
-        time_set=m.time,
-        ts_options={
-            "--ts_type": "beuler",
-            "--ts_dt": 3e-2,
-        },
-        calculate_derivatives=True,
-    )
-    res = petsc_obj.dae_by_time_element(
-        between=[0.0, 2.0],
-        skip_initial=True,  # With u and x fixed, no variables to solve for at t0
-    )
-    # No value assigned at 0 because there's no corresponding discretization equation
-    assert m.dxdt[0].value is None
-    # It should backfill values for interpolated points like t=1
-    assert value(m.dxdt[1]) == pytest.approx(-0.7580125427537873, rel=1e-3)
-    assert value(m.dxdt[2]) == pytest.approx(-0.2034733131369807, rel=1e-3)
-
-
-@pytest.mark.unit
-@pytest.mark.skipif(not petsc_available(), reason="PETSc solver not available")
-def test_calculate_derivatives_integrate_first_half():
-    m = ConcreteModel()
-
-    m.time = ContinuousSet(initialize=(0.0, 1.0, 2.0))
-    m.x = Var(m.time)
-    m.u = Var(m.time)
-    m.dxdt = DerivativeVar(m.x, wrt=m.time)
-
-    def diff_eq_rule(m, t):
-        return m.dxdt[t] == m.x[t] ** 2 - m.u[t]
-
-    m.diff_eq = Constraint(m.time, rule=diff_eq_rule)
-
-    discretizer = TransformationFactory("dae.finite_difference")
-    discretizer.apply_to(m, nfe=2, scheme="BACKWARD")
-
-    m.u.fix(1.0)
-    m.x[0].fix(0.0)
-    m.diff_eq[0].deactivate()
-
-    petsc_obj = PETScIntegrator(
-        m,
-        time_set=m.time,
-        ts_options={
-            "--ts_type": "beuler",
-            "--ts_dt": 3e-2,
-        },
-        calculate_derivatives=True,
-    )
-    res = petsc_obj.dae_by_time_element(
-        between=[0.0, 1.0],
-        skip_initial=True,  # With u and x fixed, no variables to solve for at t0
-    )
-    # No value assigned at 0 because there's no corresponding discretization equation
-    assert m.dxdt[0].value is None
-    assert value(m.dxdt[1]) == pytest.approx(-0.7580125427537873, rel=1e-3)
-    assert m.dxdt[2].value is None
-
-
-@pytest.mark.unit
-@pytest.mark.skipif(not petsc_available(), reason="PETSc solver not available")
-def test_calculate_derivatives_integrate_second_half():
-    m = ConcreteModel()
-
-    m.time = ContinuousSet(initialize=(0.0, 1.0, 2.0))
-    m.x = Var(m.time)
-    m.u = Var(m.time)
-    m.dxdt = DerivativeVar(m.x, wrt=m.time)
-
-    def diff_eq_rule(m, t):
-        return m.dxdt[t] == m.x[t] ** 2 - m.u[t]
-
-    m.diff_eq = Constraint(m.time, rule=diff_eq_rule)
-
-    discretizer = TransformationFactory("dae.finite_difference")
-    discretizer.apply_to(m, nfe=2, scheme="BACKWARD")
-
-    m.u.fix(1.0)
-    m.x[1].fix(-0.7580125427537873)
-    m.diff_eq[0].deactivate()
-
-    petsc_obj = PETScIntegrator(
-        m,
-        time_set=m.time,
-        ts_options={
-            "--ts_type": "beuler",
-            "--ts_dt": 3e-2,
-        },
-        calculate_derivatives=True,
-    )
-    res = petsc_obj.dae_by_time_element(
-        between=[1.0, 2.0],
-        skip_initial=True,  # With u and x fixed, no variables to solve for at t0
-    )
-    # No value assigned at 0 because there's no corresponding discretization equation
-    assert m.dxdt[0].value is None
-    assert m.dxdt[1].value is None
-    assert value(m.dxdt[2]) == pytest.approx(-0.2034733131369807, rel=1e-3)
 
 
 @pytest.mark.unit
