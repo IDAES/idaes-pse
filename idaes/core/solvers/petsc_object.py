@@ -83,9 +83,9 @@ def get_derivative_differential_vardata_map(
     Returns:
         deriv_diff_map (ComponentMap): Map from derivative variables to a
             dictionary containing several keys: "diff_var", which is mapped
-            to the corresponding differential variable, "disc_eqn", which
+            to the corresponding differential variable, "disc_eq", which
             is mapped to the corresponding discretization equation (if it
-            exists), and "cont_eqn", which is mapped to a continuity equation
+            exists), and "cont_eq", which is mapped to a continuity equation
             (if it exists).
 
     """
@@ -104,27 +104,27 @@ def get_derivative_differential_vardata_map(
             deriv = var
             diffvar = deriv.get_state_var()
             block = deriv.parent_block()
-            disc_eqn = block.find_component(var.local_name + DAE_DISC_SUFFIX)
-            cont_eqn = block.find_component(
+            disc_eq = block.find_component(var.local_name + DAE_DISC_SUFFIX)
+            cont_eq = block.find_component(
                 diffvar.local_name + "_" + cont_set_name + DAE_CONT_SUFFIX
             )
 
             for idx in var:
                 out_map = {}
                 if (
-                    disc_eqn is not None
-                    and disc_eqn.active
-                    and idx in disc_eqn
-                    and disc_eqn[idx].active
+                    disc_eq is not None
+                    and disc_eq.active
+                    and idx in disc_eq
+                    and disc_eq[idx].active
                 ):
-                    out_map["disc_eqn"] = disc_eqn[idx]
+                    out_map["disc_eq"] = disc_eq[idx]
                 if (
-                    cont_eqn is not None
-                    and cont_eqn.active
-                    and idx in cont_eqn
-                    and cont_eqn[idx].active
+                    cont_eq is not None
+                    and cont_eq.active
+                    and idx in cont_eq
+                    and cont_eq[idx].active
                 ):
-                    out_map["cont_eqn"] = cont_eqn[idx]
+                    out_map["cont_eq"] = cont_eq[idx]
                 if out_map:
                     out_map["diff_var"] = diffvar[idx]
                     deriv_diff_map[deriv[idx]] = out_map
@@ -364,8 +364,8 @@ class PETScIntegrator(object):
 
         disc_condata = []
         for data_dict in self._derivative_differential_vardata_map.values():
-            if "disc_eqn" in data_dict:
-                disc_condata.append(data_dict["disc_eqn"])
+            if "disc_eq" in data_dict:
+                disc_condata.append(data_dict["disc_eq"])
         self._disc_condata = disc_condata
 
     @property
@@ -553,11 +553,12 @@ class PETScIntegrator(object):
     ):
         self._validate_no_fixed_nonzero_derivatives()
 
+        # Use a ComponentSet to avoid variables from being counted
+        # twice if a Reference to that variable exists
         variables = ComponentSet()
         for var in self.time_variables:
-            # Use a ComponentSet to avoid variables from being counted
-            # twice if a Reference to that variable exists
             variables.add(var[time_point])
+
         constraints = []
         for con in self.time_constraints:
             if time_point in con and con[time_point] not in self._disc_condata:

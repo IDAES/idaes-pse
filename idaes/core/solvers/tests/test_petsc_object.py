@@ -20,6 +20,7 @@ import json
 import os
 from pyomo.common.collections import ComponentSet, ComponentMap
 from pyomo.environ import (
+    assert_optimal_termination,
     Block,
     ConcreteModel,
     Constraint,
@@ -41,7 +42,7 @@ from idaes.core.solvers.petsc_object import (
     get_derivative_differential_vardata_map,
 )
 from idaes.core.solvers.petsc import petsc_available, PetscTrajectory
-from idaes.core.util import from_json, StoreSpec
+from idaes.core.util import DiagnosticsToolbox, from_json, StoreSpec
 import idaes.logger as idaeslog
 
 
@@ -256,8 +257,8 @@ class TestGetDerivativeDifferentialVardataMap(object):
                 assert deriv_data in deriv_map
                 assert deriv_map[deriv_data]["diff_var"] is m.x[idx]
                 # Finite difference generates discretization equations
-                assert deriv_map[deriv_data]["disc_eqn"] is m.dxdt_disc_eq[idx]
-                assert "cont_eqn" not in deriv_map[deriv_data]
+                assert deriv_map[deriv_data]["disc_eq"] is m.dxdt_disc_eq[idx]
+                assert "cont_eq" not in deriv_map[deriv_data]
 
     @pytest.mark.unit
     def test_get_derivative_differential_vardata_map_multidimensional_indexing(self):
@@ -290,8 +291,7 @@ class TestGetDerivativeDifferentialVardataMap(object):
                     assert deriv_data in deriv_map_x
                     assert deriv_map_x[deriv_data]["diff_var"] is m.x[idx, t_val]
                     assert (
-                        deriv_map_x[deriv_data]["disc_eqn"]
-                        is m.dxdt_disc_eq[idx, t_val]
+                        deriv_map_x[deriv_data]["disc_eq"] is m.dxdt_disc_eq[idx, t_val]
                     )
 
         # 2. Map for y (t first, i second)
@@ -306,8 +306,7 @@ class TestGetDerivativeDifferentialVardataMap(object):
                     assert deriv_data in deriv_map_y
                     assert deriv_map_y[deriv_data]["diff_var"] is m.y[t_val, idx]
                     assert (
-                        deriv_map_y[deriv_data]["disc_eqn"]
-                        is m.dydt_disc_eq[t_val, idx]
+                        deriv_map_y[deriv_data]["disc_eq"] is m.dydt_disc_eq[t_val, idx]
                     )
 
     @pytest.mark.unit
@@ -343,7 +342,7 @@ class TestGetDerivativeDifferentialVardataMap(object):
             if idx == pytest.approx(10):
                 assert deriv_data in deriv_map
                 assert deriv_map[deriv_data]["diff_var"] is m.y[idx]
-                assert deriv_map[deriv_data]["disc_eqn"] is m.dydt_disc_eq[idx]
+                assert deriv_map[deriv_data]["disc_eq"] is m.dydt_disc_eq[idx]
             else:
                 assert deriv_data not in deriv_map
 
@@ -370,8 +369,8 @@ class TestGetDerivativeDifferentialVardataMap(object):
         deriv_map = get_derivative_differential_vardata_map(m, m.t)
 
         # In Lagrange-Legendre collocation:
-        # - Collocation points have discretization equations (disc_eqn).
-        # - Finite element boundaries (except the first point) have continuity equations (cont_eqn).
+        # - Collocation points have discretization equations (disc_eq).
+        # - Finite element boundaries (except the first point) have continuity equations (cont_eq).
         for idx in m.t:
             deriv_data = m.blk.dxdt[idx]
 
@@ -383,9 +382,9 @@ class TestGetDerivativeDifferentialVardataMap(object):
                 assert deriv_map[deriv_data]["diff_var"] is m.x[idx]
 
                 if has_disc:
-                    assert deriv_map[deriv_data]["disc_eqn"] is m.blk.dxdt_disc_eq[idx]
+                    assert deriv_map[deriv_data]["disc_eq"] is m.blk.dxdt_disc_eq[idx]
                 if has_cont:
-                    assert deriv_map[deriv_data]["cont_eqn"] is m.blk.x_t_cont_eq[idx]
+                    assert deriv_map[deriv_data]["cont_eq"] is m.blk.x_t_cont_eq[idx]
             else:
                 # Point has neither constraint, so it should not be mapped
                 assert deriv_data not in deriv_map
@@ -1245,64 +1244,132 @@ def test_exception_collocation_ll():
         )
 
 
-# def make_index_reduction_model(disc_method, nfe):
-#     m = ConcreteModel()
-#     m.time = ContinuousSet(initialize=(0.0, 1.0))
-#     m.comp_set = ["A", "B"]
-#     m.n = Var(
-#         m.time,
-#         m.comp_set,
-#         initialize=1,
-#     )
-#     m.dn_dt = DerivativeVar(m.n, initialize=0)
-#     m.C_in = Param(
-#         m.time,
-#         m.comp_set,
-#         initialize=1,
-#         mutable=True
-#     )
-#     m.F_in = Param(m.time, initialize=1, mutable=True)
-#     m.V = Param(initialize=1)
-#     m.V_bar = Param(
-#         m.comp_set,
-#         initialize={
-#             "A": 1,
-#             "B": 2
-#         }
-#     )
-#     m.F_out = Var(m.time, initialize=1)
+def make_index_reduction_model(disc_method, nfe, reduce_index):
+    m = ConcreteModel()
+    m.time = ContinuousSet(initialize=(0.0, 1.0))
+    m.comp_set = ["A", "B"]
+    m.n = Var(
+        m.time,
+        m.comp_set,
+        initialize=1,
+    )
+    m.dn_dt = DerivativeVar(m.n, initialize=0)
+    m.C_in = Param(m.time, m.comp_set, initialize=1, mutable=True)
+    m.F_in = Param(m.time, initialize=1, mutable=True)
+    m.V = Param(initialize=1)
+    m.V_bar = Param(m.comp_set, initialize={"A": 1, "B": 2})
+    m.F_out = Var(m.time, initialize=1)
 
-#     @m.Constraint(m.time, m.comp_set)
-#     def material_balance_eqn(b, t, j):
-#         return b.dn_dt[t, j] == (
-#             b.C_in[t, j] * b.F_in[t]
-#             - b.n[t, j] / b.V * b.F_out[t]
-#         )
+    @m.Constraint(m.time, m.comp_set)
+    def material_balance_eqn(b, t, j):
+        return b.dn_dt[t, j] == (
+            b.C_in[t, j] * b.F_in[t] - b.n[t, j] / b.V * b.F_out[t]
+        )
 
-#     @m.Constraint(m.time)
-#     def volume_eqn(b, t):
-#         return sum(b.n[t, j] * b.V_bar[j] for j in b.comp_set) == b.V
+    @m.Constraint(m.time)
+    def volume_eqn(b, t):
+        return sum(b.n[t, j] * b.V_bar[j] for j in b.comp_set) == b.V
 
-#     discretizer = TransformationFactory(disc_method)
-#     if disc_method == "dae.collocation":
-#         discretizer.apply_to(m, nfe=nfe, ncp=2, scheme="LAGRANGE-RADAU")
-#     else:
-#         discretizer.apply_to(m, nfe=nfe, scheme="BACKWARD")
+    discretizer = TransformationFactory(disc_method)
+    if disc_method == "dae.collocation":
+        discretizer.apply_to(m, nfe=nfe, ncp=2, scheme="LAGRANGE-RADAU")
+    else:
+        discretizer.apply_to(m, nfe=nfe, scheme="BACKWARD")
 
-#     m.dn_dt_disc_eq[:,"B"].deactivate()
+    m.n[0, "A"].fix()
+    if reduce_index:
+        m.dn_dt_disc_eq[:, "B"].deactivate()
 
-#     m.n[:, "A"].set_value(1/2)
-#     m.n[:, "B"].set_value(1/4)
-#     m.C_in[:, "A"].set_value(1/2)
-#     m.C_in[:, "B"].set_value(1/2)
+        @m.Constraint(m.time)
+        def d_volume_dt_eqn(b, t):
+            return sum(b.dn_dt[t, j] * b.V_bar[j] for j in b.comp_set) == 0
 
-#     return m
+    else:
+        m.n[0, "B"].fix()
 
-# @pytest.mark.parametrize("disc_method", ["dae.finite_difference", "dae.collocation"])
-# @pytest.mark.parametrize("nfe", [1, 2])
-# @pytest.mark.unit
-# @pytest.mark.skipif(not petsc_available(), reason="PETSc solver not available")
-# def test_find_discretization_equations_deactivated(disc_method, nfe):
-#     m = make_index_reduction_model(disc_method, nfe)
-#     out = petsc.find_discretization_equations(m, m.time)
-#     assert m.dn_dt_disc_eq in out
+    m.n[:, "A"].set_value(1 / 2)
+    m.n[:, "B"].set_value(1 / 4)
+    m.C_in[:, "A"].set_value(1 / 2)
+    m.C_in[:, "B"].set_value(1 / 2)
+
+    return m
+
+
+@pytest.mark.parametrize("reduce_index", [False, True])
+@pytest.mark.parametrize("disc_method", ["dae.finite_difference", "dae.collocation"])
+@pytest.mark.parametrize("nfe", [1, 2])
+@pytest.mark.unit
+@pytest.mark.skipif(not petsc_available(), reason="PETSc solver not available")
+def test_find_discretization_equations_deactivated(disc_method, nfe, reduce_index):
+    m = make_index_reduction_model(disc_method, nfe, reduce_index)
+    out = get_derivative_differential_vardata_map(m, m.time)
+
+    # Make sure that the derivative map gets generated correctly
+    for t in m.time:
+        if t == 0:
+            assert m.dn_dt[t, "A"] not in out
+        else:
+            assert out[m.dn_dt[t, "A"]]["diff_var"] is m.n[t, "A"]
+            assert out[m.dn_dt[t, "A"]]["disc_eq"] is m.dn_dt_disc_eq[t, "A"]
+        if reduce_index or t == 0:
+            assert m.dn_dt[t, "B"] not in out
+        else:
+            assert out[m.dn_dt[t, "B"]]["diff_var"] is m.n[t, "B"]
+            assert out[m.dn_dt[t, "B"]]["disc_eq"] is m.dn_dt_disc_eq[t, "B"]
+
+    integrator = PETScIntegrator(
+        m,
+        time_set=m.time,
+        ts_options={
+            "--ts_type": "beuler",
+            "--ts_dt": 3e-2,
+        },
+        calculate_derivatives=True,
+    )
+
+    ic_problem = integrator.get_initial_condition_problem(0)
+    dt = DiagnosticsToolbox(ic_problem)
+    if reduce_index:
+        dt.assert_no_structural_warnings()
+    else:
+        out = dt.get_dulmage_mendelsohn_partition()
+        # 3 for the constraints in the overconstrained set
+        # 0 for the first block
+        # 0 for the first constraint
+        assert out[3][0][0] is m.volume_eqn[0]
+
+    for t in m.time:
+        if t == m.time.first():
+            continue
+        tstep_problem, diff_vars, fixedness = integrator.get_timestep_problem(t)
+        diff_vars = ComponentSet(diff_vars)
+        dt = DiagnosticsToolbox(tstep_problem)
+        for var in diff_vars:
+            var.fix()
+        assert m.n[t, "A"] in diff_vars
+        if reduce_index:
+            assert len(diff_vars) == 1
+            dt.assert_no_structural_warnings()
+        else:
+            assert len(diff_vars) == 2
+            assert m.n[t, "B"] in diff_vars
+            out = dt.get_dulmage_mendelsohn_partition()
+            # 3 for the constraints in the overconstrained set
+            # 0 for the first block
+            # 0 for the first constraint
+            assert out[3][0][0] is m.volume_eqn[t]
+
+        from_json(m, sd=fixedness, wts=StoreSpec.isfixed())
+
+    def approx(x):
+        return pytest.approx(x, rel=1e-2)
+
+    if reduce_index:
+        results = integrator.dae_by_time_element(
+            between=[m.time.first(), m.time.last()],
+        )
+        assert_optimal_termination(results.results[0])
+        assert value(m.n[0, "A"]) == 0.5
+        assert value(m.n[0, "B"]) == 0.25
+        assert value(m.n[1, "A"]) == approx(0.372149)
+        assert value(m.n[1, "B"]) == approx(0.313925)
