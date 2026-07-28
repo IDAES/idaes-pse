@@ -40,13 +40,13 @@ from sys import stdout
 from pandas import DataFrame
 from pint.errors import UndefinedUnitError
 from pyomo.common.config import ConfigValue, ListOf
-from idaes.core.base.costing_base import load_location_factors
 from pyomo.core.base.units_container import InconsistentUnitsError, UnitsError
 from pyomo.environ import Expression, Param, Var, log10
 from pyomo.environ import units as pyunits
 from pyomo.environ import value
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
+from idaes.core.base.costing_base import load_location_factors
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core import FlowsheetCostingBlockData, declare_process_block_class
