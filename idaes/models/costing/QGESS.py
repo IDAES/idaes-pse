@@ -243,7 +243,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             ),
             description="Basis location for costing. Must be a supported list of three strings passed as [country, city, value];"
             "see the IDAES 'location_factors.json' dictionary for a list of supported countries and cities. The entry 'value' "
-            "defaults to 'average' but can be specified as 'min' or 'max' as well to retrieve the corresonding data entry. For "
+            "defaults to 'average' but can be specified as 'min' or 'max' as well to retrieve the corresponding data entry. For "
             "entries with a country and no specified city, must be of the form [country, aggregate, value].",
         ),
     )
