@@ -339,7 +339,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     "You should set has_phase_equilibrium=False."
                 )
                 deprecation_warning(
-                    msg=msg, logger=_log, version="2.0.0", remove_in="2.14.0"
+                    msg=msg, logger=_log, version="2.0.0", remove_in="3.0.0"
                 )
                 has_phase_equilibrium = False
             else:

@@ -771,8 +771,6 @@ class MSContactorInitializer(ModularInitializerBase):
             const_names.append(model.name + "." + s + "_pressure_balance")
             const_names.append(model.name + "." + s + "_side_stream_pressure_balance")
 
-            # const_names.append(model.name + "." + s + "_material_holdup_constraint")
-
             try:
                 # If has rate reactions ,fi extent to 0 for first pass
                 getattr(model, s + "_rate_reaction_extent").fix(0)

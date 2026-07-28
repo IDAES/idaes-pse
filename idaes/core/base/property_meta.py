@@ -269,7 +269,7 @@ class UnitSet(object):
     @property
     def MOLAR_VOLUME(self):
         msg = "The unit name MOLAR_VOLUME is being deprecated in favor of VOLUME_MOL."
-        deprecation_warning(msg=msg, logger=_log, version="2.3.0", remove_in="2.14.0")
+        deprecation_warning(msg=msg, logger=_log, version="2.3.0", remove_in="3.0.0")
         return self.VOLUME_MOLE
 
     # Flows
@@ -542,7 +542,7 @@ class PropertyClassMetadata(object):
                         "different property set by calling the define_property_set() method."
                     )
                     deprecation_warning(
-                        msg=msg, logger=_log, version="2.0.0", remove_in="2.14.0"
+                        msg=msg, logger=_log, version="2.0.0", remove_in="3.0.0"
                     )
                     n = k
                     i = None
