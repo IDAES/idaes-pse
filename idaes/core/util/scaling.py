@@ -237,9 +237,6 @@ def set_scaling_factor(c, v, data_objects=True, overwrite=True):
         c.parent_block().scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
         suf = c.parent_block().scaling_factor
 
-    # Cast to float to avoid garbage inputs
-    v = float(v)
-
     if not overwrite:
         try:
             tmp = suf[c]  # pylint: disable=unused-variable

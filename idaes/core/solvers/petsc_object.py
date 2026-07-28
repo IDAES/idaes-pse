@@ -1,18 +1,33 @@
-import os
-import sys
-import shutil
-import enum
-import copy
-import json
-import gzip
-import numpy as np
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES).
+#
+# Copyright (c) 2018-2026 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
+#################################################################################
+"""
+This module contains the PETScIntegrator object to manage calls to the PETSc
+TS integrator. It caches a flattened version of the model in order to speed up
+repeated calls to the integrator and includes the get_initial_condition_problem
+and get_timestep_problem functions to help troubleshoot issues with dynamic
+models.
+
+This module also contains the get_derivative_differential_vardata_map function,
+which builds a map between derivative variables and their corresponding
+differential variables and discretization equations.
+
+Authors: Douglas Allan, John Eslick
+"""
 
 from pyomo.core.base import BlockData
 from pyomo.environ import Constraint, Set, SolverFactory, Suffix, value, Var
 from pyomo.common.collections import ComponentSet, ComponentMap
-from pyomo.core.expr.visitor import identify_variables
 from pyomo.dae import ContinuousSet, DerivativeVar
-from pyomo.common import Executable
 from pyomo.common.config import (
     ConfigDict,
     ConfigValue,
@@ -20,36 +35,20 @@ from pyomo.common.config import (
     IsInstance,
     ListOf,
 )
-from pyomo.dae.flatten import flatten_dae_components, slice_component_along_sets
-from pyomo.util.subsystems import (
-    TemporarySubsystemManager,
-    create_subsystem_block,
-)
-from pyomo.solvers.plugins.solvers.ASL import ASL
-from pyomo.common.tempfiles import TempfileManager
-from pyomo.util.calc_var_value import calculate_variable_from_constraint
-from pyomo.common.deprecation import deprecation_warning
+from pyomo.dae.flatten import flatten_dae_components
+from pyomo.util.subsystems import create_subsystem_block
 
-import idaes
 import idaes.logger as idaeslog
-import idaes.config as icfg
 
-from idaes.core.scaling import get_scaling_factor, set_scaling_factor
 from idaes.core.scaling.util import propagate_scaling_factors_to_temporary_block
 from idaes.core.solvers.petsc import (
     calculate_time_derivatives,
     DaeVarTypes,
     PetscDAEResults,
     PetscTrajectory,
-    _set_dae_suffixes_from_variables,
 )
 
 from idaes.core.util.model_serializer import StoreSpec, from_json, to_json
-
-# Importing a few things here so that they are cached
-# pylint: disable=unused-import
-# pylint: disable=import-outside-toplevel
-# pylint: disable=protected-access
 
 DAE_DISC_SUFFIX = "_disc_eq"
 DAE_CONT_SUFFIX = "_cont_eq"
@@ -183,18 +182,6 @@ CONFIG.declare(
         "constraints to initial_variables and initial_constraints.",
     ),
 )
-# CONFIG.declare(
-#     "skip_initial",
-#     ConfigValue(
-#         default=False,
-#         domain=bool,
-#         description="Don't do the initial condition calculation step, "
-#             "and assume that the initial condition values have already been "
-#             "calculated. This can be useful, for example, if you read initial "
-#             "conditions from a separately solved steady state problem, or "
-#             "otherwise know the initial conditions."
-#     )
-# )
 CONFIG.declare(
     "initial_solver",
     ConfigValue(
@@ -229,15 +216,6 @@ CONFIG.declare(
         description="Options to use with the PETSc integrator TS.",
     ),
 )
-# CONFIG.declare(
-#     "between",
-#     ConfigValue(
-#         default=None,
-#         domain=ListOf(float),
-#         description="List of time points to integrate between. If "
-#             "None use all time points in the model."
-#     )
-# )
 CONFIG.declare(
     "interpolate_results",
     ConfigValue(
@@ -258,15 +236,6 @@ CONFIG.declare(
         "Pyomo model.",
     ),
 )
-# CONFIG.declare(
-#     "previous_trajectory",
-#     ConfigValue(
-#         default=None,
-#         domain=PetscTrajectory,
-#         description="Trajectory from previous integration "
-#             "of this model. New results will be appended to this trajectory object."
-#     )
-# )
 CONFIG.declare(
     "representative_time",
     ConfigValue(
@@ -560,7 +529,7 @@ class PETScIntegrator(object):
         time_point: float = None,
     ):
         """
-        From the cached, flattened model, construct an inital condition
+        From the cached, flattened model, construct an initial condition
         problem at a given time point. Solving this problem allows us
         to ensure that atemporal constraints are satisfied (such as those
         involving unit geometry, which does not change over time) as well
