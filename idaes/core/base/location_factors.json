@@ -1,7 +1,7 @@
 [
     {
         "country": "Afghanistan",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.91,
             "max": 0.96,
@@ -10,7 +10,7 @@
     },
     {
         "country": "Albania",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.89,
             "max": 0.93,
@@ -19,7 +19,7 @@
     },
     {
         "country": "Algeria",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.9,
             "max": 0.95,
@@ -28,7 +28,7 @@
     },
     {
         "country": "Angola",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.92,
             "max": 0.97,
@@ -37,7 +37,7 @@
     },
     {
         "country": "Argentina",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.92,
             "max": 0.95,
@@ -46,7 +46,7 @@
     },
     {
         "country": "Armenia",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.9,
             "max": 0.94,
@@ -82,7 +82,7 @@
     },
     {
         "country": "Austria",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 1.04,
             "max": 1.04,
@@ -91,7 +91,7 @@
     },
     {
         "country": "Azerbaijan",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.92,
             "max": 0.97,
@@ -100,7 +100,7 @@
     },
     {
         "country": "Bahrain",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.92,
             "max": 0.95,
@@ -109,7 +109,7 @@
     },
     {
         "country": "Bangladesh",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.9,
             "max": 0.92,
@@ -118,7 +118,7 @@
     },
     {
         "country": "Belarus",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.93,
             "max": 0.96,
@@ -127,7 +127,7 @@
     },
     {
         "country": "Belgium",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 1.01,
             "max": 1.04,
@@ -136,7 +136,7 @@
     },
     {
         "country": "Belize",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.91,
             "max": 0.95,
@@ -145,7 +145,7 @@
     },
     {
         "country": "Benin",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.9,
             "max": 0.95,
@@ -154,7 +154,7 @@
     },
     {
         "country": "Bhutan",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.9,
             "max": 0.95,
@@ -163,7 +163,7 @@
     },
     {
         "country": "Bolivia",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.9,
             "max": 0.94,
@@ -172,7 +172,7 @@
     },
     {
         "country": "Bosnia and Herzegovina",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.9,
             "max": 0.95,
@@ -181,7 +181,7 @@
     },
     {
         "country": "Botswana",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.9,
             "max": 0.95,
@@ -190,7 +190,7 @@
     },
     {
         "country": "Brazil",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.88,
             "max": 0.96,
@@ -199,7 +199,7 @@
     },
     {
         "country": "Bulgaria",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.9,
             "max": 0.95,
@@ -208,7 +208,7 @@
     },
     {
         "country": "Burkina Faso",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.88,
             "max": 0.95,
@@ -217,7 +217,7 @@
     },
     {
         "country": "Burundi",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.88,
             "max": 0.95,
@@ -226,7 +226,7 @@
     },
     {
         "country": "Cambodia",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.84,
             "max": 0.94,
@@ -235,7 +235,7 @@
     },
     {
         "country": "Cameroon",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.9,
             "max": 0.95,
@@ -433,7 +433,7 @@
     },
     {
         "country": "Central African Republic",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.9,
             "max": 0.94,
@@ -442,7 +442,7 @@
     },
     {
         "country": "Chad",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.89,
             "max": 0.93,
@@ -451,7 +451,7 @@
     },
     {
         "country": "Chile",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.91,
             "max": 0.95,
@@ -505,7 +505,7 @@
     },
     {
         "country": "Colombia",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.9,
             "max": 0.93,
@@ -514,7 +514,7 @@
     },
     {
         "country": "Democratic Republic of the Congo",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.9,
             "max": 0.94,
@@ -523,7 +523,7 @@
     },
     {
         "country": "Costa Rica",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.92,
             "max": 0.94,
@@ -532,7 +532,7 @@
     },
     {
         "country": "Côte d'Ivoire",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.9,
             "max": 0.93,
@@ -541,7 +541,7 @@
     },
     {
         "country": "Croatia",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.9,
             "max": 0.95,
@@ -550,7 +550,7 @@
     },
     {
         "country": "Cuba",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.92,
             "max": 0.94,
@@ -559,7 +559,7 @@
     },
     {
         "country": "Cyprus",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.92,
             "max": 0.94,
@@ -568,7 +568,7 @@
     },
     {
         "country": "Czech Republic",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.89,
             "max": 0.93,
@@ -577,7 +577,7 @@
     },
     {
         "country": "Denmark",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 1.05,
             "max": 1.09,
@@ -586,7 +586,7 @@
     },
     {
         "country": "Dominican Republic",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.92,
             "max": 0.95,
@@ -595,7 +595,7 @@
     },
     {
         "country": "Ecuador",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.91,
             "max": 0.94,
@@ -604,7 +604,7 @@
     },
     {
         "country": "Egypt",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.86,
             "max": 0.94,
@@ -613,7 +613,7 @@
     },
     {
         "country": "El Salvador",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.92,
             "max": 0.94,
@@ -622,7 +622,7 @@
     },
     {
         "country": "Eritrea",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.88,
             "max": 0.93,
@@ -631,7 +631,7 @@
     },
     {
         "country": "Estonia",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.9,
             "max": 0.94,
@@ -640,7 +640,7 @@
     },
     {
         "country": "Ethiopia",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.89,
             "max": 0.93,
@@ -649,7 +649,7 @@
     },
     {
         "country": "Finland",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 1.06,
             "max": 1.1,
@@ -703,7 +703,7 @@
     },
     {
         "country": "Gabon",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.89,
             "max": 0.94,
@@ -712,7 +712,7 @@
     },
     {
         "country": "The Gambia",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.89,
             "max": 0.93,
@@ -721,7 +721,7 @@
     },
     {
         "country": "Georgia",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.92,
             "max": 0.95,
@@ -757,7 +757,7 @@
     },
     {
         "country": "Ghana",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.89,
             "max": 0.94,
@@ -766,7 +766,7 @@
     },
     {
         "country": "Greece",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.91,
             "max": 0.93,
@@ -775,7 +775,7 @@
     },
     {
         "country": "Guatemala",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.91,
             "max": 0.94,
@@ -784,7 +784,7 @@
     },
     {
         "country": "Guinea-Bissau",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.9,
             "max": 0.93,
@@ -793,7 +793,7 @@
     },
     {
         "country": "Guinea",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.88,
             "max": 0.92,
@@ -802,7 +802,7 @@
     },
     {
         "country": "Guyana",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.85,
             "max": 0.94,
@@ -811,7 +811,7 @@
     },
     {
         "country": "Haiti",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.87,
             "max": 0.93,
@@ -820,7 +820,7 @@
     },
     {
         "country": "Honduras",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.9,
             "max": 0.93,
@@ -829,7 +829,7 @@
     },
     {
         "country": "Hong Kong",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.9,
             "max": 0.93,
@@ -838,7 +838,7 @@
     },
     {
         "country": "Hungary",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.88,
             "max": 0.92,
@@ -847,7 +847,7 @@
     },
     {
         "country": "India",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.85,
             "max": 0.92,
@@ -856,7 +856,7 @@
     },
     {
         "country": "Indonesia",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.75,
             "max": 0.86,
@@ -865,7 +865,7 @@
     },
     {
         "country": "Iran",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.87,
             "max": 0.93,
@@ -874,7 +874,7 @@
     },
     {
         "country": "Iraq",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.88,
             "max": 0.96,
@@ -910,7 +910,7 @@
     },
     {
         "country": "Israel",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.92,
             "max": 0.94,
@@ -946,7 +946,7 @@
     },
     {
         "country": "Jamaica",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.89,
             "max": 0.93,
@@ -982,7 +982,7 @@
     },
     {
         "country": "Jordan",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.88,
             "max": 0.92,
@@ -991,7 +991,7 @@
     },
     {
         "country": "Kazakhstan",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.89,
             "max": 0.96,
@@ -1000,7 +1000,7 @@
     },
     {
         "country": "Kenya",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.9,
             "max": 0.95,
@@ -1009,7 +1009,7 @@
     },
     {
         "country": "Kyrgyzstan",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.9,
             "max": 0.93,
@@ -1018,7 +1018,7 @@
     },
     {
         "country": "Kuwait",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.92,
             "max": 0.97,
@@ -1027,7 +1027,7 @@
     },
     {
         "country": "Laos",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.83,
             "max": 0.94,
@@ -1036,7 +1036,7 @@
     },
     {
         "country": "Latvia",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.92,
             "max": 0.95,
@@ -1045,7 +1045,7 @@
     },
     {
         "country": "Lebanon",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.9,
             "max": 0.95,
@@ -1054,7 +1054,7 @@
     },
     {
         "country": "Libya",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.91,
             "max": 0.94,
@@ -1063,7 +1063,7 @@
     },
     {
         "country": "Lithuania",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.91,
             "max": 0.96,
@@ -1072,7 +1072,7 @@
     },
     {
         "country": "Madagascar",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.88,
             "max": 0.94,
@@ -1081,7 +1081,7 @@
     },
     {
         "country": "Malawi",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.89,
             "max": 0.93,
@@ -1090,7 +1090,7 @@
     },
     {
         "country": "Malaysia",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.83,
             "max": 0.92,
@@ -1099,7 +1099,7 @@
     },
     {
         "country": "Mali",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.87,
             "max": 0.94,
@@ -1108,7 +1108,7 @@
     },
     {
         "country": "Malta",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.9,
             "max": 0.95,
@@ -1117,7 +1117,7 @@
     },
     {
         "country": "Mexico",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.84,
             "max": 0.92,
@@ -1126,7 +1126,7 @@
     },
     {
         "country": "Mongolia",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.89,
             "max": 0.93,
@@ -1135,7 +1135,7 @@
     },
     {
         "country": "Morocco",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.89,
             "max": 0.95,
@@ -1144,7 +1144,7 @@
     },
     {
         "country": "Mozambique",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.88,
             "max": 0.94,
@@ -1153,7 +1153,7 @@
     },
     {
         "country": "Myanmar",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.85,
             "max": 0.93,
@@ -1162,7 +1162,7 @@
     },
     {
         "country": "Namibia",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.88,
             "max": 0.94,
@@ -1171,7 +1171,7 @@
     },
     {
         "country": "Nepal",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.89,
             "max": 0.94,
@@ -1180,7 +1180,7 @@
     },
     {
         "country": "The Netherlands",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 1.0,
             "max": 1.05,
@@ -1189,7 +1189,7 @@
     },
     {
         "country": "New Zealand",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 1.01,
             "max": 1.04,
@@ -1198,7 +1198,7 @@
     },
     {
         "country": "Nicaragua",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.89,
             "max": 0.94,
@@ -1207,7 +1207,7 @@
     },
     {
         "country": "Niger",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.88,
             "max": 0.93,
@@ -1216,7 +1216,7 @@
     },
     {
         "country": "Nigeria",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.93,
             "max": 0.98,
@@ -1252,7 +1252,7 @@
     },
     {
         "country": "Oman",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.93,
             "max": 0.98,
@@ -1261,7 +1261,7 @@
     },
     {
         "country": "Panama",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.89,
             "max": 0.93,
@@ -1270,7 +1270,7 @@
     },
     {
         "country": "Pakistan",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.87,
             "max": 0.93,
@@ -1279,7 +1279,7 @@
     },
     {
         "country": "Paraguay",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.89,
             "max": 0.94,
@@ -1288,7 +1288,7 @@
     },
     {
         "country": "Peru",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.89,
             "max": 0.95,
@@ -1297,7 +1297,7 @@
     },
     {
         "country": "Philippines",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.86,
             "max": 0.93,
@@ -1306,7 +1306,7 @@
     },
     {
         "country": "Poland",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.91,
             "max": 0.94,
@@ -1315,7 +1315,7 @@
     },
     {
         "country": "Portugal",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.89,
             "max": 0.93,
@@ -1324,7 +1324,7 @@
     },
     {
         "country": "Romania",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.89,
             "max": 0.94,
@@ -1369,7 +1369,7 @@
     },
     {
         "country": "Rwanda",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.88,
             "max": 0.93,
@@ -1378,7 +1378,7 @@
     },
     {
         "country": "Saudi Arabia",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.93,
             "max": 0.98,
@@ -1387,7 +1387,7 @@
     },
     {
         "country": "Senegal",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.88,
             "max": 0.94,
@@ -1396,7 +1396,7 @@
     },
     {
         "country": "Singapore",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.9,
             "max": 0.95,
@@ -1405,7 +1405,7 @@
     },
     {
         "country": "South Africa",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.92,
             "max": 0.95,
@@ -1414,7 +1414,7 @@
     },
     {
         "country": "South Korea",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.92,
             "max": 0.96,
@@ -1423,7 +1423,7 @@
     },
     {
         "country": "Spain",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.92,
             "max": 0.94,
@@ -1432,7 +1432,7 @@
     },
     {
         "country": "Sri Lanka",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.78,
             "max": 0.89,
@@ -1441,7 +1441,7 @@
     },
     {
         "country": "Sudan",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.88,
             "max": 0.95,
@@ -1450,7 +1450,7 @@
     },
     {
         "country": "Sweden",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 1.07,
             "max": 1.13,
@@ -1459,7 +1459,7 @@
     },
     {
         "country": "Switzerland",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 1.07,
             "max": 1.14,
@@ -1468,7 +1468,7 @@
     },
     {
         "country": "Syria",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.91,
             "max": 0.95,
@@ -1477,7 +1477,7 @@
     },
     {
         "country": "Tajikistan",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.89,
             "max": 0.94,
@@ -1486,7 +1486,7 @@
     },
     {
         "country": "Taiwan",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.9,
             "max": 0.94,
@@ -1495,7 +1495,7 @@
     },
     {
         "country": "Thailand",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.85,
             "max": 0.93,
@@ -1504,7 +1504,7 @@
     },
     {
         "country": "Togo",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.89,
             "max": 0.94,
@@ -1513,7 +1513,7 @@
     },
     {
         "country": "Tunisia",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.89,
             "max": 0.95,
@@ -1522,7 +1522,7 @@
     },
     {
         "country": "Turkey",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.89,
             "max": 0.94,
@@ -1531,7 +1531,7 @@
     },
     {
         "country": "UAE",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.93,
             "max": 0.98,
@@ -1540,7 +1540,7 @@
     },
     {
         "country": "Uganda",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.9,
             "max": 0.95,
@@ -1549,7 +1549,7 @@
     },
     {
         "country": "Ukraine",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.91,
             "max": 0.95,
@@ -1619,9 +1619,9 @@
             "average": 1.05
         }
     },
-    { TODO add other US regions
+    {
         "country": "United States",
-        "city": "Washington DC",
+        "city": "Washington DC / Northeast",
         "location_factor": {
             "min": 1.0,
             "max": 1.0,
@@ -1629,8 +1629,44 @@
         }
     },
     {
+        "country": "United States",
+        "city": "Gulf Coast",
+        "location_factor": {
+            "min": 0.9091,
+            "max": 0.9091,
+            "average": 0.9091
+        }
+    },
+    {
+        "country": "United States",
+        "city": "Southwest",
+        "location_factor": {
+            "min": 0.8636,
+            "max": 0.8636,
+            "average": 0.8636
+        }
+    },
+    {
+        "country": "United States",
+        "city": "Midwest",
+        "location_factor": {
+            "min": 1.0455,
+            "max": 1.0455,
+            "average": 1.0455
+        }
+    },
+    {
+        "country": "United States",
+        "city": "West Coast",
+        "location_factor": {
+            "min": 1.1363,
+            "max": 1.1363,
+            "average": 1.1363
+        }
+    },
+    {
         "country": "Uruguay",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.93,
             "max": 0.95,
@@ -1639,7 +1675,7 @@
     },
     {
         "country": "Uzbekistan",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.93,
             "max": 0.96,
@@ -1648,7 +1684,7 @@
     },
     {
         "country": "Venezuela",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.93,
             "max": 0.96,
@@ -1657,7 +1693,7 @@
     },
     {
         "country": "Vietnam",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.86,
             "max": 0.9,
@@ -1666,7 +1702,7 @@
     },
     {
         "country": "Yemen",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.89,
             "max": 0.95,
@@ -1675,7 +1711,7 @@
     },
     {
         "country": "Zambia",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.88,
             "max": 0.94,
@@ -1684,7 +1720,7 @@
     },
     {
         "country": "Zimbabwe",
-        "city": null,
+        "city": "aggregate",
         "location_factor": {
             "min": 0.87,
             "max": 0.93,

@@ -40,6 +40,7 @@ from sys import stdout
 from pandas import DataFrame
 from pint.errors import UndefinedUnitError
 from pyomo.common.config import ConfigValue, ListOf
+from idaes.core.base.costing_base import load_location_factors
 from pyomo.core.base.units_container import InconsistentUnitsError, UnitsError
 from pyomo.environ import Expression, Param, Var, log10
 from pyomo.environ import units as pyunits
@@ -225,23 +226,29 @@ class QGESSCostingData(FlowsheetCostingBlockData):
     #     9. Sensors & Controls accounts
     #     10. University of Kentucky Fire Clay Seam (Hazard No. 4) Rejects
 
-    # TODO add location factor to calculations
-    # CONFIG.declare(
-    #     "location",
-    #     ConfigValue(
-    #         default="United States; Washington, DC",
-    #         domain=str,
-    #         description="Basis location for costing. Must be a supported value passed as 'country; city';"
-    #         "see the IDAES 'location_factors.json' dictionary. For entries with a country and no city, must "
-    #         "be of the form 'country; None'.",
-    #     ),
-    # )
+    CONFIG.declare(
+        "location",
+        ConfigValue(
+            default=["United States", "Washington DC / Northeast", "average"],
+            domain=lambda v: ListOf(str)(v) if (
+                isinstance(v, list) and all(isinstance(i, str) for i in v)
+                ) else (_ for _ in ()).throw(
+        ValueError("Argument 'location' must be a list of strings in form ['country', 'city/region', 'val'] "
+        "where 'val' can be 'min', 'max', or 'average'. Must define `country` and `city`. If `val` "
+        "is not defined, the default value is `average`.")
+    ),
+            description="Basis location for costing. Must be a supported list of three strings passed as [country, city, value];"
+            "see the IDAES 'location_factors.json' dictionary for a list of supported countries and cities. The entry 'value' "
+            "defaults to 'average' but can be specified as 'min' or 'max' as well to retrieve the corresonding data entry. For "
+            "entries with a country and no specified city, must be of the form [country, aggregate, value].",
+        ),
+    )
 
     def build_global_params(self):
         """
         This is where we can declare any global parameters such as default year (2018 per the CONFIG),
         currency (currently only USD is supported), Lang factor (TIC = Lang * BEC, TPC = BEC + TIC),
-        location factor (Washington, D.C. = 1), and so on.
+        location factor, and so on.
         """
 
         # check that the user selected a technology
@@ -296,6 +303,64 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
         # Set a base period for all operating costs
         self.base_period = pyunits.year
+
+        # Set the location factor that will be applied to the total plant cost
+        if (len(self.config.location) < 2 or len(self.config.location) > 3):
+            raise TypeError(
+                "Argument 'location' must contain either 2 or 3 items."
+                )
+            
+
+        if self.config.location == ["United States", "Washington DC / Northeast", "average"]:
+            # user did not choose a location, the default value is 1.00 so don't even load the location data
+            self.location_factor = Param(
+                initialize=1,
+                mutable=True,
+                doc=("Location factor for United States, Washington DC / Northeast, average"),
+                units=pyunits.dimensionless,
+            )
+
+        else:
+            self.location_factor_dictionary = load_location_factors()
+            # alias country and city to make code more readable
+            country = self.config.location[0]
+            city = self.config.location[1]
+
+            # check if country is valid
+            if country not in self.location_factor_dictionary:
+                # too many countries to list, point users to the data file
+                raise KeyError(
+                    f"Country {country} not supported; please check the data file at "
+                    f"IDAES.idaes-pse.idaes.core.base.locations_factors.json for spelling and supported countries."
+                    )
+
+            # check if city is valid
+            if city not in self.location_factor_dictionary[country]:
+                # city lists within countries are not too long, list them here for the user
+                raise KeyError(
+                    f"City {city} not supported for country {country}; valid cities include "
+                    f"{self.location_factor_dictionary[country].keys()}"
+                    )
+
+            # check if min, max, or average was specified at all, and default to average if not
+            if len(self.config.location) == 2:
+                val = "average"
+            else:
+                val = self.config.location[2]
+
+            # check that val matches min, max, or average
+            if val not in ["min", "max", "average"]:
+                raise KeyError(
+                    "Must specify 'min', 'max', or 'average' for location factor value; only "
+                    "passing [country, city] with no third entry will default to 'average'."
+                    )
+
+            self.location_factor = Param(
+                initialize=self.location_factor_dictionary[country][city][val],
+                mutable=True,
+                doc=("Location factor for " + country + ", " + city + ", " + val),
+                units=pyunits.dimensionless,
+            )
 
         # Set capacity factor for overnight and levelized costs
         if self.config.tech == 10:  # UKy REE, assume operating 336 days per year
@@ -2493,7 +2558,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 *
                 # apply economy of numbers if enabled
                 (c.NOAK_factor if c.config.has_economy_of_numbers else 1)
-                # TODO * c.location_factor
+                * c.location_factor
             )
 
     def get_fixed_OM_costs(
@@ -2550,7 +2615,6 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
             # dictionary of default sale prices
             # the currency units are of USD
-            # Purity, purchase quantity, purchasing time, and location, all affect the cost.
             default_sale_prices = {}
 
             if additional_sales_price_dictionaries is not None:
@@ -2756,7 +2820,6 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     units=b.CEPCI_units / pyunits.year,
                 )
 
-                # TODO apply location factor to some of these components
                 # maintenance cost is 2% of TPC
                 @b.Constraint()
                 def maintenance_and_material_cost_eq(c):

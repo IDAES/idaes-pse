@@ -128,12 +128,33 @@ def load_location_factors():
     Location factors for 139 countries are sourced from Compass International (2017):
     https://www.compassinternational.net/wp-content/uploads/2017/01/Worldwide-Industrial.pdf
 
+    Location factors for U.S. regions are sourced from Table 16.13 in the Seider reference above. The values
+    are converted appropriately assuming the base factor of 1.0 corresponds to Washington D.C. and U.S. Northeast.
+
     Note: For some countries, multiple city-specific location factors are provided.
     The benchmark location is Washington, D.C., USA.
     """
     directory = this_file_dir()
     with open(os.path.join(directory, "location_factors.json"), "r") as file:
-        location_factors = json.load(file)
+        location_data = json.load(file)
+
+    # convert to a dictionary format
+    location_factors = {}
+    for item in location_data:
+        country = item["country"]
+        city = item["city"]
+
+        # create entry if new country, otherwise it already exists
+        if country not in location_factors:
+            location_factors[country] = {}
+
+        # create entry for city
+        location_factors[country][city] = {}
+
+        # populate min, max, average
+        for val in ["min", "max", "average"]:
+            location_factors[country][city][val] = item["location_factor"][val]
+
     return location_factors
 
 
@@ -207,9 +228,6 @@ class FlowsheetCostingBlockData(ProcessBlockData):
         # Set the base year for all costs
         self.base_currency = None
         self.base_period = pyo.units.year
-
-        # Set the location factor, default U.S. Washington DC, location_factor = 1.00
-        self.location_factor = ("United States", "Washington DC")
 
         # Register unit mapping
         self._costing_methods_map = {}
