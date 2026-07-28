@@ -822,9 +822,8 @@ class PETScIntegrator(object):
             try:
                 vec = tj.get_vec(v)
             except KeyError:
-                tj._set_vec(
-                    v, [value(v)] * len(tj.time)
-                )  # pylint: disable = protected-access
+                # pylint: disable-next = protected-access
+                tj._set_vec(v, [value(v)] * len(tj.time))
         if previous_trajectory is not None:
             # due to the way variables is generated we know variables
             # have corresponding positions in the list
@@ -842,9 +841,8 @@ class PETScIntegrator(object):
                 vec = tj.get_vec(v)
                 vec_prev = previous_trajectory.get_vec(vp)
                 tj._set_vec(v, vec_prev + vec)  # pylint: disable = protected-access
-            tj._set_time_vec(
-                previous_trajectory.time + tj.time
-            )  # pylint: disable = protected-access
+            # pylint: disable-next = protected-access
+            tj._set_time_vec(previous_trajectory.time + tj.time)
         return tj, variables
 
     def _interpolate_results(self, between, trajectory):

@@ -18,7 +18,7 @@ import re
 import numpy as np
 import json
 import os
-from pyomo.common.collections import ComponentSet, ComponentMap
+from pyomo.common.collections import ComponentSet
 from pyomo.environ import (
     assert_optimal_termination,
     Block,
@@ -35,7 +35,6 @@ from pyomo.environ import (
     Var,
 )
 from pyomo.dae import ContinuousSet, DerivativeVar
-from pyomo.util.subsystems import create_subsystem_block
 from idaes.core.scaling.util import set_scaling_factor
 from idaes.core.solvers.petsc_object import (
     PETScIntegrator,
@@ -43,7 +42,6 @@ from idaes.core.solvers.petsc_object import (
 )
 from idaes.core.solvers.petsc import petsc_available, PetscTrajectory
 from idaes.core.util import DiagnosticsToolbox, from_json, StoreSpec
-import idaes.logger as idaeslog
 
 
 def car_example():
