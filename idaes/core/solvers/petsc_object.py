@@ -74,7 +74,7 @@ def get_derivative_differential_vardata_map(
         blk (BlockData): Block which will be searched for DerivativeVars
         cont_set (ContinuousSet): This function searches for DerivativeVars
             which have been differentiated by this set.
-        raise_higher_derivative_exception(Exception): Raise a ValueError if
+        raise_higher_derivative_exception(bool): Raise a ValueError if
             this function encounters a derivative with respect to cont_set
             that is of order greater than one. Higher derivatives
             that do not involve cont_set are ignored.
