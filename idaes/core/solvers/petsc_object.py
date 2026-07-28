@@ -361,35 +361,55 @@ class PETScIntegrator(object):
 
     @property
     def atemporal_variables(self):
+        """
+        List of variables not indexed by time.
+        """
         return self._atemporal_variables.copy()
 
     @property
     def time_variables(self):
+        """
+        List of variables indexed by time.
+        """
         return self._time_variables.copy()
 
     @property
     def atemporal_constraints(self):
+        """
+        List of constraints not indexed by time.
+        """
         return self._atemporal_constraints.copy()
 
     @property
     def time_constraints(self):
+        """
+        List of constraints indexed by time.
+        """
         return self._time_constraints.copy()
 
     @property
     def initial_variables(self):
+        """
+        List of additional variables to add to
+        the initial condition problem.
+        """
         return self._initial_variables.copy()
 
     @initial_variables.setter
     def initial_variables(self, initial_variables):
-        self._initial_variables = initial_variables
+        self._initial_variables = list(initial_variables)
 
     @property
     def initial_constraints(self):
+        """
+        List of additional constraints to add to
+        initial condition problem.
+        """
         return self._initial_constraints.copy()
 
     @initial_constraints.setter
     def initial_constraints(self, initial_constraints):
-        self._initial_constraints = initial_constraints
+        self._initial_constraints = list(initial_constraints)
 
     def _validate_no_fixed_nonzero_derivatives(self):
         for deriv_vardata in self._derivative_differential_vardata_map.keys():
@@ -802,7 +822,9 @@ class PETScIntegrator(object):
             try:
                 vec = tj.get_vec(v)
             except KeyError:
-                tj._set_vec(v, [value(v)] * len(tj.time))
+                tj._set_vec(
+                    v, [value(v)] * len(tj.time)
+                )  # pylint: disable = protected-access
         if previous_trajectory is not None:
             # due to the way variables is generated we know variables
             # have corresponding positions in the list
@@ -819,8 +841,10 @@ class PETScIntegrator(object):
                 # so they don't show up in the trajectory data
                 vec = tj.get_vec(v)
                 vec_prev = previous_trajectory.get_vec(vp)
-                tj._set_vec(v, vec_prev + vec)
-            tj._set_time_vec(previous_trajectory.time + tj.time)
+                tj._set_vec(v, vec_prev + vec)  # pylint: disable = protected-access
+            tj._set_time_vec(
+                previous_trajectory.time + tj.time
+            )  # pylint: disable = protected-access
         return tj, variables
 
     def _interpolate_results(self, between, trajectory):
