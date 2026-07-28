@@ -108,8 +108,12 @@ def test_invalid_country_raises_keyerror():
 @pytest.mark.unit
 def test_invalid_city_raises_keyerror():
     location_factor_dictionary = load_location_factors()
-    assert "Washington DC / Northeast" in location_factor_dictionary["United States"]  # check valid city
-    assert "notacity" not in location_factor_dictionary["United States"]  # check invalid city
+    assert (
+        "Washington DC / Northeast" in location_factor_dictionary["United States"]
+    )  # check valid city
+    assert (
+        "notacity" not in location_factor_dictionary["United States"]
+    )  # check invalid city
     with pytest.raises(KeyError):
         location_factor_dictionary["United States"]["notacity"]
 

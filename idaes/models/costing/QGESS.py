@@ -230,13 +230,17 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         "location",
         ConfigValue(
             default=["United States", "Washington DC / Northeast", "average"],
-            domain=lambda v: ListOf(str)(v) if (
-                isinstance(v, list) and all(isinstance(i, str) for i in v)
-                ) else (_ for _ in ()).throw(
-        ValueError("Argument 'location' must be a list of strings in form ['country', 'city/region', 'val'] "
-        "where 'val' can be 'min', 'max', or 'average'. Must define `country` and `city`. If `val` "
-        "is not defined, the default value is `average`.")
-    ),
+            domain=lambda v: (
+                ListOf(str)(v)
+                if (isinstance(v, list) and all(isinstance(i, str) for i in v))
+                else (_ for _ in ()).throw(
+                    ValueError(
+                        "Argument 'location' must be a list of strings in form ['country', 'city/region', 'val'] "
+                        "where 'val' can be 'min', 'max', or 'average'. Must define `country` and `city`. If `val` "
+                        "is not defined, the default value is `average`."
+                    )
+                )
+            ),
             description="Basis location for costing. Must be a supported list of three strings passed as [country, city, value];"
             "see the IDAES 'location_factors.json' dictionary for a list of supported countries and cities. The entry 'value' "
             "defaults to 'average' but can be specified as 'min' or 'max' as well to retrieve the corresonding data entry. For "
@@ -305,18 +309,21 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         self.base_period = pyunits.year
 
         # Set the location factor that will be applied to the total plant cost
-        if (len(self.config.location) < 2 or len(self.config.location) > 3):
-            raise TypeError(
-                "Argument 'location' must contain either 2 or 3 items."
-                )
-            
+        if len(self.config.location) < 2 or len(self.config.location) > 3:
+            raise TypeError("Argument 'location' must contain either 2 or 3 items.")
 
-        if self.config.location == ["United States", "Washington DC / Northeast", "average"]:
+        if self.config.location == [
+            "United States",
+            "Washington DC / Northeast",
+            "average",
+        ]:
             # user did not choose a location, the default value is 1.00 so don't even load the location data
             self.location_factor = Param(
                 initialize=1,
                 mutable=True,
-                doc=("Location factor for United States, Washington DC / Northeast, average"),
+                doc=(
+                    "Location factor for United States, Washington DC / Northeast, average"
+                ),
                 units=pyunits.dimensionless,
             )
 
@@ -332,7 +339,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 raise KeyError(
                     f"Country {country} not supported; please check the data file at "
                     f"IDAES.idaes-pse.idaes.core.base.locations_factors.json for spelling and supported countries."
-                    )
+                )
 
             # check if city is valid
             if city not in self.location_factor_dictionary[country]:
@@ -340,7 +347,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 raise KeyError(
                     f"City {city} not supported for country {country}; valid cities include "
                     f"{self.location_factor_dictionary[country].keys()}"
-                    )
+                )
 
             # check if min, max, or average was specified at all, and default to average if not
             if len(self.config.location) == 2:
@@ -353,7 +360,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 raise KeyError(
                     "Must specify 'min', 'max', or 'average' for location factor value; only "
                     "passing [country, city] with no third entry will default to 'average'."
-                    )
+                )
 
             self.location_factor = Param(
                 initialize=self.location_factor_dictionary[country][city][val],

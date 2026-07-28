@@ -65,6 +65,7 @@ class HXType(StrEnum):
     """
     HX types
     """
+
     floating_head = "floating_head"
     fixed_head = "fixed_head"
     Utube = "Utube"
@@ -75,6 +76,7 @@ class HXMaterial(StrEnum):
     """
     HX materials
     """
+
     CarbonSteelCarbonSteel = "CarbonSteelCarbonSteel"
     CarbonSteelBrass = "CarbonSteelBrass"
     CarbonSteelStainlessSteel = "CarbonSteelStainlessSteel"
@@ -91,6 +93,7 @@ class HXTubeLength(StrEnum):
     """
     HX tube lengths
     """
+
     EightFoot = "8ft"
     TwelveFoot = "12ft"
     SixteenFoot = "16ft"
@@ -101,6 +104,7 @@ class VesselMaterial(StrEnum):
     """
     Vessel materials
     """
+
     CarbonSteel = "Carbon_steel"
     LowAlloySteel = "LowAlloySteel"
     StainlessSteel304 = "StainlessSteel304"
@@ -117,6 +121,7 @@ class TrayType(StrEnum):
     """
     Tray types
     """
+
     Sieve = "Sieve"
     Valve = "Valve"
     BubbleCap = "BubbleCap"
@@ -126,6 +131,7 @@ class TrayMaterial(StrEnum):
     """
     Tray materials
     """
+
     CarbonSteel = "CarbonSteel"
     StainlessSteel303 = "StainlessSteel303"
     StainlessSteel316 = "StainlessSteel316"
@@ -137,6 +143,7 @@ class HeaterMaterial(StrEnum):
     """
     Heater materials
     """
+
     CarbonSteel = "CarbonSteel"
     CrMoSteel = "CrMoSteel"
     StainlessSteel = "StainlessSteel"
@@ -146,6 +153,7 @@ class HeaterSource(StrEnum):
     """
     Heater sources
     """
+
     Fuel = "Fuel"
     Reformer = "Reformer"
     Pyrolysis = "Pyrolysis"
@@ -159,6 +167,7 @@ class CompressorType(StrEnum):
     """
     Compressor types
     """
+
     Centrifugal = "Centrifugal"
     Reciprocating = "Reciprocating"
     Screw = "Screw"
@@ -168,6 +177,7 @@ class CompressorDriveType(StrEnum):
     """
     Compressor drive types
     """
+
     ElectricMotor = "ElectricMotor"
     SteamTurbine = "SteamTurbine"
     gasTurbine = "GasTurbine"
@@ -177,6 +187,7 @@ class CompressorMaterial(StrEnum):
     """
     Compressor materials
     """
+
     CarbonSteel = "CarbonSteel"
     StainlessSteel = "StainlessSteel"
     NickelAlloy = "NickelAlloy"
@@ -186,6 +197,7 @@ class PumpMaterial(StrEnum):
     """
     Pump materials
     """
+
     CastIron = "CastIron"
     DuctileIron = "DuctileIron"
     CastSteel = "CastSteel"
@@ -203,6 +215,7 @@ class PumpType(StrEnum):
     """
     Pump types
     """
+
     Centrifugal = "Centrifugal"
     ExternalGear = "ExternalGear"
     Reciprocating = "Reciprocating"
@@ -212,6 +225,7 @@ class PumpMotorType(StrEnum):
     """
     Pump motor types
     """
+
     Open = "open"
     Enclosed = "enclosed"
     ExplosionProof = "explosion_proof"
@@ -221,6 +235,7 @@ class FanType(StrEnum):
     """
     Fan types
     """
+
     CentrifugalBackward = "CentrifugalBackward"
     CentrifugalStraight = "CentrifugalStraight"
     VaneAxial = "VaneAxial"
@@ -231,6 +246,7 @@ class FanMaterial(StrEnum):
     """
     Fan materials
     """
+
     CarbonSteel = "CarbonSteel"
     Fiberglass = "Fiberglass"
     StainlessSteel = "StainlessSteel"
@@ -241,6 +257,7 @@ class BlowerType(StrEnum):
     """
     Blower types
     """
+
     Centrifugal = "Centrifugal"
     Rotary = "Rotary"
 
@@ -249,6 +266,7 @@ class BlowerMaterial(StrEnum):
     """
     Blower materials
     """
+
     CarbonSteel = "CarbonSteel"
     Aluminum = "Aluminum"
     Fiberglass = "Fiberglass"
@@ -259,12 +277,13 @@ class BlowerMaterial(StrEnum):
 @declare_process_block_class("SSLWCosting")
 class SSLWCostingData(FlowsheetCostingBlockData):
     """
-    Capital costing methods derived from Process and Product Design 
-    Principles: Synthesis, Analysis, and Evaluation Seider, Seader, 
-    Lewin, Windagdo, 3rd Ed. John Wiley and Sons Chapter 22. Cost 
-    Accounting and Capital Cost Estimation 22.2 Cost Indexes and 
+    Capital costing methods derived from Process and Product Design
+    Principles: Synthesis, Analysis, and Evaluation Seider, Seader,
+    Lewin, Windagdo, 3rd Ed. John Wiley and Sons Chapter 22. Cost
+    Accounting and Capital Cost Estimation 22.2 Cost Indexes and
     Capital Investment.
     """
+
     # Register currency and conversion rates based on CE Index
     register_idaes_currency_units()
 

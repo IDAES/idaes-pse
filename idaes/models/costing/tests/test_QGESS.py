@@ -178,13 +178,15 @@ class TestQGESSConfigParameters(object):
 
         # Add a flowsheet object to the model
         m.fs = FlowsheetBlock(dynamic=False)
-        
+
         m.fs.costing = QGESSCosting(tech=1)
 
         assert isinstance(m.fs.costing.location_factor, pyo.Param)
         assert pyo.value(m.fs.costing.location_factor) == 1
-        assert m.fs.costing.location_factor.doc == \
-        "Location factor for United States, Washington DC / Northeast, average"
+        assert (
+            m.fs.costing.location_factor.doc
+            == "Location factor for United States, Washington DC / Northeast, average"
+        )
 
     @pytest.mark.unit
     def test_location_defaultval(self):
@@ -193,13 +195,15 @@ class TestQGESSConfigParameters(object):
 
         # Add a flowsheet object to the model
         m.fs = FlowsheetBlock(dynamic=False)
-        
+
         m.fs.costing = QGESSCosting(tech=1, location=["United States", "West Coast"])
 
         assert isinstance(m.fs.costing.location_factor, pyo.Param)
         assert pyo.value(m.fs.costing.location_factor) == 1.1363
-        assert m.fs.costing.location_factor.doc == \
-        "Location factor for United States, West Coast, average"
+        assert (
+            m.fs.costing.location_factor.doc
+            == "Location factor for United States, West Coast, average"
+        )
 
     @pytest.mark.unit
     def test_location_config(self):
@@ -209,13 +213,19 @@ class TestQGESSConfigParameters(object):
 
         # Add a flowsheet object to the model
         m.fs = FlowsheetBlock(dynamic=False)
-        
-        m.fs.costing = QGESSCosting(tech=1, location=["United States", "West Coast", "min"])
+
+        m.fs.costing = QGESSCosting(
+            tech=1, location=["United States", "West Coast", "min"]
+        )
 
         assert isinstance(m.fs.costing.location_factor, pyo.Param)
-        assert pyo.value(m.fs.costing.location_factor) == pytest.approx(1.1363, rel=1e-4)
-        assert m.fs.costing.location_factor.doc == \
-        "Location factor for United States, West Coast, min"
+        assert pyo.value(m.fs.costing.location_factor) == pytest.approx(
+            1.1363, rel=1e-4
+        )
+        assert (
+            m.fs.costing.location_factor.doc
+            == "Location factor for United States, West Coast, min"
+        )
         assert m.fs.costing.location_factor_dictionary == location_factor_dictionary
 
     @pytest.mark.unit
@@ -240,11 +250,20 @@ class TestQGESSConfigParameters(object):
         m.fs = FlowsheetBlock(dynamic=False)
         with pytest.raises(
             ValueError,
-            match=re.escape("Argument 'location' must be a list of strings in form ['country', 'city/region', 'val'] "
-            "where 'val' can be 'min', 'max', or 'average'. Must define `country` and `city`. If `val` "
-            "is not defined, the default value is `average`."),
+            match=re.escape(
+                "Argument 'location' must be a list of strings in form ['country', 'city/region', 'val'] "
+                "where 'val' can be 'min', 'max', or 'average'. Must define `country` and `city`. If `val` "
+                "is not defined, the default value is `average`."
+            ),
         ):
-            m.fs.costing = QGESSCosting(tech=1, location={"country": "United States", "city": "West Coast", "val": "min"})
+            m.fs.costing = QGESSCosting(
+                tech=1,
+                location={
+                    "country": "United States",
+                    "city": "West Coast",
+                    "val": "min",
+                },
+            )
 
     @pytest.mark.unit
     def test_location_invalidnotalist2(self):
@@ -255,9 +274,11 @@ class TestQGESSConfigParameters(object):
         m.fs = FlowsheetBlock(dynamic=False)
         with pytest.raises(
             ValueError,
-            match=re.escape("Argument 'location' must be a list of strings in form ['country', 'city/region', 'val'] "
-            "where 'val' can be 'min', 'max', or 'average'. Must define `country` and `city`. If `val` "
-            "is not defined, the default value is `average`."),
+            match=re.escape(
+                "Argument 'location' must be a list of strings in form ['country', 'city/region', 'val'] "
+                "where 'val' can be 'min', 'max', or 'average'. Must define `country` and `city`. If `val` "
+                "is not defined, the default value is `average`."
+            ),
         ):
             m.fs.costing = QGESSCosting(tech=1, location="United States")
 
@@ -270,9 +291,11 @@ class TestQGESSConfigParameters(object):
         m.fs = FlowsheetBlock(dynamic=False)
         with pytest.raises(
             ValueError,
-            match=re.escape("Argument 'location' must be a list of strings in form ['country', 'city/region', 'val'] "
-            "where 'val' can be 'min', 'max', or 'average'. Must define `country` and `city`. If `val` "
-            "is not defined, the default value is `average`."),
+            match=re.escape(
+                "Argument 'location' must be a list of strings in form ['country', 'city/region', 'val'] "
+                "where 'val' can be 'min', 'max', or 'average'. Must define `country` and `city`. If `val` "
+                "is not defined, the default value is `average`."
+            ),
         ):
             m.fs.costing = QGESSCosting(tech=1, location=["United States", 0])
 
@@ -287,7 +310,12 @@ class TestQGESSConfigParameters(object):
             TypeError,
             match="Argument 'location' must contain either 2 or 3 items.",
         ):
-            m.fs.costing = QGESSCosting(tech=1, location=["United States",])
+            m.fs.costing = QGESSCosting(
+                tech=1,
+                location=[
+                    "United States",
+                ],
+            )
 
     @pytest.mark.unit
     def test_location_invalidlistnocomma(self):
@@ -313,7 +341,9 @@ class TestQGESSConfigParameters(object):
             TypeError,
             match="Argument 'location' must contain either 2 or 3 items.",
         ):
-            m.fs.costing = QGESSCosting(tech=1, location=["United States", "West Coast", "min", "extra string"])
+            m.fs.costing = QGESSCosting(
+                tech=1, location=["United States", "West Coast", "min", "extra string"]
+            )
 
     @pytest.mark.unit
     def test_location_invalidcountry(self):
@@ -324,10 +354,14 @@ class TestQGESSConfigParameters(object):
         m.fs = FlowsheetBlock(dynamic=False)
         with pytest.raises(
             KeyError,
-            match=re.escape("Country notacountry not supported; please check the data file at "
-            "IDAES.idaes-pse.idaes.core.base.locations_factors.json for spelling and supported countries."),
+            match=re.escape(
+                "Country notacountry not supported; please check the data file at "
+                "IDAES.idaes-pse.idaes.core.base.locations_factors.json for spelling and supported countries."
+            ),
         ):
-            m.fs.costing = QGESSCosting(tech=1, location=["notacountry", "notacity", "notaval"])
+            m.fs.costing = QGESSCosting(
+                tech=1, location=["notacountry", "notacity", "notaval"]
+            )
 
     @pytest.mark.unit
     def test_location_invalidcity(self):
@@ -338,10 +372,14 @@ class TestQGESSConfigParameters(object):
         m.fs = FlowsheetBlock(dynamic=False)
         with pytest.raises(
             KeyError,
-            match=re.escape("City notacity not supported for country United States; valid cities include "
-            "dict_keys(['Washington DC / Northeast', 'Gulf Coast', 'Southwest', 'Midwest', 'West Coast'])"),
+            match=re.escape(
+                "City notacity not supported for country United States; valid cities include "
+                "dict_keys(['Washington DC / Northeast', 'Gulf Coast', 'Southwest', 'Midwest', 'West Coast'])"
+            ),
         ):
-            m.fs.costing = QGESSCosting(tech=1, location=["United States", "notacity", "notaval"])
+            m.fs.costing = QGESSCosting(
+                tech=1, location=["United States", "notacity", "notaval"]
+            )
 
     @pytest.mark.unit
     def test_location_invalidval(self):
@@ -352,10 +390,14 @@ class TestQGESSConfigParameters(object):
         m.fs = FlowsheetBlock(dynamic=False)
         with pytest.raises(
             KeyError,
-            match=re.escape("Must specify 'min', 'max', or 'average' for location factor value; only "
-            "passing [country, city] with no third entry will default to 'average'."),
+            match=re.escape(
+                "Must specify 'min', 'max', or 'average' for location factor value; only "
+                "passing [country, city] with no third entry will default to 'average'."
+            ),
         ):
-            m.fs.costing = QGESSCosting(tech=1, location=["United States", "West Coast", "notaval"])
+            m.fs.costing = QGESSCosting(
+                tech=1, location=["United States", "West Coast", "notaval"]
+            )
 
     @pytest.mark.unit
     def test_taxes_no_fixed_OM(self):
@@ -1175,7 +1217,7 @@ class TestQGESSBuildProcessCosts(object):
         def create_model(location):
             # Create a Concrete Model as the top level object
             m = pyo.ConcreteModel()
-    
+
             # Add a flowsheet object to the model
             m.fs = FlowsheetBlock(dynamic=False)
             m.fs.costing = QGESSCosting(
@@ -1193,36 +1235,42 @@ class TestQGESSBuildProcessCosts(object):
                 location=location,
                 tech=10,
             )
-    
-            m.fs.coal = pyo.Var(m.fs.time, initialize=1, units=pyunits.tonne / pyunits.h)
+
+            m.fs.coal = pyo.Var(
+                m.fs.time, initialize=1, units=pyunits.tonne / pyunits.h
+            )
             m.fs.coal.fix()
-    
+
             m.fs.natural_gas = pyo.Var(
                 m.fs.time, initialize=1, units=pyunits.MBtu / pyunits.s
             )
             m.fs.natural_gas.fix()
-    
-            m.fs.water = pyo.Var(m.fs.time, initialize=1, units=pyunits.gallon / pyunits.s)
+
+            m.fs.water = pyo.Var(
+                m.fs.time, initialize=1, units=pyunits.gallon / pyunits.s
+            )
             m.fs.water.fix()
-    
-            m.fs.chemicals = pyo.Var(m.fs.time, initialize=1, units=pyunits.kg / pyunits.s)
+
+            m.fs.chemicals = pyo.Var(
+                m.fs.time, initialize=1, units=pyunits.kg / pyunits.s
+            )
             m.fs.chemicals.fix()
-    
+
             m.fs.nonharzardous_waste_disposal = pyo.Var(
                 m.fs.time, initialize=1, units=pyunits.kg / pyunits.s
             )
             m.fs.nonharzardous_waste_disposal.fix()
-    
+
             m.fs.pure_product = pyo.Var(
                 m.fs.time, initialize=1, units=pyunits.kg / pyunits.s
             )
             m.fs.pure_product.fix()
-    
+
             m.fs.mixed_product = pyo.Var(
                 m.fs.time, initialize=0.1, units=pyunits.kg / pyunits.s
             )
             m.fs.mixed_product.fix()
-    
+
             m.fs.costing.build_process_costs(
                 # optional arguments that directly fix cost variables and bypass calculations
                 total_purchase_cost=100 * pyunits.MUSD_2018,
@@ -1301,11 +1349,11 @@ class TestQGESSBuildProcessCosts(object):
                 transport_per_unit_production_cost=10 * pyunits.USD_2018 / pyunits.kg,
                 transport_per_unit_CO2_cost=10 * pyunits.USD_2018 / pyunits.kg,
             )
-    
+
             # check diagnostics
             dt = DiagnosticsToolbox(m)
             dt.assert_no_structural_warnings()
-    
+
             # try solving
             solver = get_solver()
             results = solver.solve(m, tee=True)
@@ -1314,78 +1362,204 @@ class TestQGESSBuildProcessCosts(object):
 
             return m
 
-        m1 = create_model(location=["United States", "Washington DC / Northeast", "average"])
+        m1 = create_model(
+            location=["United States", "Washington DC / Northeast", "average"]
+        )
         m2 = create_model(location=["United States", "West Coast", "average"])
         m3 = create_model(location=["United States", "Midwest", "average"])
 
         # check that components that should scale with TPC have been scaled by the location factor
 
         assert (
-            pytest.approx(pyo.value(m2.fs.costing.total_TPC / m1.fs.costing.total_TPC), abs=1e-4) == 1.1363
+            pytest.approx(
+                pyo.value(m2.fs.costing.total_TPC / m1.fs.costing.total_TPC), abs=1e-4
+            )
+            == 1.1363
         )
         assert (
-            pytest.approx(pyo.value(m2.fs.costing.maintenance_and_material_cost / m1.fs.costing.maintenance_and_material_cost), abs=1e-4) == 1.1363
+            pytest.approx(
+                pyo.value(
+                    m2.fs.costing.maintenance_and_material_cost
+                    / m1.fs.costing.maintenance_and_material_cost
+                ),
+                abs=1e-4,
+            )
+            == 1.1363
         )
         assert (
-            pytest.approx(pyo.value(m2.fs.costing.property_taxes_and_insurance_cost / m1.fs.costing.property_taxes_and_insurance_cost), abs=1e-4) == 1.1363
+            pytest.approx(
+                pyo.value(
+                    m2.fs.costing.property_taxes_and_insurance_cost
+                    / m1.fs.costing.property_taxes_and_insurance_cost
+                ),
+                abs=1e-4,
+            )
+            == 1.1363
         )
 
         assert (
-            pytest.approx(pyo.value(m3.fs.costing.total_TPC / m1.fs.costing.total_TPC), abs=1e-4) == 1.0455
+            pytest.approx(
+                pyo.value(m3.fs.costing.total_TPC / m1.fs.costing.total_TPC), abs=1e-4
+            )
+            == 1.0455
         )
         assert (
-            pytest.approx(pyo.value(m3.fs.costing.maintenance_and_material_cost / m1.fs.costing.maintenance_and_material_cost), abs=1e-4) == 1.0455
+            pytest.approx(
+                pyo.value(
+                    m3.fs.costing.maintenance_and_material_cost
+                    / m1.fs.costing.maintenance_and_material_cost
+                ),
+                abs=1e-4,
+            )
+            == 1.0455
         )
         assert (
-            pytest.approx(pyo.value(m3.fs.costing.property_taxes_and_insurance_cost / m1.fs.costing.property_taxes_and_insurance_cost), abs=1e-4) == 1.0455
+            pytest.approx(
+                pyo.value(
+                    m3.fs.costing.property_taxes_and_insurance_cost
+                    / m1.fs.costing.property_taxes_and_insurance_cost
+                ),
+                abs=1e-4,
+            )
+            == 1.0455
         )
 
         # check that components that shouldn't scale with TPC have not changed
 
         assert (
-            pytest.approx(pyo.value(m2.fs.costing.annual_operating_labor_cost / m1.fs.costing.annual_operating_labor_cost), abs=1e-4) == 1.0000
+            pytest.approx(
+                pyo.value(
+                    m2.fs.costing.annual_operating_labor_cost
+                    / m1.fs.costing.annual_operating_labor_cost
+                ),
+                abs=1e-4,
+            )
+            == 1.0000
         )
         assert (
-            pytest.approx(pyo.value(m2.fs.costing.annual_technical_labor_cost / m1.fs.costing.annual_technical_labor_cost), abs=1e-4) == 1.0000
+            pytest.approx(
+                pyo.value(
+                    m2.fs.costing.annual_technical_labor_cost
+                    / m1.fs.costing.annual_technical_labor_cost
+                ),
+                abs=1e-4,
+            )
+            == 1.0000
         )
         assert (
-            pytest.approx(pyo.value(m2.fs.costing.quality_assurance_and_control_cost / m1.fs.costing.quality_assurance_and_control_cost), abs=1e-4) == 1.0000
+            pytest.approx(
+                pyo.value(
+                    m2.fs.costing.quality_assurance_and_control_cost
+                    / m1.fs.costing.quality_assurance_and_control_cost
+                ),
+                abs=1e-4,
+            )
+            == 1.0000
         )
         assert (
-            pytest.approx(pyo.value(m2.fs.costing.sales_patenting_and_research_cost / m1.fs.costing.sales_patenting_and_research_cost), abs=1e-4) == 1.0000
+            pytest.approx(
+                pyo.value(
+                    m2.fs.costing.sales_patenting_and_research_cost
+                    / m1.fs.costing.sales_patenting_and_research_cost
+                ),
+                abs=1e-4,
+            )
+            == 1.0000
         )
         assert (
-            pytest.approx(pyo.value(m2.fs.costing.admin_and_support_labor_cost / m1.fs.costing.admin_and_support_labor_cost), abs=1e-4) == 1.0000
+            pytest.approx(
+                pyo.value(
+                    m2.fs.costing.admin_and_support_labor_cost
+                    / m1.fs.costing.admin_and_support_labor_cost
+                ),
+                abs=1e-4,
+            )
+            == 1.0000
         )
         # plant overhead includes some fixed OM components that depend on TPC, so just compare the non-overhead variable OM
         assert (
             pytest.approx(
-                (pyo.value(m2.fs.costing.total_variable_OM_cost[0] - m2.fs.costing.plant_overhead_cost[0]) /
-                 pyo.value(m1.fs.costing.total_variable_OM_cost[0] - m1.fs.costing.plant_overhead_cost[0])
-                  ), abs=1e-4) == 1.0000
+                (
+                    pyo.value(
+                        m2.fs.costing.total_variable_OM_cost[0]
+                        - m2.fs.costing.plant_overhead_cost[0]
+                    )
+                    / pyo.value(
+                        m1.fs.costing.total_variable_OM_cost[0]
+                        - m1.fs.costing.plant_overhead_cost[0]
+                    )
+                ),
+                abs=1e-4,
+            )
+            == 1.0000
         )
 
         assert (
-            pytest.approx(pyo.value(m3.fs.costing.annual_operating_labor_cost / m1.fs.costing.annual_operating_labor_cost), abs=1e-4) == 1.0000
+            pytest.approx(
+                pyo.value(
+                    m3.fs.costing.annual_operating_labor_cost
+                    / m1.fs.costing.annual_operating_labor_cost
+                ),
+                abs=1e-4,
+            )
+            == 1.0000
         )
         assert (
-            pytest.approx(pyo.value(m3.fs.costing.annual_technical_labor_cost / m1.fs.costing.annual_technical_labor_cost), abs=1e-4) == 1.0000
+            pytest.approx(
+                pyo.value(
+                    m3.fs.costing.annual_technical_labor_cost
+                    / m1.fs.costing.annual_technical_labor_cost
+                ),
+                abs=1e-4,
+            )
+            == 1.0000
         )
         assert (
-            pytest.approx(pyo.value(m3.fs.costing.quality_assurance_and_control_cost / m1.fs.costing.quality_assurance_and_control_cost), abs=1e-4) == 1.0000
+            pytest.approx(
+                pyo.value(
+                    m3.fs.costing.quality_assurance_and_control_cost
+                    / m1.fs.costing.quality_assurance_and_control_cost
+                ),
+                abs=1e-4,
+            )
+            == 1.0000
         )
         assert (
-            pytest.approx(pyo.value(m3.fs.costing.sales_patenting_and_research_cost / m1.fs.costing.sales_patenting_and_research_cost), abs=1e-4) == 1.0000
+            pytest.approx(
+                pyo.value(
+                    m3.fs.costing.sales_patenting_and_research_cost
+                    / m1.fs.costing.sales_patenting_and_research_cost
+                ),
+                abs=1e-4,
+            )
+            == 1.0000
         )
         assert (
-            pytest.approx(pyo.value(m3.fs.costing.admin_and_support_labor_cost / m1.fs.costing.admin_and_support_labor_cost), abs=1e-4) == 1.0000
+            pytest.approx(
+                pyo.value(
+                    m3.fs.costing.admin_and_support_labor_cost
+                    / m1.fs.costing.admin_and_support_labor_cost
+                ),
+                abs=1e-4,
+            )
+            == 1.0000
         )
         # plant overhead includes some fixed OM components that depend on TPC, so just compare the non-overhead variable OM
         assert (
             pytest.approx(
-                (pyo.value(m3.fs.costing.total_variable_OM_cost[0] - m3.fs.costing.plant_overhead_cost[0]) /
-                 pyo.value(m1.fs.costing.total_variable_OM_cost[0] - m1.fs.costing.plant_overhead_cost[0])
-                  ), abs=1e-4) == 1.0000
+                (
+                    pyo.value(
+                        m3.fs.costing.total_variable_OM_cost[0]
+                        - m3.fs.costing.plant_overhead_cost[0]
+                    )
+                    / pyo.value(
+                        m1.fs.costing.total_variable_OM_cost[0]
+                        - m1.fs.costing.plant_overhead_cost[0]
+                    )
+                ),
+                abs=1e-4,
+            )
+            == 1.0000
         )
 
     @pytest.mark.unit
