@@ -331,7 +331,7 @@ class SaponificationStateBlockData(StateBlockData):
         # Create state variables
         self.flow_vol = Var(
             initialize=1.0,
-            domain=NonNegativeReals,
+            bounds=(0, None),
             doc="Total volumentric flowrate [m^3/s]",
             units=units.m**3 / units.s,
         )
@@ -351,7 +351,7 @@ class SaponificationStateBlockData(StateBlockData):
         )
         self.conc_mol_comp = Var(
             self.params.component_list,
-            domain=NonNegativeReals,
+            bounds=(0, None),
             initialize=100.0,
             doc="Component molar concentrations " "[mol/m^3]",
             units=units.mol / units.m**3,
