@@ -411,6 +411,10 @@ class PETScIntegrator(object):
     def initial_constraints(self, initial_constraints):
         self._initial_constraints = list(initial_constraints)
 
+    @property
+    def derivative_differential_vardata_map(self):
+        return self._derivative_differential_vardata_map.copy()
+
     def _validate_no_fixed_nonzero_derivatives(self):
         for deriv_vardata in self._derivative_differential_vardata_map.keys():
             if deriv_vardata.fixed and value(deriv_vardata) != 0:
@@ -452,7 +456,7 @@ class PETScIntegrator(object):
         for var in variables:
             if var in self._derivative_differential_vardata_map:
                 deriv = var
-                diffvar = self._derivative_differential_vardata_map[deriv]["diff_var"]
+                diffvar = self.derivative_differential_vardata_map[deriv]["diff_var"]
                 blk.dae_suffix[diffvar] = int(DaeVarTypes.DIFFERENTIAL)
                 blk.dae_suffix[deriv] = int(DaeVarTypes.DERIVATIVE)
                 blk.dae_link[diffvar] = dae_var_link_index
