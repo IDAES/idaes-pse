@@ -125,8 +125,10 @@ def load_location_factors():
     - :math:`TPI` is the total plant investment, and
     - :math:`ISF` is the investment site factor (i.e., location factor).
 
-    Location factors for 139 countries are sourced from Compass International (2017):
-    https://www.compassinternational.net/wp-content/uploads/2017/01/Worldwide-Industrial.pdf
+    Location factors for 139 countries are sourced from 
+    Compass International, Inc. (2017). 2017 worldwide industrial [Sample edition]. 
+    https://www.compassinternational.net/wp-content/uploads/2017/01/Worldwide-Industrial.pdf 
+    (Accessed March 25, 2025).
 
     Location factors for U.S. regions are sourced from Table 16.13 in the Seider reference above. The values
     are converted appropriately assuming the base factor of 1.0 corresponds to Washington D.C. and U.S. Northeast.

@@ -338,7 +338,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 # too many countries to list, point users to the data file
                 raise KeyError(
                     f"Country {country} not supported; please check the data file at "
-                    f"IDAES.idaes-pse.idaes.core.base.locations_factors.json for spelling and supported countries."
+                    f"IDAES.idaes-pse.idaes.core.base.location_factors.json for spelling and supported countries."
                 )
 
             # check if city is valid
@@ -346,7 +346,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 # city lists within countries are not too long, list them here for the user
                 raise KeyError(
                     f"City {city} not supported for country {country}; valid cities include "
-                    f"{self.location_factor_dictionary[country].keys()}"
+                    f"{list(self.location_factor_dictionary[country].keys())}"
                 )
 
             # check if min, max, or average was specified at all, and default to average if not

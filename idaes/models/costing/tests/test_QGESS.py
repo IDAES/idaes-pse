@@ -356,7 +356,7 @@ class TestQGESSConfigParameters(object):
             KeyError,
             match=re.escape(
                 "Country notacountry not supported; please check the data file at "
-                "IDAES.idaes-pse.idaes.core.base.locations_factors.json for spelling and supported countries."
+                "IDAES.idaes-pse.idaes.core.base.location_factors.json for spelling and supported countries."
             ),
         ):
             m.fs.costing = QGESSCosting(
@@ -374,7 +374,7 @@ class TestQGESSConfigParameters(object):
             KeyError,
             match=re.escape(
                 "City notacity not supported for country United States; valid cities include "
-                "dict_keys(['Washington DC / Northeast', 'Gulf Coast', 'Southwest', 'Midwest', 'West Coast'])"
+                "['Washington DC / Northeast', 'Gulf Coast', 'Southwest', 'Midwest', 'West Coast']"
             ),
         ):
             m.fs.costing = QGESSCosting(
