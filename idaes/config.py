@@ -371,6 +371,14 @@ def _new_idaes_config_block():
             description="Linear solver to be used by IPOPT",
         ),
     )
+    cfg["ipopt_v2"]["options"].declare(
+        "bound_relax_factor",
+        pyomo.common.config.ConfigValue(
+            domain=float,
+            default=0,
+            description="Ipopt bound_relax_factor option",
+        ),
+    )
 
     cfg["ipopt_v2"].declare(
         "writer_config",
@@ -528,7 +536,7 @@ def _new_idaes_config_block():
     cfg.declare(
         "default_solver",
         pyomo.common.config.ConfigValue(
-            default="ipopt_v2",
+            default="ipopt",
             domain=str,
             description="Default solver.  See Pyomo's SolverFactory for details.",
             doc="Default solver.  See Pyomo's SolverFactory for details.",
