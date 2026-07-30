@@ -528,7 +528,7 @@ def _new_idaes_config_block():
     cfg.declare(
         "default_solver",
         pyomo.common.config.ConfigValue(
-            default="ipopt",
+            default="ipopt_v2",
             domain=str,
             description="Default solver.  See Pyomo's SolverFactory for details.",
             doc="Default solver.  See Pyomo's SolverFactory for details.",
