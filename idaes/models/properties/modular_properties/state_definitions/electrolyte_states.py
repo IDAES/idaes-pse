@@ -77,7 +77,6 @@ def _apparent_species_state(b):
     b.flow_mol_phase_comp_true = Var(
         b.params.true_phase_component_set,
         initialize=f_init,
-        bounds=(0, None),
         bounds=f_bounds,
         doc="Phase-component molar flowrates of true species",
         units=units.FLOW_MOLE,
@@ -205,7 +204,6 @@ def _true_species_state(b):
     b.flow_mol_phase_comp_apparent = Var(
         b.params.apparent_phase_component_set,
         initialize=f_init,
-        bounds=(0, None),
         bounds=f_bounds,
         doc="Phase-component molar flowrates of apparent species",
         units=units.FLOW_MOLE,

@@ -486,7 +486,6 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         blk.capital_cost = pyo.Var(
             initialize=1e4,
             bounds=(0, None),
-            bounds=(0, None),
             units=pyo.units.USD_CE500,
             doc="Capital cost of all units",
         )
@@ -1279,7 +1278,6 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         blk.capital_cost = pyo.Var(
             initialize=1e4,
             bounds=(0, None),
-            bounds=(0, None),
             units=pyo.units.USD_CE500,
             doc="Capital cost of all units",
         )
@@ -1369,7 +1367,6 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         # Add common variables
         blk.capital_cost = pyo.Var(
             initialize=1e4,
-            bounds=(0, None),
             bounds=(0, None),
             units=pyo.units.USD_CE500,
             doc="Capital cost of all units",
@@ -1678,7 +1675,6 @@ def _make_common_vars(blk, integer=True):
 
     blk.capital_cost = pyo.Var(
         initialize=1e4,
-        bounds=(0, None),
         bounds=(0, None),
         units=pyo.units.USD_CE500,
         doc="Capital cost of all units",
