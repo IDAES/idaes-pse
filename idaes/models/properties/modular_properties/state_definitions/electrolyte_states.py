@@ -20,7 +20,7 @@ Methods for creating additional state variables for electrolyte systems
 # TODO: Look into protected access issues
 # pylint: disable=protected-access
 
-from pyomo.environ import Constraint, NonNegativeReals, Reference, units as pyunits, Var
+from pyomo.environ import Constraint, Reference, units as pyunits, Var
 
 from idaes.models.properties.modular_properties.base.generic_property import StateIndex
 from idaes.models.properties.modular_properties.base.utility import (

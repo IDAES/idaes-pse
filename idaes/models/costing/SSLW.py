@@ -1285,7 +1285,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         if integer is True:
             domain = pyo.Integers
         else:
-            domain = pyo.NonNegativeReals
+            domain = pyo.Reals
         blk.number_of_units = pyo.Var(
             initialize=1,
             domain=domain,
@@ -1375,7 +1375,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         if integer is True:
             domain = pyo.Integers
         else:
-            domain = pyo.NonNegativeReals
+            domain = pyo.Reals
         blk.number_of_units = pyo.Var(
             initialize=1,
             domain=domain,
@@ -1683,7 +1683,7 @@ def _make_common_vars(blk, integer=True):
     if integer is True:
         domain = pyo.Integers
     else:
-        domain = pyo.NonNegativeReals
+        domain = pyo.Reals
     blk.number_of_units = pyo.Var(
         initialize=1, domain=domain, bounds=(1, 100), doc="Number of units to install."
     )

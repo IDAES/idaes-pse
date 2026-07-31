@@ -21,7 +21,6 @@ Assumes dilute solutions with properties of H2O.
 # Import Pyomo libraries
 from pyomo.environ import (
     Constraint,
-    NonNegativeReals,
     Param,
     PositiveReals,
     Reals,

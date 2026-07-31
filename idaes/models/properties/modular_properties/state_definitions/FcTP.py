@@ -27,7 +27,6 @@ from types import MethodType
 from pyomo.environ import (
     Constraint,
     Expression,
-    NonNegativeReals,
     Var,
     units as pyunits,
 )
