@@ -23,6 +23,7 @@ differential variables and discretization equations.
 
 Authors: Douglas Allan, John Eslick
 """
+from copy import copy
 
 from pyomo.core.base import BlockData
 from pyomo.environ import Constraint, Set, SolverFactory, Suffix, value, Var
@@ -413,7 +414,7 @@ class PETScIntegrator(object):
 
     @property
     def derivative_differential_vardata_map(self):
-        return self._derivative_differential_vardata_map.copy()
+        return copy(self._derivative_differential_vardata_map)
 
     def _validate_no_fixed_nonzero_derivatives(self):
         for deriv_vardata in self._derivative_differential_vardata_map.keys():
