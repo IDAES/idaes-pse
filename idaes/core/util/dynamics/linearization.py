@@ -240,28 +240,31 @@ def linearize_system(
             test whether the time derivative variables are close
             enough to zero to consider that the system is at steady state.
         constraint_tolerance (float): Tolerance used to test whether the
-        DAE constraints are close enough to being satisfied to consider
+            DAE constraints are close enough to being satisfied to consider
             that the system 0 = f(x, xdot, u, d) is satisfied.
+
     Returns:
-        Dictionary containing the following fields:
-            "scaled_jac": Jacobian of scaled system evaluated at the
-                point of linearization
-            "nlp": PyomoNLP object used to evaluate "scaled_jac"
-            "diff_vars": The list of differential VarData in the order
-                they appear in the A and C matrices
-            "alg_vars": The list of algebraic VarData
-            "input_vars": The list of input VarData in the order they
-                appear in the B and D matrices
-            "disturbance_vars": The list of disturbance VarData in the
-                order they appear in the B_d and D_d matrices
-            "output_vars": The list of output VarData in the order
-                they appear in the C, D, and D_d matrices
-            "A" (numpy.array): The A matrix
-            "B" (numpy.array): The B matrix
-            "Bd" (numpy.array): The B_d matrix
-            "C" (numpy.array): The C matrix
-            "D" (numpy.array): The D matrix
-            "Dd" (numpy.array): The D_d matrix
+        dict:
+            A dictionary containing the following fields:
+
+            * **scaled_jac**: Jacobian of scaled system evaluated at the
+              point of linearization
+            * **nlp**: PyomoNLP object used to evaluate scaled_jac
+            * **diff_vars**: The list of differential VarData in the order
+              they appear in the A and C matrices
+            * **alg_vars**: The list of algebraic VarData
+            * **input_vars**: The list of input VarData in the order they
+              appear in the B and D matrices
+            * **disturbance_vars**: The list of disturbance VarData in the
+              order they appear in the B_d and D_d matrices
+            * **output_vars**: The list of output VarData in the order
+              they appear in the C, D, and D_d matrices
+            * **A** (numpy.array): The A matrix
+            * **B** (numpy.array): The B matrix
+            * **Bd** (numpy.array): The B_d matrix
+            * **C** (numpy.array): The C matrix
+            * **D** (numpy.array): The D matrix
+            * **Dd** (numpy.array): The D_d matrix
     """
     if representative_time is not None:
         t1 = representative_time
