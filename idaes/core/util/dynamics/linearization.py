@@ -518,7 +518,11 @@ def c2d(sys: dict, dt: float):
         Bd = zeros((A.shape[0], 0))
 
     nx = A.shape[0]
+    if B.shape[0] != nx:
+        raise ValueError(f"B matrix has {B.shape[0]} rows, but {nx} were expected.")
     nu = B.shape[1]
+    if Bd.shape[0] != nx:
+        raise ValueError(f"Bd matrix has {Bd.shape[0]} rows, but {nx} were expected.")
     nd = Bd.shape[1]
 
     A_aug = block([[A, B, Bd], [zeros((nu + nd, nx + nu + nd))]])

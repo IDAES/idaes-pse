@@ -1314,6 +1314,10 @@ class TestLinearizeSystemUnits(object):
 
 @pytest.mark.unit
 class TestC2dConversion(object):
+    """
+    These tests were generated with the assistence of Google Gemini 3.5
+    """
+
     def test_c2d_conversion(self):
         """
         Verify the continuous-to-discrete LTI system conversion function 'c2d'
@@ -1328,13 +1332,62 @@ class TestC2dConversion(object):
         dt = 0.5
         discrete_sys = c2d(continuous_sys, dt=dt)
 
-        expected_A = array([[0.36787944]])
-        expected_B = array([[0.31606028]])
-        expected_Bd = array([[0.94818083]])
+        expected_A = array([[exp(-1)]])
+        expected_B = array([[-0.5 * (exp(-1) - 1)]])
+        expected_Bd = array([[-0.5 * (exp(-1) - 1) * 3]])
 
         assert discrete_sys["A"] == pytest.approx(expected_A, rel=1e-5)
         assert discrete_sys["B"] == pytest.approx(expected_B, rel=1e-5)
         assert discrete_sys["Bd"] == pytest.approx(expected_Bd, rel=1e-5)
+
+    def test_c2d_missing_B_and_Bd(self):
+        sys = {"A": array([[-1.0]])}
+        out = c2d(sys, dt=1.0)
+        assert out["A"] == pytest.approx(array([[exp(-1.0)]]))
+        assert out["B"].shape == (1, 0)
+        assert out["Bd"].shape == (1, 0)
+
+    def test_c2d_missing_Bd_only(self):
+        sys = {"A": array([[-1.0]]), "B": array([[2.0]])}
+        out = c2d(sys, dt=1.0)
+        # For dx/dt = -x + 2u, the discrete step is: x_k+1 = e^-1 * x_k + 2*(1 - e^-1) * u_k
+        assert out["A"] == pytest.approx(array([[exp(-1.0)]]))
+        assert out["B"] == pytest.approx(array([[2.0 * (1.0 - exp(-1.0))]]))
+        assert out["Bd"].shape == (1, 0)
+
+    def test_defective_matrix(self):
+        sys = {"A": array([[0, 1], [0, 0]]), "B": array([[0], [2]])}
+        out = c2d(sys, dt=1.0)
+        assert out["A"] == pytest.approx(array([[1, 1], [0, 1]]))
+        assert out["B"] == pytest.approx(array([[1], [2]]))
+        assert out["Bd"].shape == (2, 0)
+
+    def test_c2d_incompatible_B_shape(self):
+        """
+        Asserts that a ValueError is raised when the row count of
+        matrix B does not match the row/column count of matrix A.
+        """
+        sys = {
+            "A": array([[-1.0, 0.0], [0.0, -1.0]]),
+            "B": array([[1.0]]),  # 1 row, but A has 2 rows
+        }
+        with pytest.raises(ValueError) as exc_info:
+            c2d(sys, dt=1.0)
+        assert "B matrix has 1 rows, but 2 were expected." in str(exc_info.value)
+
+    def test_c2d_incompatible_Bd_shape(self):
+        """
+        Asserts that a ValueError is raised when the row count of
+        matrix Bd does not match the row/column count of matrix A.
+        """
+        sys = {
+            "A": array([[-1.0, 0.0], [0.0, -1.0]]),
+            "B": array([[1.0], [1.0]]),
+            "Bd": array([[1.0]]),  # 1 row, but A has 2 rows
+        }
+        with pytest.raises(ValueError) as exc_info:
+            c2d(sys, dt=1.0)
+        assert "Bd matrix has 1 rows, but 2 were expected." in str(exc_info.value)
 
 
 @pytest.mark.component
