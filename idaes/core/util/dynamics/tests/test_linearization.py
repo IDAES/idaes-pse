@@ -22,6 +22,8 @@ from pyomo.environ import (
     Constraint,
     exp,
     Param,
+    Reference,
+    Set,
     sin,
     Suffix,
     TransformationFactory,
@@ -802,6 +804,537 @@ class TestLinearizeSystemUnits(object):
         assert array(out_b["Bd"]) == pytest.approx(array([[-40.0, -30.0]]))
         assert array(out_b["D"]) == pytest.approx(array([[0.0, 0.0], [3.0, 2.0]]))
         assert array(out_b["Dd"]) == pytest.approx(array([[5.0, 4.0], [0.0, 0.0]]))
+
+    def test_linearize_system_representative_time(self):
+        """
+        Verify that the representative_time argument correctly dictates which
+        time index is used to build the timestep problem, extract variables,
+        and evaluate the linearized matrices.
+
+        We set up a system with a time-varying parameter (p) that changes over time:
+        dx/dt = -p[t]*x + u
+        At t=1, p[1] = 1.0  => dx/dt = -1.0*x + u  => A = [[-1.0]]
+        At t=2, p[2] = 5.0  => dx/dt = -5.0*x + u  => A = [[-5.0]]
+        """
+        m = ConcreteModel()
+        m.time = ContinuousSet(initialize=[0, 1, 2])
+        m.x = Var(m.time, initialize=1.0)
+        m.xdot = DerivativeVar(m.x, wrt=m.time, initialize=0.0)
+        m.u = Var(m.time, initialize=1.0)
+        m.p = Param(m.time, initialize={0: 1.0, 1: 1.0, 2: 5.0}, mutable=True)
+
+        @m.Constraint(m.time)
+        def ode_eqn(b, t):
+            return b.xdot[t] == -b.p[t] * b.x[t] + b.u[t]
+
+        fd_factory = TransformationFactory("dae.finite_difference")
+        fd_factory.apply_to(m, wrt=m.time, nfe=2, scheme="BACKWARD")
+
+        m.u.fix(1.0)
+
+        # Establish operating steady-state for t=1 (p=1.0, x=1.0, u=1.0)
+        m.x[1].set_value(1.0)
+        m.xdot[1].set_value(0.0)
+
+        # Establish operating steady-state for t=2 (p=5.0, x=0.2, u=1.0)
+        m.x[2].set_value(0.2)
+        m.xdot[2].set_value(0.0)
+
+        # --- Case A: representative_time = 1 ---
+        out_t1 = linearize_system(
+            m,
+            m.time,
+            representative_time=1,
+            input_vars=[m.u],
+            output_vars=[m.x],
+            scaled=False,
+        )
+
+        # Assert correct variable slice is extracted (t = 1)
+        assert len(out_t1["diff_vars"]) == 1
+        assert _component_index(out_t1["diff_vars"], m.x[1]) == 0
+        assert _component_index(out_t1["input_vars"], m.u[1]) == 0
+        assert _component_index(out_t1["output_vars"], m.x[1]) == 0
+
+        # Assert A matrix reflects p[1] = 1.0
+        assert array(out_t1["A"]) == pytest.approx(array([[-1.0]]))
+
+        # --- Case B: representative_time = 2 ---
+        out_t2 = linearize_system(
+            m,
+            m.time,
+            representative_time=2,
+            input_vars=[m.u],
+            output_vars=[m.x],
+            scaled=False,
+        )
+
+        # Assert correct variable slice is extracted (t = 2)
+        assert len(out_t2["diff_vars"]) == 1
+        assert _component_index(out_t2["diff_vars"], m.x[2]) == 0
+        assert _component_index(out_t2["input_vars"], m.u[2]) == 0
+        assert _component_index(out_t2["output_vars"], m.x[2]) == 0
+
+        # Assert A matrix reflects p[2] = 5.0
+        assert array(out_t2["A"]) == pytest.approx(array([[-5.0]]))
+
+    def test_linearize_system_implicit_representative_time(self):
+        """
+        Verify that omitting representative_time uses the second index of the
+        Time ContinuousSet (time.at(2)) automatically.
+        """
+        m = ConcreteModel()
+        m.time = ContinuousSet(initialize=[0.0, 10.0, 20.0])  # time.at(2) will be 10.0
+        m.x = Var(m.time, initialize=0)
+        m.xdot = DerivativeVar(m.x, wrt=m.time, initialize=0)
+        m.p = Param(m.time, initialize={0: -1, 10: -2, 20: -3})
+
+        @m.Constraint(m.time)
+        def ode_eqn(b, t):
+            return b.xdot[t] == b.p[t] * b.x[t]
+
+        fd_factory = TransformationFactory("dae.finite_difference")
+        fd_factory.apply_to(m, wrt=m.time, nfe=1, scheme="BACKWARD")
+
+        # Omit representative_time
+        out = linearize_system(
+            m, m.time, input_vars=[], output_vars=[m.x], scaled=False
+        )
+
+        # Confirm variables and equations evaluated at t = 10.0
+        assert _component_index(out["diff_vars"], m.x[10.0]) == 0
+        assert _component_index(out["output_vars"], m.x[10.0]) == 0
+        assert array(out["A"]) == pytest.approx(array([[-2]]))
+
+    def test_linearize_system_scaled_behavior(self):
+        """
+        Verify that when scaled=True, variables are adjusted by their scaling factors,
+        and when scaled=False, the returned matrices are correctly unscaled.
+
+        Let:
+        dx/dt = -3*x + 5*u
+        y = 4*x
+        Unscaled continuous system matrices (scaled=False):
+        A = [[-3.0]], B = [[5.0]], C = [[4.0]], D = [[0.0]]
+
+        Let non-unity scaling factors be:
+        s_x = 10.0       (scaling factor for state x)
+        s_xdot = 2.0     (scaling factor for derivative xdot)
+        s_u = 0.5        (scaling factor for input u)
+        s_y = 8.0        (scaling factor for output y)
+
+        Expected Scaled matrices (scaled=True):
+        A_scaled = diag(s_xdot) @ A @ diag(1/s_x)    = [[ 2.0 * (-3.0) * (1 / 10.0) ]] = [[-0.6]]
+        B_scaled = diag(s_xdot) @ B @ diag(1/s_u)    = [[ 2.0 * (5.0)  * (1 / 0.5)  ]] = [[20.0]]
+        C_scaled = diag(s_y)    @ C @ diag(1/s_x)    = [[ 8.0 * (4.0)  * (1 / 10.0) ]] = [[ 3.2]]
+        """
+        m = ConcreteModel()
+        m.time = ContinuousSet(initialize=[0, 1])
+        m.x = Var(m.time, initialize=1.0)
+        m.xdot = DerivativeVar(m.x, wrt=m.time, initialize=0.0)
+        m.u = Var(m.time, initialize=1.0)
+        m.y = Var(m.time, initialize=4.0)
+
+        @m.Constraint(m.time)
+        def ode_eqn(b, t):
+            return b.xdot[t] == -3.0 * b.x[t] + 5.0 * b.u[t]
+
+        @m.Constraint(m.time)
+        def output_eqn(b, t):
+            return b.y[t] == 4.0 * b.x[t]
+
+        fd_factory = TransformationFactory("dae.finite_difference")
+        fd_factory.apply_to(m, wrt=m.time, nfe=1, scheme="BACKWARD")
+
+        m.u.fix(3.0)
+        for t in m.time:
+            m.x[t].set_value(5.0)
+            m.xdot[t].set_value(0.0)
+            m.y[t].set_value(20.0)
+
+        # Declare scaling factors in the model's Export suffix
+        m.scaling_factor = Suffix(direction=Suffix.EXPORT)
+        m.scaling_factor[m.x[1]] = 10.0
+        m.scaling_factor[m.xdot[1]] = 2.0
+        m.scaling_factor[m.u[1]] = 0.5
+        m.scaling_factor[m.y[1]] = 8.0
+
+        # --- Case A: scaled = False (returns physical matrices) ---
+        out_unscaled = linearize_system(
+            m,
+            m.time,
+            representative_time=1,
+            input_vars=[m.u],
+            output_vars=[m.y],
+            scaled=False,
+        )
+
+        assert array(out_unscaled["A"]) == pytest.approx(array([[-3.0]]))
+        assert array(out_unscaled["B"]) == pytest.approx(array([[5.0]]))
+        assert array(out_unscaled["C"]) == pytest.approx(array([[4.0]]))
+        assert array(out_unscaled["D"]) == pytest.approx(array([[0.0]]))
+
+        # --- Case B: scaled = True (returns mathematically scaled matrices) ---
+        out_scaled = linearize_system(
+            m,
+            m.time,
+            representative_time=1,
+            input_vars=[m.u],
+            output_vars=[m.y],
+            scaled=True,
+        )
+
+        assert array(out_scaled["A"]) == pytest.approx(array([[-0.6]]))
+        assert array(out_scaled["B"]) == pytest.approx(array([[20.0]]))
+        assert array(out_scaled["C"]) == pytest.approx(array([[3.2]]))
+        assert array(out_scaled["D"]) == pytest.approx(array([[0.0]]))
+
+    def test_linearize_system_constraint_scaling_invariance(self):
+        """
+        Verify that constraint scaling factors DO NOT change the resulting unscaled
+        state-space matrices (A, B, C, D).
+
+        System definition:
+        dx/dt = -3*x + 5*u    ==> Equation 1 (ode_eqn)
+        y = 2*x               ==> Equation 2 (output_eqn)
+
+        Unscaled continuous system matrices (A = [[-3.0]], B = [[5.0]], C = [[2.0]], D = [[0.0]])
+        should remain exactly the same even if Equation 1 is scaled by 100.0 and Equation 2
+        is scaled by 0.01.
+        """
+        m = ConcreteModel()
+        m.time = ContinuousSet(initialize=[0, 1])
+        m.x = Var(m.time, initialize=1.0)
+        m.xdot = DerivativeVar(m.x, wrt=m.time, initialize=0.0)
+        m.u = Var(m.time, initialize=1.0)
+        m.y = Var(m.time, initialize=2.0)
+
+        @m.Constraint(m.time)
+        def ode_eqn(b, t):
+            return b.xdot[t] == -3.0 * b.x[t] + 5.0 * b.u[t]
+
+        @m.Constraint(m.time)
+        def output_eqn(b, t):
+            return b.y[t] == 2.0 * b.x[t]
+
+        fd_factory = TransformationFactory("dae.finite_difference")
+        fd_factory.apply_to(m, wrt=m.time, nfe=1, scheme="BACKWARD")
+
+        m.u.fix(3.0)
+        for t in m.time:
+            m.x[t].set_value(5.0)
+            m.xdot[t].set_value(0.0)
+            m.y[t].set_value(10.0)
+
+        # 1. Base run without any constraint scaling factors
+        out_base = linearize_system(
+            m,
+            m.time,
+            representative_time=1,
+            input_vars=[m.u],
+            output_vars=[m.y],
+            scaled=False,
+        )
+
+        assert array(out_base["A"]) == pytest.approx(array([[-3.0]]))
+        assert array(out_base["B"]) == pytest.approx(array([[5.0]]))
+        assert array(out_base["C"]) == pytest.approx(array([[2.0]]))
+        assert array(out_base["D"]) == pytest.approx(array([[0.0]]))
+
+        # 2. Add highly non-unity scaling factors to the constraints
+        m.scaling_factor = Suffix(direction=Suffix.EXPORT)
+        # Apply scaling factors to the specific constraint datas evaluated at t=1
+        m.scaling_factor[m.ode_eqn[1]] = 100.0
+        m.scaling_factor[m.output_eqn[1]] = 0.01
+
+        out_scaled_constraints = linearize_system(
+            m,
+            m.time,
+            representative_time=1,
+            input_vars=[m.u],
+            output_vars=[m.y],
+            scaled=False,
+        )
+
+        # The unscaled matrices must remain exactly identical to the base run
+        assert array(out_scaled_constraints["A"]) == pytest.approx(array(out_base["A"]))
+        assert array(out_scaled_constraints["B"]) == pytest.approx(array(out_base["B"]))
+        assert array(out_scaled_constraints["C"]) == pytest.approx(array(out_base["C"]))
+        assert array(out_scaled_constraints["D"]) == pytest.approx(array(out_base["D"]))
+
+        # 3. Finally, the results should be unaffected when scaled=True because constraint
+        # scaling factors are cancelled when inverting the Jacobian
+        out_scaled_constraints = linearize_system(
+            m,
+            m.time,
+            representative_time=1,
+            input_vars=[m.u],
+            output_vars=[m.y],
+            scaled=True,
+        )
+
+        # The unscaled matrices must remain exactly identical to the base run
+        assert array(out_scaled_constraints["A"]) == pytest.approx(array(out_base["A"]))
+        assert array(out_scaled_constraints["B"]) == pytest.approx(array(out_base["B"]))
+        assert array(out_scaled_constraints["C"]) == pytest.approx(array(out_base["C"]))
+        assert array(out_scaled_constraints["D"]) == pytest.approx(array(out_base["D"]))
+
+    def test_linearize_system_output_categories(self):
+        """
+        Verify that output matrices (C, D, Dd) are correctly constructed for
+        each of the five possible mathematical variable categories:
+        1) Differential (x)
+        2) Algebraic (z)
+        3) Derivative (xdot)
+        4) Input (u)
+        5) Disturbance (d)
+
+        System equations:
+        dx/dt = -3*x + 5*u - 2*d   (ode_eqn)
+        z = 4*x + 6*u + 7*d        (alg_eqn)
+        """
+        m = ConcreteModel()
+        m.time = ContinuousSet(initialize=[0, 1])
+        m.x = Var(m.time, initialize=1.0)
+        m.xdot = DerivativeVar(m.x, wrt=m.time, initialize=0.0)
+        m.z = Var(m.time, initialize=0.0)
+        m.u = Var(m.time, initialize=1.0)
+        m.d = Var(m.time, initialize=1.0)
+
+        @m.Constraint(m.time)
+        def ode_eqn(b, t):
+            return b.xdot[t] == -3.0 * b.x[t] + 5.0 * b.u[t] - 2.0 * b.d[t]
+
+        @m.Constraint(m.time)
+        def alg_eqn(b, t):
+            return b.z[t] == 4.0 * b.x[t] + 6.0 * b.u[t] + 7.0 * b.d[t]
+
+        fd_factory = TransformationFactory("dae.finite_difference")
+        fd_factory.apply_to(m, wrt=m.time, nfe=1, scheme="BACKWARD")
+
+        m.u.fix(1.0)
+        m.d.fix(1.0)
+        for t in m.time:
+            m.x[t].set_value(1.0)
+            m.xdot[t].set_value(0.0)
+            m.z[t].set_value(17.0)
+
+        # We pass one variable of each category as an output variable
+        out = linearize_system(
+            m,
+            m.time,
+            representative_time=1,
+            input_vars=[m.u],
+            disturbance_vars=[m.d],
+            output_vars=[m.x, m.z, m.xdot, m.u, m.d],
+            scaled=False,
+        )
+
+        # Output list ordering: [x, z, xdot, u, d]
+        assert len(out["output_vars"]) == 5
+        assert _component_index(out["output_vars"], m.x[1]) == 0
+        assert _component_index(out["output_vars"], m.z[1]) == 1
+        assert _component_index(out["output_vars"], m.xdot[1]) == 2
+        assert _component_index(out["output_vars"], m.u[1]) == 3
+        assert _component_index(out["output_vars"], m.d[1]) == 4
+
+        # 1) Differential Output (index 0)
+        # y = x  => C[0, :] = [[1]], D[0, :] = [[0]], Dd[0, :] = [[0]]
+        assert array(out["C"])[0, :] == pytest.approx(array([1.0]))
+        assert array(out["D"])[0, :] == pytest.approx(array([0.0]))
+        assert array(out["Dd"])[0, :] == pytest.approx(array([0.0]))
+
+        # 2) Algebraic Output (index 1)
+        # y = 4*x + 6*u + 7*d  => C[1, :] = [[4]], D[1, :] = [[6]], Dd[1, :] = [[7]]
+        assert array(out["C"])[1, :] == pytest.approx(array([4.0]))
+        assert array(out["D"])[1, :] == pytest.approx(array([6.0]))
+        assert array(out["Dd"])[1, :] == pytest.approx(array([7.0]))
+
+        # 3) Derivative Output (index 2)
+        # y = xdot = -3*x + 5*u - 2*d  => C[2, :] = [[-3.0]], D[2, :] = [[5.0]], Dd[2, :] = [[-2.0]]
+        assert array(out["C"])[2, :] == pytest.approx(array([-3.0]))
+        assert array(out["D"])[2, :] == pytest.approx(array([5.0]))
+        assert array(out["Dd"])[2, :] == pytest.approx(array([-2.0]))
+
+        # 4) Input Output (index 3)
+        # y = u  => C[3, :] = [[0]], D[3, :] = [[1]], Dd[3, :] = [[0]]
+        assert array(out["C"])[3, :] == pytest.approx(array([0.0]))
+        assert array(out["D"])[3, :] == pytest.approx(array([1.0]))
+        assert array(out["Dd"])[3, :] == pytest.approx(array([0.0]))
+
+        # 5) Disturbance Output (index 4)
+        # y = d  => C[4, :] = [[0]], D[4, :] = [[0]], Dd[4, :] = [[1]]
+        assert array(out["C"])[4, :] == pytest.approx(array([0.0]))
+        assert array(out["D"])[4, :] == pytest.approx(array([0.0]))
+        assert array(out["Dd"])[4, :] == pytest.approx(array([1.0]))
+
+    def test_linearize_system_output_categories_multivariable(self):
+        """
+        Verify that output matrices (C, D, Dd) are correctly constructed for
+        each of the five possible mathematical variable categories when there are
+        multiple input and disturbance variables to verify column mapping.
+
+        System equations:
+        dx/dt = -3*x + 5*u1 + 10*u2 - 2*d1 - 8*d2   (ode_eqn)
+        z = 4*x + 6*u1 + 12*u2 + 7*d1 + 14*d2       (alg_eqn)
+
+        To enforce steady state (dx/dt = 0):
+        3*x = 5(1) + 10(1.5) - 2(1) - 8(2) = 2
+        x = 2/3
+
+        z = 4(2/3) + 6(1) + 12(1.5) + 7(1) + 14(2) = 8/3 + 59 = 185/3
+        """
+        m = ConcreteModel()
+        m.time = ContinuousSet(initialize=[0, 1])
+        m.x = Var(m.time, initialize=2.0 / 3.0)
+        m.xdot = DerivativeVar(m.x, wrt=m.time, initialize=0.0)
+        m.z = Var(m.time, initialize=185.0 / 3.0)
+        m.u1 = Var(m.time, initialize=1.0)
+        m.u2 = Var(m.time, initialize=1.5)
+        m.d1 = Var(m.time, initialize=1.0)
+        m.d2 = Var(m.time, initialize=2.0)
+
+        @m.Constraint(m.time)
+        def ode_eqn(b, t):
+            return b.xdot[t] == (
+                -3.0 * b.x[t]
+                + 5.0 * b.u1[t]
+                + 10.0 * b.u2[t]
+                - 2.0 * b.d1[t]
+                - 8.0 * b.d2[t]
+            )
+
+        @m.Constraint(m.time)
+        def alg_eqn(b, t):
+            return b.z[t] == (
+                4.0 * b.x[t]
+                + 6.0 * b.u1[t]
+                + 12.0 * b.u2[t]
+                + 7.0 * b.d1[t]
+                + 14.0 * b.d2[t]
+            )
+
+        fd_factory = TransformationFactory("dae.finite_difference")
+        fd_factory.apply_to(m, wrt=m.time, nfe=1, scheme="BACKWARD")
+
+        m.u1.fix(1.0)
+        m.u2.fix(1.5)
+        m.d1.fix(1.0)
+        m.d2.fix(2.0)
+        for t in m.time:
+            m.x[t].set_value(2.0 / 3.0)
+            m.xdot[t].set_value(0.0)
+            m.z[t].set_value(185.0 / 3.0)
+
+        # We pass one variable of each category as an output variable
+        # Inputs: [u1, u2]
+        # Disturbances: [d1, d2]
+        out = linearize_system(
+            m,
+            m.time,
+            representative_time=1,
+            input_vars=[m.u1, m.u2],
+            disturbance_vars=[m.d1, m.d2],
+            output_vars=[m.x, m.z, m.xdot, m.u2, m.d1],
+            scaled=False,
+        )
+
+        # Output list ordering: [x, z, xdot, u2, d1]
+        assert len(out["output_vars"]) == 5
+        assert _component_index(out["output_vars"], m.x[1]) == 0
+        assert _component_index(out["output_vars"], m.z[1]) == 1
+        assert _component_index(out["output_vars"], m.xdot[1]) == 2
+        assert _component_index(out["output_vars"], m.u2[1]) == 3
+        assert _component_index(out["output_vars"], m.d1[1]) == 4
+
+        # 1) Differential Output (index 0)
+        # y = x  => C = [[1]], D = [[0, 0]], Dd = [[0, 0]]
+        assert array(out["C"])[0, :] == pytest.approx(array([1.0]))
+        assert array(out["D"])[0, :] == pytest.approx(array([0.0, 0.0]))
+        assert array(out["Dd"])[0, :] == pytest.approx(array([0.0, 0.0]))
+
+        # 2) Algebraic Output (index 1)
+        # y = 4*x + 6*u1 + 12*u2 + 7*d1 + 14*d2
+        # C = [[4]], D = [[6, 12]], Dd = [[7, 14]]
+        assert array(out["C"])[1, :] == pytest.approx(array([4.0]))
+        assert array(out["D"])[1, :] == pytest.approx(array([6.0, 12.0]))
+        assert array(out["Dd"])[1, :] == pytest.approx(array([7.0, 14.0]))
+
+        # 3) Derivative Output (index 2)
+        # y = xdot = -3*x + 5*u1 + 10*u2 - 2*d1 - 8*d2
+        # C = [[-3]], D = [[5, 10]], Dd = [[-2, -8]]
+        assert array(out["C"])[2, :] == pytest.approx(array([-3.0]))
+        assert array(out["D"])[2, :] == pytest.approx(array([5.0, 10.0]))
+        assert array(out["Dd"])[2, :] == pytest.approx(array([-2.0, -8.0]))
+
+        # 4) Input Output (index 3 checking u2)
+        # y = u2  => C = [[0]], D = [[0, 1]] (since u2 is the 2nd input), Dd = [[0, 0]]
+        assert array(out["C"])[3, :] == pytest.approx(array([0.0]))
+        assert array(out["D"])[3, :] == pytest.approx(array([0.0, 1.0]))
+        assert array(out["Dd"])[3, :] == pytest.approx(array([0.0, 0.0]))
+
+        # 5) Disturbance Output (index 4 checking d1)
+        # y = d1  => C = [[0]], D = [[0, 0]], Dd = [[1, 0]] (since d1 is the 1st disturbance)
+        assert array(out["C"])[4, :] == pytest.approx(array([0.0]))
+        assert array(out["D"])[4, :] == pytest.approx(array([0.0, 0.0]))
+        assert array(out["Dd"])[4, :] == pytest.approx(array([1.0, 0.0]))
+
+    def test_linearize_system_with_sliced_references(self):
+        """
+        Verify that linearize_system works transparently when passed Reference slices
+        to represent variables indexed by sets in addition to the time continuous set.
+        """
+        m = ConcreteModel()
+        m.time = ContinuousSet(initialize=[0, 1])
+        m.space = Set(initialize=["inlet", "outlet"])
+
+        # A state variable indexed by both time AND space
+        m.x_spatial = Var(m.time, m.space, initialize=0)
+        m.xdot_spatial = DerivativeVar(m.x_spatial, wrt=m.time, initialize=0)
+
+        @m.Constraint(m.time, m.space)
+        def ode_eqn(b, t, s):
+            # dx/dt = -2*x
+            return b.xdot_spatial[t, s] == -2.0 * b.x_spatial[t, s]
+
+        fd_factory = TransformationFactory("dae.finite_difference")
+        fd_factory.apply_to(m, wrt=m.time, nfe=1, scheme="BACKWARD")
+
+        # Create Reference slices indexed only by time
+        x_outlet_ref = Reference(m.x_spatial[:, "outlet"])
+
+        out = linearize_system(
+            m, m.time, representative_time=1, output_vars=[x_outlet_ref], scaled=False
+        )
+
+        assert len(out["diff_vars"]) == 2  # Spatial states at 'inlet' and 'outlet'
+        assert len(out["output_vars"]) == 1
+        assert _component_index(out["output_vars"], m.x_spatial[1, "outlet"]) == 0
+
+
+@pytest.mark.unit
+class TestC2dConversion(object):
+    def test_c2d_conversion(self):
+        """
+        Verify the continuous-to-discrete LTI system conversion function 'c2d'
+        with states, inputs, and disturbances.
+        """
+        continuous_sys = {
+            "A": array([[-2.0]]),
+            "B": array([[1.0]]),
+            "Bd": array([[3.0]]),
+        }
+
+        dt = 0.5
+        discrete_sys = c2d(continuous_sys, dt=dt)
+
+        expected_A = array([[0.36787944]])
+        expected_B = array([[0.31606028]])
+        expected_Bd = array([[0.94818083]])
+
+        assert discrete_sys["A"] == pytest.approx(expected_A, rel=1e-5)
+        assert discrete_sys["B"] == pytest.approx(expected_B, rel=1e-5)
+        assert discrete_sys["Bd"] == pytest.approx(expected_Bd, rel=1e-5)
 
 
 @pytest.mark.component

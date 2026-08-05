@@ -11,174 +11,17 @@
 # license information.
 #################################################################################
 
-import numpy as np
+from numpy import block, diag, zeros
 from scipy.linalg import expm
-import scipy.sparse.linalg as spla
+from scipy.sparse.linalg import spsolve
 
-from pyomo.environ import Constraint, value, Var
-from pyomo.common.collections import ComponentSet, ComponentMap, OrderedSet
-from pyomo.core.expr.visitor import identify_variables
-from pyomo.dae.flatten import flatten_dae_components
-from pyomo.util.subsystems import (
-    TemporarySubsystemManager,
-    create_subsystem_block,
-)
+from pyomo.environ import Constraint, value
+from pyomo.common.collections import ComponentSet, ComponentMap
 
-from idaes.core.solvers.petsc import _sub_problem_scaling_suffix
 from idaes.core.solvers.petsc_object import PETScIntegrator
 from idaes.core.util import from_json, StoreSpec, to_json
 from idaes.core.util.exceptions import BurntToast
-import idaes.core.util.scaling as iscale
-from idaes.core.scaling.util import (
-    propagate_scaling_factors_to_temporary_block,
-    get_jacobian,
-)
-import idaes.apps.caprese.nmpc_var as nmpc_var
-from idaes.apps.caprese.common.config import (
-    VariableCategory,
-    ConstraintCategory,
-)
-from idaes.apps.caprese.categorize import (
-    _get_state_vardata,
-    _get_disc_eq,
-    _is_derivative_wrt,
-)
-
-DAE_DISC_SUFFIX = "_disc_eq"
-
-VC = VariableCategory
-CC = ConstraintCategory
-
-CATEGORY_TYPE_MAP = {
-    VariableCategory.DIFFERENTIAL: nmpc_var.DiffVar,
-    VariableCategory.ALGEBRAIC: nmpc_var.AlgVar,
-    VariableCategory.DERIVATIVE: nmpc_var.DerivVar,
-    VariableCategory.INPUT: nmpc_var.InputVar,
-    VariableCategory.FIXED: nmpc_var.FixedVar,
-    VariableCategory.MEASUREMENT: nmpc_var.MeasuredVar,
-}
-
-
-def _unfix_vars(var_list):
-    flags = ComponentMap()
-    for var in var_list:
-        flags[var] = var.fixed
-        var.unfix()
-    return flags
-
-
-def _restore_fixedness(flags):
-    for var, fix in flags.items():
-        if fix:
-            var.fix()
-
-
-def _identify_derivatives_if_differential(condata, wrt, include_fixed=False):
-    # Originally from caprese.categorize, but we want to allow more than one
-    # DerivativeVar per equation
-    parent = condata.parent_component()
-    if parent.local_name.endswith(DAE_DISC_SUFFIX):
-        return False, None
-    derivs = None
-    for var in identify_variables(condata.expr, include_fixed=include_fixed):
-        if _is_derivative_wrt(var, wrt):
-            if derivs is None:
-                derivs = [var]
-            else:
-                derivs.append(var)
-    is_diff = False if derivs is None else True
-    return is_diff, derivs
-
-
-def _deduplicate_components(comp_list, idx, ctype=None):
-    """
-    Iterates through a list of Pyomo components and removes any duplicate
-    components (e.g., References, object references, etc.). In order to
-    determine whether the elements of comp_list refer to the same component,
-    they need to be evaluated at some index to get a child component data
-    object. If they refer to the same data object, they are considered to
-    be the same component
-
-    Args:
-        comp_list (list): List of components that need to be deduplicated
-        idx: Index at which to evaluate each component to get the
-            associated data objects
-        ctype (Class): Expected type of Pyomo component. If ctype is not
-            set to None, then raise an exception if a component is not
-            an instance of ctype.
-    Returns:
-        filtered_list (list): List of components with duplicates removed
-        duplicate_list (list): List of duplicate components in comp_list
-    """
-    visited = set()
-    filtered_list = []
-    duplicate_list = []
-    for comp in comp_list:
-        if ctype is not None and not isinstance(comp, ctype):
-            raise ValueError(
-                f"Encounted component {comp.name} with unexpected type "
-                f"{type(comp)}, which is not a subclass of the "
-                f"expected type {ctype}."
-            )
-        _id = id(comp[idx])
-        if _id not in visited:
-            visited.add(_id)
-            filtered_list.append(comp)
-        else:
-            duplicate_list.append(comp)
-
-
-def _validate_user_specified_variables(
-    vardata_set, input_vardata_set, disturbance_vardata_set, output_vardata_set
-):
-    """
-    Iterates through a set of variables to ensure the user-specified
-    input, disturbance, and output variables are present in that set.
-    If some variables are not present, then all the absent variables
-    are collected to raise a ValueError.
-
-    Args:
-        var_set: Variable set which we are checking for inclusion of
-            the other variable set.
-        input_vardata_set: Set of user-specified input variables
-        disturbance_vardata_set: Set of user-specified disturbance variables
-        output_vardata_set: Set of user-specified output variables
-    Returns:
-        None
-    """
-    missing_inputs = []
-    for input in input_vardata_set:
-        if not input in vardata_set:
-            missing_inputs.append(input.name)
-
-    missing_disturbances = []
-    for dist in disturbance_vardata_set:
-        if not dist in vardata_set:
-            missing_disturbances.append(dist.name)
-
-    missing_outputs = []
-    for out in output_vardata_set:
-        if not out in vardata_set:
-            missing_outputs.append(out.name)
-
-    if missing_inputs or missing_disturbances or missing_outputs:
-        err_message = f"User specified variables not present in any active constraint at time {t1}: \n\n"
-        if missing_inputs:
-            err_message += (
-                "Missing input variables:\n" + "\n".join(missing_inputs) + "\n\n"
-            )
-        if missing_disturbances:
-            err_message += (
-                "Missing disturbance variables:\n"
-                + "\n".join(missing_disturbances)
-                + "\n\n"
-            )
-        if missing_outputs:
-            err_message += (
-                "Missing output variables:\n" + "\n".join(missing_outputs) + "\n\n"
-            )
-
-        raise ValueError(err_message)
+from idaes.core.scaling.util import get_jacobian
 
 
 # This function was created with the assistence of Google Gemini 3.5 Flash
@@ -217,7 +60,7 @@ def _validate_vardata_collections(vardata_lists, vardata_sets):
             duplicates = []
             for var in lst:
                 if var in seen:
-                    duplicates.append(var)
+                    duplicates.append(var.name)
                 else:
                     seen.add(var)
             raise ValueError(
@@ -457,7 +300,7 @@ def linearize_system(
         # disturbance, and differential variables are fixed.
         # In other words, it contains the equations to formulate
         # the DAE system 0 = f(x, xdot, u, d)
-        t_block, _, _ = integrator.get_timestep_problem(t1)
+        t_block, diff_vars, _ = integrator.get_timestep_problem(t1)
         jac, nlp = get_jacobian(t_block, equality_constraints_only=True)
     finally:
         from_json(model, fixedness, wts=StoreSpec.isfixed())
@@ -465,10 +308,15 @@ def linearize_system(
     vardata_lists["total"] = nlp.get_pyomo_variables()
 
     vardata_lists["deriv"] = []
-    vardata_lists["diff"] = []
+    vardata_lists["diff"] = diff_vars
+
+    # Invert the map to get derivative vars in the same order as diff_vars
+    diff_deriv_map = ComponentMap()
     for deriv, out in integrator.derivative_differential_vardata_map.items():
-        vardata_lists["deriv"].append(deriv)
-        vardata_lists["diff"].append(out["diff_var"])
+        diff_deriv_map[out["diff_var"]] = deriv
+
+    for diff_var in vardata_lists["diff"]:
+        vardata_lists["deriv"].append(diff_deriv_map[diff_var])
 
     vartypes += ["deriv", "diff", "total"]
     vardata_sets = {}
@@ -535,7 +383,21 @@ def linearize_system(
         :, raw_jac_indices["diff"] + raw_jac_indices["input"] + raw_jac_indices["dist"]
     ]
 
-    sys_raw = spla.spsolve(-jac_deriv_alg.tocsc(), jac_rest.tocsc()).todense()
+    sys_raw = spsolve(-jac_deriv_alg.tocsc(), jac_rest.tocsc())
+    if hasattr(sys_raw, "todense"):
+        sys_raw = sys_raw.todense()
+    else:
+        # In the edge case where sys_raw is a 1x1 matrix, it's cast to
+        # an ndarray and calling todense() would result in an error
+        if len(sys_raw.shape) != 2:
+            if len(sys_raw) != 1:
+                raise RuntimeError(
+                    "Unexpected behavior from results returned by spsolve. Please "
+                    "open an issue on the IDAES Github with steps to reproduce "
+                    "this error."
+                )
+            else:
+                sys_raw = sys_raw.reshape((1, 1))
 
     # We seek an LTI system of the form:
     # xdot = A @ x + B @ u + B_d @ d
@@ -557,9 +419,9 @@ def linearize_system(
     out["B"] = AB_raw[:, nx : nx + nu]
     out["Bd"] = AB_raw[:, nx + nu : nx + nu + nd]
 
-    out["C"] = np.zeros((ny, nx))
-    out["D"] = np.zeros((ny, nu))
-    out["Dd"] = np.zeros((ny, nd))
+    out["C"] = zeros((ny, nx))
+    out["D"] = zeros((ny, nu))
+    out["Dd"] = zeros((ny, nd))
 
     for Crow, output, out_idx in zip(
         range(ny), vardata_lists["output"], raw_jac_indices["output"]
@@ -583,12 +445,12 @@ def linearize_system(
             out["Dd"][Crow, :] = out["Bd"][drvi, :]
         elif output in output_sets["input"]:
             # The C row is full of zeros
-            ini = len(raw_jac_indices["diff"]) + vardata_lists["input"].index(out_idx)
+            ini = raw_jac_indices["input"].index(out_idx)
             out["D"][Crow, ini] = 1
             # The Dd row is full of zeros
         elif output in output_sets["dist"]:
             # The C and D rows are full of zeros
-            ind = vardata_lists["dist"].index(out_idx)
+            ind = raw_jac_indices["dist"].index(out_idx)
             out["Dd"][Crow, ind] = 1
         else:
             raise BurntToast(
@@ -607,13 +469,13 @@ def linearize_system(
         # This step could be accomplished more efficiently using
         # array broadcasting, but using matrices avoids bugs
         # involving matrices broadcast along the wrong axis
-        out["A"] = np.diag(1 / sfxdot) @ out["A"] @ np.diag(sfx)
-        out["B"] = np.diag(1 / sfxdot) @ out["B"] @ np.diag(sfu)
-        out["Bd"] = np.diag(1 / sfxdot) @ out["Bd"] @ np.diag(sfd)
+        out["A"] = diag(1 / sfxdot) @ out["A"] @ diag(sfx)
+        out["B"] = diag(1 / sfxdot) @ out["B"] @ diag(sfu)
+        out["Bd"] = diag(1 / sfxdot) @ out["Bd"] @ diag(sfd)
 
-        out["C"] = np.diag(1 / sfy) @ out["C"] @ np.diag(sfx)
-        out["D"] = np.diag(1 / sfy) @ out["D"] @ np.diag(sfu)
-        out["Dd"] = np.diag(1 / sfy) @ out["Dd"] @ np.diag(sfd)
+        out["C"] = diag(1 / sfy) @ out["C"] @ diag(sfx)
+        out["D"] = diag(1 / sfy) @ out["D"] @ diag(sfu)
+        out["Dd"] = diag(1 / sfy) @ out["Dd"] @ diag(sfd)
 
     return out
 
@@ -648,18 +510,18 @@ def c2d(sys: dict, dt: float):
     if "B" in sys:
         B = sys["B"]
     else:
-        B = np.zeros((A.shape[0], 0))
+        B = zeros((A.shape[0], 0))
 
     if "Bd" in sys:
         Bd = sys["Bd"]
     else:
-        Bd = np.zeros((A.shape[0], 0))
+        Bd = zeros((A.shape[0], 0))
 
     nx = A.shape[0]
     nu = B.shape[1]
     nd = Bd.shape[1]
 
-    A_aug = np.block([[A, B, Bd], [np.zeros((nu + nd, nx + nu + nd))]])
+    A_aug = block([[A, B, Bd], [zeros((nu + nd, nx + nu + nd))]])
 
     A_tilde_aug = expm(A_aug * dt)
 
