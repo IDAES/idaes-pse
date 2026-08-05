@@ -205,8 +205,8 @@ def _validate_vardata_collections(vardata_lists, vardata_sets):
             of variables to a ComponentSet of those variables.
             It must contain the same keys as vardata_lists.
     Returns:
-        output_data_lists (dict): Dictionary partitioning the
-            output variables into lists of derivative, differential,
+        output_sets (dict): Dictionary partitioning the output
+            variables into ComponentSets of derivative, differential,
             algebraic, input, and disturbance variables.
     """
     # 1. Ensure no duplicate elements exist within individual lists
@@ -247,7 +247,7 @@ def _validate_vardata_collections(vardata_lists, vardata_sets):
                 )
 
     # Partition output variables into lists preserving their original order
-    output_data_lists = {
+    output_sets = {
         "deriv": ComponentSet(),
         "diff": ComponentSet(),
         "alg": ComponentSet(),
@@ -257,15 +257,15 @@ def _validate_vardata_collections(vardata_lists, vardata_sets):
 
     for var in vardata_lists["output"]:
         if var in vardata_sets["deriv"]:
-            output_data_lists["deriv"].add(var)
+            output_sets["deriv"].add(var)
         elif var in vardata_sets["diff"]:
-            output_data_lists["diff"].add(var)
+            output_sets["diff"].add(var)
         elif var in vardata_sets["alg"]:
-            output_data_lists["alg"].add(var)
+            output_sets["alg"].add(var)
         elif var in vardata_sets["input"]:
-            output_data_lists["input"].add(var)
+            output_sets["input"].add(var)
         elif var in vardata_sets["dist"]:
-            output_data_lists["dist"].add(var)
+            output_sets["dist"].add(var)
         else:
             # Since "alg" is mathematically defined as "total - (diff + deriv + input + dist)",
             # any output variable belonging to "total" must fall into one of these 5 sets.
@@ -277,7 +277,7 @@ def _validate_vardata_collections(vardata_lists, vardata_sets):
                 "IDAES Github with steps to reproduce this error."
             )
 
-    return output_data_lists
+    return output_sets
 
 
 def _validate_steady_state(
@@ -319,9 +319,16 @@ def _validate_steady_state(
             )
 
     nonzero_constraint_residuals = []
-    for condata in t_block.component_data_objects(ctype=Constraint):
+    for condata in t_block.component_data_objects(ctype=Constraint, active=True):
         sf = _get_scaling_factor(condata)
-        if sf * abs(value(condata)) > constraint_tolerance:
+        if condata.lb != condata.ub:
+            raise BurntToast(
+                f"Encountered the inequality constraint {condata.name} "
+                "while trying to validate that the system is at a steady "
+                "state. This should never happen. Please open an issue on "
+                "the IDAES Github with steps to reproduce this error."
+            )
+        if sf * abs(value(condata) - condata.lb) > constraint_tolerance:
             nonzero_constraint_residuals.append(
                 condata.name + f": {value(condata):.2e} (scaling factor={sf:.2e})\n"
             )
@@ -475,13 +482,13 @@ def linearize_system(
     )
     # Iterate through vardata_lists["total"] instead
     # of directly converting vardata_sets["alg"] to
-    # ensure a consistent variabel order is maintained
+    # ensure a consistent variable order is maintained
     vardata_lists["alg"] = []
     for vardata in vardata_lists["total"]:
         if vardata in vardata_sets["alg"]:
             vardata_lists["alg"].append(vardata)
 
-    output_lists = _validate_vardata_collections(vardata_lists, vardata_sets)
+    output_sets = _validate_vardata_collections(vardata_lists, vardata_sets)
 
     dof = (
         nlp.n_primals()
@@ -522,7 +529,7 @@ def linearize_system(
         :, raw_jac_indices["diff"] + raw_jac_indices["input"] + raw_jac_indices["dist"]
     ]
 
-    sys_raw = spla.spsolve(-jac_deriv_alg, jac_rest.tocsc()).todense()
+    sys_raw = spla.spsolve(-jac_deriv_alg.tocsc(), jac_rest.tocsc()).todense()
 
     # We seek an LTI system of the form:
     # xdot = A @ x + B @ u + B_d @ d
@@ -551,29 +558,29 @@ def linearize_system(
     for Crow, output, out_idx in zip(
         range(ny), vardata_lists["output"], raw_jac_indices["output"]
     ):
-        if output in output_lists["diff"]:
+        if output in output_sets["diff"]:
             # Because we've rearranged the rows/columns when creating
             # A, we need to find the *new* index corresponding to the
             # differential variable
             di = raw_jac_indices["diff"].index(out_idx)
             out["C"][Crow, di] = 1
-        elif output in output_lists["alg"]:
+        elif output in output_sets["alg"]:
             ai = len(raw_jac_indices["deriv"]) + raw_jac_indices["alg"].index(out_idx)
             out["C"][Crow, :] = sys_raw[ai, raw_jac_indices["diff"]]
             out["D"][Crow, :] = sys_raw[ai, raw_jac_indices["input"]]
             out["Dd"][Crow, :] = sys_raw[ai, raw_jac_indices["dist"]]
-        elif output in output_lists["deriv"]:
+        elif output in output_sets["deriv"]:
             # Grab the correct rows of A, B, and Bd
             drvi = raw_jac_indices["deriv"].index(out_idx)
             out["C"][Crow, :] = out["A"][drvi, :]
             out["D"][Crow, :] = out["B"][drvi, :]
             out["Dd"][Crow, :] = out["Bd"][drvi, :]
-        elif output in output_lists["input"]:
+        elif output in output_sets["input"]:
             # The C row is full of zeros
             ini = len(raw_jac_indices["diff"]) + vardata_lists["input"].index(out_idx)
             out["D"][Crow, ini] = 1
             # The Dd row is full of zeros
-        elif output in output_lists["dist"]:
+        elif output in output_sets["dist"]:
             # The C and D rows are full of zeros
             ind = vardata_lists["dist"].index(out_idx)
             out["Dd"][Crow, ind] = 1

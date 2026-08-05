@@ -1,14 +1,19 @@
 import pytest
 from itertools import combinations
 
-from numpy import array, eye, zeros
+from numpy import array, eye, logspace, zeros
 
 from pyomo.environ import (
+    Block,
     ConcreteModel,
+    Constraint,
     exp,
     Param,
+    sin,
+    Suffix,
     TransformationFactory,
     units as pyunits,
+    value,
     Var,
 )
 from pyomo.common.collections import ComponentSet
@@ -20,9 +25,11 @@ from idaes.core.solvers.petsc_object import PETScIntegrator
 from idaes.core.util.constants import Constants
 from idaes.core.util.dynamics.linearization import (
     _validate_vardata_collections,
+    _validate_steady_state,
     c2d,
     linearize_system,
 )
+from idaes.core.util.exceptions import BurntToast
 
 
 @pytest.mark.unit
@@ -61,15 +68,15 @@ class TestValidateVardataCollections(object):
         output_partition = _validate_vardata_collections(vardata_lists, vardata_sets)
 
         # Check that outputs are mapped and original list ordering is preserved
-        assert output_partition["deriv"] == [base_setup[0].deriv_v]
-        assert output_partition["alg"] == [base_setup[0].alg_v]
-        assert output_partition["dist"] == [base_setup[0].dist_v]
-        assert output_partition["diff"] == []
-        assert output_partition["input"] == []
+        assert output_partition["deriv"] == ComponentSet([base_setup[0].deriv_v])
+        assert output_partition["alg"] == ComponentSet([base_setup[0].alg_v])
+        assert output_partition["dist"] == ComponentSet([base_setup[0].dist_v])
+        assert output_partition["diff"] == ComponentSet()
+        assert output_partition["input"] == ComponentSet()
 
     def test_output_partition_assignment(self, base_setup):
         """Verifies that input and differential variables that show up as outputs
-        are correctly assigned to their respective partitioned lists."""
+        are correctly assigned to their respective partitioned ComponentSets."""
         m, vardata_lists, vardata_sets = base_setup
 
         # Configure outputs to explicitly include a differential and an input variable
@@ -79,14 +86,13 @@ class TestValidateVardataCollections(object):
 
         output_partition = _validate_vardata_collections(vardata_lists, vardata_sets)
 
-        # Assert that they are correctly partitioned based on their true classification
-        assert output_partition["input"] == [m.input_v]
-        assert output_partition["alg"] == [m.alg_v]
-        assert output_partition["diff"] == [m.diff_v]
+        assert output_partition["input"] == ComponentSet([m.input_v])
+        assert output_partition["alg"] == ComponentSet([m.alg_v])
+        assert output_partition["diff"] == ComponentSet([m.diff_v])
 
         # Ensure other categories remain empty
-        assert output_partition["deriv"] == []
-        assert output_partition["dist"] == []
+        assert output_partition["deriv"] == ComponentSet()
+        assert output_partition["dist"] == ComponentSet()
 
     @pytest.mark.parametrize(
         "category", ["total", "deriv", "diff", "alg", "input", "output", "dist"]
@@ -147,6 +153,147 @@ class TestValidateVardataCollections(object):
         assert "is not present in the total variables set" in str(excinfo.value)
 
 
+@pytest.mark.unit
+class TestSteadyStateValidation(object):
+    @pytest.fixture
+    @classmethod
+    def pyomo_system(cls):
+        """Fixture containing a real Pyomo model with initialized vars and constraints."""
+        m = ConcreteModel()
+        m.scaling_factor = Suffix(direction=Suffix.EXPORT)
+
+        m.v_ok = Var(initialize=1e-6)
+        m.v_fail = Var(initialize=0.5)
+
+        # Clean equality constraint (v_ok == 0) -> body is v_ok, lb = ub = 0
+        m.con_ok = Constraint(expr=m.v_ok == 0)
+
+        # Failing equality constraint (v_fail == 0) -> body is v_fail, lb = ub = 0
+        m.con_fail = Constraint(expr=m.v_fail == 0)
+
+        # Inequality constraint (0 <= v_ok <= 10) -> lb = 0, ub = 10
+        m.con_ineq = Constraint(expr=(0.0, m.v_ok, 10.0))
+
+        return m
+
+    def test_steady_state_validation_success(self, pyomo_system):
+        m = pyomo_system
+        m.scaling_factor[m.v_ok] = 1.0
+        m.scaling_factor[m.con_ok] = 1.0
+
+        # Ensure only the passing constraint is checked
+        m.con_fail.deactivate()
+        m.con_ineq.deactivate()
+
+        # Should run without error
+        _validate_steady_state(
+            t_block=m,
+            deriv_var_set=ComponentSet([m.v_ok]),
+            steady_state_derivative_tolerance=1e-5,
+            constraint_tolerance=1e-5,
+        )
+
+    def test_steady_state_validation_derivative_failure(self, pyomo_system):
+        m = pyomo_system
+        m.scaling_factor[m.v_fail] = 2.0  # Scaled value = 1.0
+
+        m.con_ok.deactivate()
+        m.con_fail.deactivate()
+        m.con_ineq.deactivate()
+
+        with pytest.raises(ValueError) as exc_info:
+            _validate_steady_state(
+                t_block=m,
+                deriv_var_set=ComponentSet([m.v_fail]),
+                steady_state_derivative_tolerance=0.1,
+                constraint_tolerance=1e-5,
+            )
+
+        assert "Nonzero derivative variables" in str(exc_info.value)
+        assert "v_fail: 5.00e-01 (scaling factor=2.00e+00)" in str(exc_info.value)
+
+    def test_steady_state_validation_scaled_derivative_success(self, pyomo_system):
+        m = pyomo_system
+        m.scaling_factor[m.v_fail] = 0.1  # Scaled value = 5e-2
+
+        m.con_ok.deactivate()
+        m.con_fail.deactivate()
+        m.con_ineq.deactivate()
+
+        _validate_steady_state(
+            t_block=m,
+            deriv_var_set=ComponentSet([m.v_fail]),
+            steady_state_derivative_tolerance=0.07,
+            constraint_tolerance=1e-5,
+        )
+
+    def test_steady_state_validation_scaled_derivative_failure(self, pyomo_system):
+        m = pyomo_system
+        m.scaling_factor[m.v_fail] = 3.0  # Scaled value = 1.5
+
+        m.con_ok.deactivate()
+        m.con_fail.deactivate()
+        m.con_ineq.deactivate()
+
+        with pytest.raises(ValueError) as exc_info:
+            _validate_steady_state(
+                t_block=m,
+                deriv_var_set=ComponentSet([m.v_fail]),
+                steady_state_derivative_tolerance=1,
+                constraint_tolerance=1e-5,
+            )
+
+        assert "Nonzero derivative variables" in str(exc_info.value)
+        assert "v_fail: 5.00e-01 (scaling factor=3.00e+00)" in str(exc_info.value)
+
+    def test_steady_state_validation_scaled_constraint_success(self, pyomo_system):
+        m = pyomo_system
+        m.scaling_factor[m.con_fail] = 0.1  # Scaled residual = 0.05
+
+        m.con_ok.deactivate()
+        m.con_ineq.deactivate()
+
+        _validate_steady_state(
+            t_block=m,
+            deriv_var_set=ComponentSet(),
+            steady_state_derivative_tolerance=1e-5,
+            constraint_tolerance=0.2,
+        )
+
+    def test_steady_state_validation_scaled_constraint_failure(self, pyomo_system):
+        m = pyomo_system
+        m.scaling_factor[m.con_fail] = 10.0  # Scaled residual = 5.0
+
+        m.con_ok.deactivate()
+        m.con_ineq.deactivate()
+
+        with pytest.raises(ValueError) as exc_info:
+            _validate_steady_state(
+                t_block=m,
+                deriv_var_set=ComponentSet(),
+                steady_state_derivative_tolerance=1e-5,
+                constraint_tolerance=0.8,
+            )
+
+        assert "Nonzero constraint residuals" in str(exc_info.value)
+        assert "con_fail: 5.00e-01 (scaling factor=1.00e+01)" in str(exc_info.value)
+
+    def test_steady_state_validation_burnt_toast_exception(self, pyomo_system):
+        m = pyomo_system
+        m.con_ok.deactivate()
+        m.con_fail.deactivate()
+
+        with pytest.raises(BurntToast) as exc_info:
+            _validate_steady_state(
+                t_block=m,
+                deriv_var_set=ComponentSet(),
+                steady_state_derivative_tolerance=1e-5,
+                constraint_tolerance=1e-5,
+            )
+
+        assert "Encountered the inequality constraint con_ineq" in str(exc_info.value)
+
+
 @pytest.mark.component
 def test_ogunnaike_ray_example_10_4():
     """
@@ -157,21 +304,13 @@ def test_ogunnaike_ray_example_10_4():
     m = ConcreteModel()
     m.time = ContinuousSet(initialize=[0, 1])
 
-    # Tank geometry
     m.h = Var(m.time, initialize=1, doc="Tank level")
-    m.A = Var(m.time, initialize=1, doc="Cross sectional area of the tank at height h")
-    m.alpha = Param(initialize=2, doc="Cone shape parameter")
-    m.c = Param(initialize=0.5, doc="Cone outflow parameter")
+    m.alpha = Param(initialize=1, mutable=True, doc="Cone shape parameter")
+    m.c = Param(initialize=1, mutable=True, doc="Cone outflow parameter")
     m.beta = Var(initialize=1, doc="Cone outflow parameter")
-    # m.R = Param(initialize=1, doc="Cone base radius")
-    # m.H = Param(initialize=1, doc="Cone's overall height")
-    m.hdot = DerivativeVar(m.h, wrt=m.time)
+    m.hdot = DerivativeVar(m.h, wrt=m.time, initialize=0)
 
     m.Fi = Var(m.time, initialize=1, doc="Inlet flowrate")
-
-    @m.Constraint(m.time)
-    def A_eqn(b, t):
-        return b.A[t] == b.h[t] ** 2 / b.alpha
 
     @m.Constraint()
     def beta_eqn(b):
@@ -180,11 +319,42 @@ def test_ogunnaike_ray_example_10_4():
 
     @m.Constraint(m.time)
     def hdot_eqn(b, t):
-        b.hdot[t] == b.alpha * b.Fi[t] / b.h[t] ** 2 - b.beta * b.h[t] ** -1.5
+        return b.hdot[t] == b.alpha * b.Fi[t] / b.h[t] ** 2 - b.beta * b.h[t] ** -1.5
+
+    fd_factory = TransformationFactory("dae.finite_difference")
+    fd_factory.apply_to(m, wrt=m.time, nfe=1, scheme="BACKWARD")
+
+    for alpha in logspace(-1, 1, 3):
+        for c in logspace(-1, 1, 3):
+            for Fi in logspace(-1, 1, 3):
+                m.alpha.set_value(alpha)
+                m.c.set_value(c)
+                m.Fi.fix(Fi)
+                m.beta.set_value(c * alpha)
+                for t in m.time:
+                    m.h[t].set_value((Fi / c) ** 2)
+
+                out = linearize_system(
+                    m,
+                    m.time,
+                    representative_time=1,
+                    disturbance_vars=[m.Fi],
+                    output_vars=[m.h],
+                )
+
+                K = value(2 / c * m.h[1] ** 0.5)
+                tau = value(2 / m.beta * m.h[1] ** 2.5)
+
+                assert out["A"] == pytest.approx(-1 / tau)
+                assert out["B"].shape == (1, 0)
+                assert out["Bd"] == pytest.approx(K / tau)
+                assert out["C"] == pytest.approx(1)
+                assert out["D"].shape == (1, 0)
+                assert out["Dd"] == pytest.approx(0)
 
 
 @pytest.mark.component
-def test_red_book_example():
+def test_rawlings_mayne_example():
     """
     Example 1.11 from Rawlings, Mayne, and Diehl (2024) involving a
     nonisothermal CSTR with varying level and a cooling jacket.
@@ -323,23 +493,15 @@ def test_red_book_example():
     m.Tc.fix()
     m.F.fix()
 
-    # Solve for steady state---there is rounding error in the
-    # values transcribed from the red book.
-    m.cdot[0].fix(0)
-    m.Tdot[0].fix(0)
-    m.hdot[0].fix(0)
-
-    solver_obj = get_solver("ipopt_v2", solver_options={"constr_viol_tol": 1e-8})
-    solver_obj.solve(m)
-
-    for t in m.time:
-        m.cdot[t].unfix()
-        m.Tdot[t].unfix()
-        m.hdot[t].unfix()
-
     m.c[0].fix()
     m.T[0].fix()
     m.h[0].fix()
+
+    for t in m.time:
+        m.c[t].set_value(0.877773845919673)
+        m.T[t].set_value(324.50842862814466)
+        m.h[t].set_value(0.6586682605839007)
+        calculate_variable_from_constraint(m.rxn_rate[t], m.rxn_rate_eqn[t])
 
     cont_sys = linearize_system(
         m,
@@ -365,3 +527,125 @@ def test_red_book_example():
     assert disc_sys["Bd"] == pytest.approx(
         array([[-0.1175], [69.74], [6.637]]), rel=1e-2
     )
+
+
+@pytest.mark.component
+def test_pendulum_example():
+    """
+    Testing an example of a pendulum system taken from a set of slides
+    posted online by Jovana Andrejevic and Catherine Ding.
+    https://people.math.wisc.edu/~chr/am205/g_act/DAE_slides.pdf
+
+    This test covers cases where discretization equations are deactivated
+    as part of an index reduction scheme, as well as creating LTI models
+    of individual blocks (instead of the entire model).
+    """
+    m = ConcreteModel()
+    m.time = ContinuousSet(initialize=[0, 1])
+    m.f1 = Block()
+
+    init = {(0, "x"): 0, (0, "y"): -1, (1, "x"): 0, (1, "y"): -1}
+    m.f1.s = Var(
+        m.time,
+        ["x", "y"],
+        initialize=init,
+        units=pyunits.m,
+        doc="displacement of pendulum",
+    )
+    m.f1.v = Var(
+        m.time,
+        ["x", "y"],
+        initialize=0,
+        units=pyunits.m / pyunits.s,
+        doc="velocity of pendulum",
+    )
+    # The example called T "tension", but it does not have the units of tension
+    m.f1.T = Var(
+        m.time,
+        initialize=1,
+        units=1 / pyunits.s**2,
+        doc="centripedal tension of pendulum",
+    )
+
+    m.f1.sdot = DerivativeVar(m.f1.s, wrt=m.time, initialize=0)
+    m.f1.vdot = DerivativeVar(m.f1.v, wrt=m.time, initialize=0)
+
+    @m.f1.Constraint(m.time, ["x", "y"])
+    def sdot_eqn(b, t, c):
+        return b.sdot[t, c] == b.v[t, c]
+
+    @m.f1.Constraint(m.time, ["x", "y"])
+    def vdot_eqn(b, t, c):
+        if c == "y":
+            term = -Constants.acceleration_gravity
+        else:
+            term = 0 * pyunits.m / pyunits.s**2
+        return b.vdot[t, c] == -b.T[t] * b.s[t, c] + term
+
+    @m.f1.Constraint(m.time)
+    def pendulum_rod_eqn(b, t):
+        return b.s[t, "x"] ** 2 + b.s[t, "y"] ** 2 == 1
+
+    # There is also a two variable encoding using polar coordinates
+    m.f2 = Block()
+    m.f2.theta = Var(m.time, initialize=0)
+    m.f2.thetadot = DerivativeVar(m.f2.theta, wrt=m.time, initialize=0)
+    m.f2.omega = Var(m.time, initialize=0)
+    m.f2.omegadot = DerivativeVar(m.f2.omega, wrt=m.time, initialize=0)
+
+    @m.f2.Constraint(m.time)
+    def thetadot_eqn(b, t):
+        return b.thetadot[t] == b.omega[t]
+
+    @m.f2.Constraint(m.time)
+    def omegadot_eqn(b, t):
+        return b.omegadot[t] == -Constants.acceleration_gravity * sin(b.theta[t])
+
+    fd_factory = TransformationFactory("dae.finite_difference")
+    fd_factory.apply_to(m, wrt=m.time, nfe=1, scheme="BACKWARD")
+
+    # We want to reduce the index of the first formulation by getting rid of the y
+    # equations and replacing them with derivatives of the rod equation
+
+    m.f1.sdot_disc_eq[:, "y"].deactivate()
+    m.f1.vdot_disc_eq[:, "y"].deactivate()
+
+    @m.f1.Constraint(m.time)
+    def first_deriv_eqn(b, t):
+        return 0 == b.s[t, "x"] * b.v[t, "x"] + b.s[t, "y"] * b.v[t, "y"]
+
+    @m.f1.Constraint(m.time)
+    def second_deriv_eqn(b, t):
+        return (
+            0
+            == b.v[t, "x"] ** 2
+            + b.v[t, "y"] ** 2
+            - b.T[t]
+            - Constants.acceleration_gravity * b.s[t, "y"]
+        )
+
+    # Now calculate the tension
+    for t in m.time:
+        calculate_variable_from_constraint(m.f1.T[t], m.f1.second_deriv_eqn[t])
+
+    # Both of these encodings should produce the same linearized approximation
+    # for small angles because x = L * sin(theta), and the pendulum length L
+    # equals 1 here.
+    for blk in [m.f1, m.f2]:
+        out = linearize_system(
+            blk,
+            m.time,
+            representative_time=1,
+            input_vars=[],
+            disturbance_vars=[],
+            output_vars=[],
+        )
+
+        assert out["A"] == pytest.approx(
+            array([[0, 1], [-value(Constants.acceleration_gravity), 0]])
+        )
+        assert out["B"].shape == (2, 0)
+        assert out["Bd"].shape == (2, 0)
+        assert out["C"].shape == (0, 2)
+        assert out["D"].shape == (0, 0)
+        assert out["Dd"].shape == (0, 0)
