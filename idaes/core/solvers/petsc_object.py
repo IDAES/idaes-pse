@@ -23,6 +23,7 @@ differential variables and discretization equations.
 
 Authors: Douglas Allan, John Eslick
 """
+
 from copy import copy
 
 from pyomo.core.base import BlockData
