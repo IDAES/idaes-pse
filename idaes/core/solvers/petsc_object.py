@@ -415,6 +415,10 @@ class PETScIntegrator(object):
 
     @property
     def derivative_differential_vardata_map(self):
+        """
+        Map linking derivative VarData to their corresponding
+        differential VarData components.
+        """
         return copy(self._derivative_differential_vardata_map)
 
     def _validate_no_fixed_nonzero_derivatives(self):
