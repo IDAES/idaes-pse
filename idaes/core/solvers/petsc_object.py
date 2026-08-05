@@ -23,6 +23,7 @@ differential variables and discretization equations.
 
 Authors: Douglas Allan, John Eslick
 """
+
 from copy import copy
 
 from pyomo.core.base import BlockData
@@ -457,7 +458,7 @@ class PETScIntegrator(object):
         for var in variables:
             if var in self._derivative_differential_vardata_map:
                 deriv = var
-                diffvar = self.derivative_differential_vardata_map[deriv]["diff_var"]
+                diffvar = self._derivative_differential_vardata_map[deriv]["diff_var"]
                 blk.dae_suffix[diffvar] = int(DaeVarTypes.DIFFERENTIAL)
                 blk.dae_suffix[deriv] = int(DaeVarTypes.DERIVATIVE)
                 blk.dae_link[diffvar] = dae_var_link_index
