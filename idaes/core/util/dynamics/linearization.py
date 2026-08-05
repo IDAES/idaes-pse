@@ -401,6 +401,9 @@ def linearize_system(
             that the system 0 = f(x, xdot, u, d) is satisfied.
     Returns:
         Dictionary containing the following fields:
+            "scaled_jac": Jacobian of scaled system evaluated at the
+                point of linearization
+            "nlp": PyomoNLP object used to evaluate "scaled_jac"
             "diff_vars": The list of differential VarData in the order
                 they appear in the A and C matrices
             "alg_vars": The list of algebraic VarData
@@ -412,10 +415,10 @@ def linearize_system(
                 they appear in the C, D, and D_d matrices
             "A" (numpy.array): The A matrix
             "B" (numpy.array): The B matrix
-            "B_d" (numpy.array): The B_d matrix
+            "Bd" (numpy.array): The B_d matrix
             "C" (numpy.array): The C matrix
             "D" (numpy.array): The D matrix
-            "D_d" (numpy.array): The D_d matrix
+            "Dd" (numpy.array): The D_d matrix
     """
     if representative_time is not None:
         t1 = representative_time
@@ -522,6 +525,9 @@ def linearize_system(
         "nlp": nlp,
         "diff_vars": vardata_lists["diff"],
         "alg_vars": vardata_lists["alg"],
+        "input_vars": vardata_lists["input"],
+        "disturbance_vars": vardata_lists["dist"],
+        "output_vars": vardata_lists["output"],
     }
 
     jac_deriv_alg = jac[:, raw_jac_indices["deriv"] + raw_jac_indices["alg"]]
@@ -540,7 +546,7 @@ def linearize_system(
     # few elements of C being appropriate unit vectors
 
     nx = len(vardata_lists["diff"])
-    nz = len(vardata_lists["alg"])
+    # nz = len(vardata_lists["alg"])
     nu = len(vardata_lists["input"])
     nd = len(vardata_lists["dist"])
     ny = len(vardata_lists["output"])
@@ -566,9 +572,9 @@ def linearize_system(
             out["C"][Crow, di] = 1
         elif output in output_sets["alg"]:
             ai = len(raw_jac_indices["deriv"]) + raw_jac_indices["alg"].index(out_idx)
-            out["C"][Crow, :] = sys_raw[ai, raw_jac_indices["diff"]]
-            out["D"][Crow, :] = sys_raw[ai, raw_jac_indices["input"]]
-            out["Dd"][Crow, :] = sys_raw[ai, raw_jac_indices["dist"]]
+            out["C"][Crow, :] = sys_raw[ai, :nx]
+            out["D"][Crow, :] = sys_raw[ai, nx : nx + nu]
+            out["Dd"][Crow, :] = sys_raw[ai, nx + nu : nx + nu + nd]
         elif output in output_sets["deriv"]:
             # Grab the correct rows of A, B, and Bd
             drvi = raw_jac_indices["deriv"].index(out_idx)
