@@ -12,8 +12,9 @@
 #################################################################################
 import pytest
 from itertools import combinations
+from unittest.mock import patch
 
-from numpy import array, eye, logspace, ndarray, zeros
+from numpy import array, eye, logspace, nan, ndarray, zeros
 from scipy.sparse import csr_matrix, csc_matrix, coo_matrix
 
 from pyomo.environ import (
@@ -68,6 +69,81 @@ def _component_index(lst, comp):
         if v is comp:
             return i
     raise ValueError(f"Component {comp} is not present in collection.")
+
+
+def _make_dae_pendulum(blk, time_init, reduce_index=True):
+    init = {(0, "x"): 0, (0, "y"): -1, (1, "x"): 0, (1, "y"): -1}
+    blk.time_set = ContinuousSet(initialize=time_init)
+
+    blk.s = Var(
+        blk.time_set,
+        ["x", "y"],
+        initialize=init,
+        units=pyunits.m,
+        doc="displacement of pendulum",
+    )
+    blk.v = Var(
+        blk.time_set,
+        ["x", "y"],
+        initialize=0,
+        units=pyunits.m / pyunits.s,
+        doc="velocity of pendulum",
+    )
+    # The example called T "tension", but it does not have the units of tension
+    blk.T = Var(
+        blk.time_set,
+        initialize=1,
+        units=1 / pyunits.s**2,
+        doc="centripedal tension of pendulum",
+    )
+
+    blk.sdot = DerivativeVar(blk.s, wrt=blk.time_set, initialize=0)
+    blk.vdot = DerivativeVar(blk.v, wrt=blk.time_set, initialize=0)
+
+    @blk.Constraint(blk.time_set, ["x", "y"])
+    def sdot_eqn(b, t, c):
+        return b.sdot[t, c] == b.v[t, c]
+
+    @blk.Constraint(blk.time_set, ["x", "y"])
+    def vdot_eqn(b, t, c):
+        if c == "y":
+            term = -Constants.acceleration_gravity
+        else:
+            term = 0 * pyunits.m / pyunits.s**2
+        return b.vdot[t, c] == -b.T[t] * b.s[t, c] + term
+
+    @blk.Constraint(blk.time_set)
+    def pendulum_rod_eqn(b, t):
+        return b.s[t, "x"] ** 2 + b.s[t, "y"] ** 2 == 1
+
+    fd_factory = TransformationFactory("dae.finite_difference")
+    fd_factory.apply_to(blk, wrt=blk.time_set, nfe=1, scheme="BACKWARD")
+
+    # We want to reduce the index of the first formulation by getting rid of the y
+    # equations and replacing them with derivatives of the rod equation
+    if reduce_index:
+        blk.sdot_disc_eq[:, "y"].deactivate()
+        blk.vdot_disc_eq[:, "y"].deactivate()
+
+        @blk.Constraint(blk.time)
+        def first_deriv_eqn(b, t):
+            return 0 == b.s[t, "x"] * b.v[t, "x"] + b.s[t, "y"] * b.v[t, "y"]
+
+        @blk.Constraint(blk.time)
+        def second_deriv_eqn(b, t):
+            return (
+                0
+                == b.v[t, "x"] ** 2
+                + b.v[t, "y"] ** 2
+                - b.T[t]
+                - Constants.acceleration_gravity * b.s[t, "y"]
+            )
+
+        for t in blk.time_set:
+            calculate_variable_from_constraint(blk.T[t], blk.second_deriv_eqn[t])
+    else:
+        for t in blk.time_set:
+            calculate_variable_from_constraint(blk.T[t], blk.vdot_eqn[t, "y"])
 
 
 @pytest.mark.unit
@@ -340,15 +416,15 @@ class TestSteadyStateValidation(object):
 
 
 @pytest.mark.unit
-class TestLinearizeSystemUnits(object):
+class TestLinearizeSystem(object):
     @pytest.fixture
     def scalar_dae_model(self):
         """Creates a minimal DAE model: dx/dt = -3*x + 2*u."""
         m = ConcreteModel()
         m.time = ContinuousSet(initialize=[0, 1])
-        m.x = Var(m.time, initialize=2.0)
+        m.x = Var(m.time, initialize=0.0)
         m.xdot = DerivativeVar(m.x, wrt=m.time, initialize=0.0)
-        m.u = Var(m.time, initialize=1.0)
+        m.u = Var(m.time, initialize=0.0)
         m.y = Var(m.time, initialize=0.0)
 
         @m.Constraint(m.time)
@@ -1311,11 +1387,62 @@ class TestLinearizeSystemUnits(object):
         assert len(out["output_vars"]) == 1
         assert _component_index(out["output_vars"], m.x_spatial[1, "outlet"]) == 0
 
+    def test_linearized_system_rank_deficient_jacobian_exception(self):
+        m = ConcreteModel()
+        _make_dae_pendulum(m, time_init=[0, 1], reduce_index=False)
+
+        with pytest.raises(RuntimeError) as exc_info:
+            _ = linearize_system(m, m.time_set)
+        assert "Derivative-algebraic variable jacobian is singular." in str(
+            exc_info.value
+        )
+
+    def test_linearize_system_unexpected_spsolve_exception(self, scalar_dae_model):
+        """Verify that unexpected exceptions raised by spsolve are re-raised."""
+        m = scalar_dae_model
+
+        # Mock spsolve to raise an arbitrary unexpected exception
+        with patch(
+            "idaes.core.util.dynamics.linearization.spsolve",
+            side_effect=KeyError("Unexpected solver error"),
+        ):
+            with pytest.raises(KeyError) as exc_info:
+                linearize_system(
+                    m,
+                    m.time,
+                    representative_time=1,
+                    input_vars=[m.u],
+                    scaled=False,
+                )
+            assert "Unexpected solver error" in str(exc_info.value)
+
+    def test_linearize_system_nan_values_in_spsolve_result(self, scalar_dae_model):
+        """Verify that returning nan values from spsolve triggers a modeling error."""
+        m = scalar_dae_model
+
+        # Mock spsolve to return an array containing NaN values
+        nan_array = array([[nan, 1.0]])
+        with patch(
+            "idaes.core.util.dynamics.linearization.spsolve",
+            return_value=nan_array,
+        ):
+            with pytest.raises(RuntimeError) as exc_info:
+                linearize_system(
+                    m,
+                    m.time,
+                    representative_time=1,
+                    input_vars=[m.u],
+                    scaled=False,
+                )
+            assert "nan values encountered when solving for reduced jacobian" in str(
+                exc_info.value
+            )
+
 
 @pytest.mark.unit
 class TestC2dConversion(object):
     """
-    These tests were generated with the assistence of Google Gemini 3.5
+    These tests were generated with the assistance of Google Gemini 3.5
     """
 
     def test_c2d_conversion(self):

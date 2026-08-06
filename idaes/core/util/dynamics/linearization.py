@@ -10,10 +10,9 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-
-from numpy import block, diag, zeros
+from numpy import any, block, diag, isnan, zeros
 from scipy.linalg import expm
-from scipy.sparse.linalg import spsolve
+from scipy.sparse.linalg import MatrixRankWarning, spsolve
 
 from pyomo.environ import Constraint, value
 from pyomo.common.collections import ComponentSet, ComponentMap
@@ -24,7 +23,7 @@ from idaes.core.util.exceptions import BurntToast
 from idaes.core.scaling.util import get_jacobian
 
 
-# This function was created with the assistence of Google Gemini 3.5 Flash
+# This function was created with the assistance of Google Gemini 3.5 Flash
 def _validate_vardata_collections(vardata_lists, vardata_sets):
     """
     In order for linearization to work correctly, we want to
@@ -386,7 +385,18 @@ def linearize_system(
         :, raw_jac_indices["diff"] + raw_jac_indices["input"] + raw_jac_indices["dist"]
     ]
 
-    sys_raw = spsolve(-jac_deriv_alg.tocsc(), jac_rest.tocsc())
+    try:
+        sys_raw = spsolve(-jac_deriv_alg.tocsc(), jac_rest.tocsc())
+    except RuntimeError as err:
+        if "Factor is exactly singular" in repr(err):
+            raise RuntimeError(
+                "Derivative-algebraic variable jacobian is singular. "
+                "This typically indicates a DAE with elevated index "
+                "or some other modeling issue."
+            ) from err
+        else:
+            raise
+
     if hasattr(sys_raw, "todense"):
         sys_raw = sys_raw.todense()
     else:
@@ -401,6 +411,14 @@ def linearize_system(
                 )
             else:
                 sys_raw = sys_raw.reshape((1, 1))
+    if any(isnan(sys_raw)):
+        # Should we also check for nans in the jacobian pre-solve?
+        raise RuntimeError(
+            "nan values encountered when solving for reduced jacobian. "
+            "This typically means that the derivative-algebraic variable "
+            "jacobian is singular and a modeling problem exists, like the "
+            "DAE having an elevated index."
+        )
 
     # We seek an LTI system of the form:
     # xdot = A @ x + B @ u + B_d @ d
