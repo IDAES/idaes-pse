@@ -451,6 +451,18 @@ def linearize_system(
     out["D"] = zeros((ny, nu))
     out["Dd"] = zeros((ny, nd))
 
+    inverse_maps = {
+        "diff": ComponentMap(),
+        "alg": ComponentMap(),
+        "deriv": ComponentMap(),
+        "input": ComponentMap(),
+        "dist": ComponentMap(),
+    }
+    for key, cmap in inverse_maps.items():
+        for i, vardata in enumerate(vardata_lists[key]):
+            if vardata in output_sets[key]:
+                cmap[vardata] = i
+
     for Crow, output, out_idx in zip(
         range(ny), vardata_lists["output"], raw_jac_indices["output"]
     ):
@@ -458,27 +470,27 @@ def linearize_system(
             # Because we've rearranged the rows/columns when creating
             # A, we need to find the *new* index corresponding to the
             # differential variable
-            di = raw_jac_indices["diff"].index(out_idx)
+            di = inverse_maps["diff"][output]
             out["C"][Crow, di] = 1
         elif output in output_sets["alg"]:
-            ai = len(raw_jac_indices["deriv"]) + raw_jac_indices["alg"].index(out_idx)
+            ai = nx + inverse_maps["alg"][output]
             out["C"][Crow, :] = sys_raw[ai, :nx]
             out["D"][Crow, :] = sys_raw[ai, nx : nx + nu]
             out["Dd"][Crow, :] = sys_raw[ai, nx + nu : nx + nu + nd]
         elif output in output_sets["deriv"]:
             # Grab the correct rows of A, B, and Bd
-            drvi = raw_jac_indices["deriv"].index(out_idx)
+            drvi = inverse_maps["deriv"][output]
             out["C"][Crow, :] = out["A"][drvi, :]
             out["D"][Crow, :] = out["B"][drvi, :]
             out["Dd"][Crow, :] = out["Bd"][drvi, :]
         elif output in output_sets["input"]:
             # The C row is full of zeros
-            ini = raw_jac_indices["input"].index(out_idx)
+            ini = inverse_maps["input"][output]
             out["D"][Crow, ini] = 1
             # The Dd row is full of zeros
         elif output in output_sets["dist"]:
             # The C and D rows are full of zeros
-            ind = raw_jac_indices["dist"].index(out_idx)
+            ind = inverse_maps["dist"][output]
             out["Dd"][Crow, ind] = 1
         else:
             raise BurntToast(
