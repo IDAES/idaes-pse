@@ -252,6 +252,18 @@ CONFIG.declare(
         "Must be an element of between.",
     ),
 )
+CONFIG.declare(
+    "always_refresh",
+    ConfigValue(
+        default=True,
+        domain=bool,
+        description="Whether to always call refresh_model before running "
+        "dae_by_time_element. If the model has not changed structurally "
+        "(i.e., no components have been activated or deactivated) since "
+        "the model was previously refreshed, avoiding a call to "
+        "refresh_model can save a significant amount of time.",
+    ),
+)
 
 
 @document_kwargs_from_configdict(CONFIG)
@@ -415,6 +427,11 @@ class PETScIntegrator(object):
 
     @property
     def derivative_differential_vardata_map(self):
+        """
+        Cached results of calling get_derivative_differential_vardata_map
+        on the model passed to the DAE integrator. Can be refreshed by
+        calling
+        """
         return copy(self._derivative_differential_vardata_map)
 
     def _validate_no_fixed_nonzero_derivatives(self):
@@ -733,6 +750,9 @@ class PETScIntegrator(object):
                 )
             between = Set(initialize=sorted(between))
             between.construct()
+
+        if self.config.always_refresh:
+            self.refresh_model()
 
         # First calculate the initial conditions and non-time-indexed constraints
         res_list = []
