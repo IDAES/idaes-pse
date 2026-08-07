@@ -12,7 +12,7 @@
 #################################################################################
 from numpy import any, block, diag, isnan, zeros
 from scipy.linalg import expm
-from scipy.sparse.linalg import MatrixRankWarning, spsolve
+from scipy.sparse.linalg import spsolve
 
 from pyomo.environ import Constraint, value
 from pyomo.common.collections import ComponentSet, ComponentMap
@@ -63,7 +63,8 @@ def _validate_vardata_collections(vardata_lists, vardata_sets):
                 else:
                     seen.add(var)
             raise ValueError(
-                f"Duplicate variables found in the '{key}' variable list: {duplicates}"
+                f"Duplicate variables found in the '{key}' "
+                "variable list: {duplicates}"
             )
 
     # 2. Ensure differential, derivative, input, and disturbance sets are disjoint
@@ -75,8 +76,8 @@ def _validate_vardata_collections(vardata_lists, vardata_sets):
                     v for v in vardata_lists[cat_a] if v in vardata_sets[cat_b]
                 ]
                 raise ValueError(
-                    f"The variable sets '{cat_a}' and '{cat_b}' are not disjoint. "
-                    f"Shared variables: {intersection}"
+                    f"The variable sets '{cat_a}' and '{cat_b}' are not "
+                    "disjoint. Shared variables: {intersection}"
                 )
 
     # 3. Ensure input, disturbance, and output variables are in the total set
@@ -85,7 +86,8 @@ def _validate_vardata_collections(vardata_lists, vardata_sets):
         for var in vardata_lists[cat]:
             if var not in total_set:
                 raise ValueError(
-                    f"Variable {var} in '{cat}' is not present in the total variables set."
+                    f"Variable {var} in '{cat}' is not present in the total "
+                    "variables set."
                 )
 
     # Partition output variables into lists preserving their original order
@@ -112,11 +114,13 @@ def _validate_vardata_collections(vardata_lists, vardata_sets):
             # Since "alg" is mathematically defined as "total - (diff + deriv + input + dist)",
             # any output variable belonging to "total" must fall into one of these 5 sets.
             raise BurntToast(
-                f"Output variable {var} is in the total variables set but could not be "
-                f"partitioned into derivative, differential, algebraic, input, or disturbance subsets."
-                "Encountering this error indicates either a developer oversight or that the "
-                "implementation of ComponentSet has been changed. Please open an issue on the "
-                "IDAES Github with steps to reproduce this error."
+                f"Output variable {var} is in the total variables set but "
+                f"could not be partitioned into derivative, differential, "
+                "algebraic, input, or disturbance subsets. Encountering this "
+                "error indicates either a developer oversight or that the "
+                "implementation of ComponentSet has been changed. Please open "
+                "an issue on the IDAES Github with steps to reproduce this "
+                "error."
             )
 
     return output_sets
@@ -208,11 +212,14 @@ def linearize_system(
     Function to obtain a linear time invariant state space model by
     linearizing a set of differential algebraic equations. It takes
     the general system
+
     .. math:: 0 = f(x, \\dot{x}, u, d)
     .. math:: y = h(x, u, d)
+
     and turns it into the linear system
-    ..math:: \\dot{x} = A x + B u + B_d d
-    ..math:: y = C x + D u + D_d d
+
+    .. math:: \\dot{x} = A x + B u + B_d d
+    .. math:: y = C x + D u + D_d d
 
     Note that the sets of input, disturbance, and output variables
     should be indexed only by time. This indexing can be achieved
@@ -232,38 +239,38 @@ def linearize_system(
         scaled (bool): Whether to return a linear system with variables
             adjusted by their scaling factors, or to unscale the
             system matrices before returning.
-        input_variables (list): List of input (u) variables.
-        disturbance_variables (list): List of disturbance (d) variables.
-        output_variables (list): List of output (y) variables.
+        input_variables (list): List of input (:math:`u`) variables.
+        disturbance_variables (list): List of disturbance (:math:`d`)
+        variables.
+        output_variables (list): List of output (:math:`y`) variables.
         steady_state_derivative_tolerance (float): Tolerance used to
             test whether the time derivative variables are close
-            enough to zero to consider that the system is at steady state.
+            enough to zero to consider that the system is at steady
+            state.
         constraint_tolerance (float): Tolerance used to test whether the
             DAE constraints are close enough to being satisfied to consider
-            that the system 0 = f(x, xdot, u, d) is satisfied.
+            that the system :math:`0 = f(x, xdot, u, d)` is satisfied.
 
     Returns:
-        dict:
-            A dictionary containing the following fields:
-
-            * **scaled_jac**: Jacobian of scaled system evaluated at the
-              point of linearization
-            * **nlp**: PyomoNLP object used to evaluate scaled_jac
-            * **diff_vars**: The list of differential VarData in the order
-              they appear in the :math:`A` and :math:`C` matrices
-            * **alg_vars**: The list of algebraic VarData
-            * **input_vars**: The list of input VarData in the order they
-              appear in the :math:`B` and :math:`D` matrices
-            * **disturbance_vars**: The list of disturbance VarData in the
-              order they appear in the :math:`B_d` and :math:`D_d` matrices
-            * **output_vars**: The list of output VarData in the order
+        dict: A dictionary containing the keys:
+            * "scaled_jac" (`scipy.sparse.csr_matrix`): Jacobian of scaled
+              system evaluated at the point of linearization
+            * "nlp" (`PyomoNLP`): NLP object used to evaluate scaled_jac
+            * "diff_vars (`list`): The list of differential `VarData` in the
+              order they appear in the :math:`A` and :math:`C` matrices
+            * "alg_vars" (`list`): The list of algebraic `VarData`
+            * "input_vars" (`list`): The list of input `VarData` in the order
+              they appear in the :math:`B` and :math:`D` matrices
+            * "disturbance_vars (`list`): The list of disturbance `VarData` in
+              the order they appear in the :math:`B_d` and :math:`D_d` matrices
+            * "output_vars" (`list`): The list of output `VarData` in the order
               they appear in the :math:`C`, :math:`D`, and :math:`D_d` matrices
-            * **A** (numpy.array): The :math:`A` matrix
-            * **B** (numpy.array): The :math:`B` matrix
-            * **Bd** (numpy.array): The :math:`B_d` matrix
-            * **C** (numpy.array): The :math:`C` matrix
-            * **D** (numpy.array): The :math:`D` matrix
-            * **Dd** (numpy.array): The :math:`D_d` matrix
+            * "A" (`numpy.ndarray`): The :math:`A` matrix
+            * "B" (`numpy.ndarray`): The :math:`B` matrix
+            * "Bd" (`numpy.ndarray`): The :math:`B_d` matrix
+            * "C" (`numpy.ndarray`): The :math:`C` matrix
+            * "D" (`numpy.ndarray`): The :math:`D` matrix
+            * "Dd" (`numpy.ndarray`): The :math:`D_d` matrix
     """
     if representative_time is not None:
         t1 = representative_time
@@ -475,9 +482,9 @@ def linearize_system(
             out["Dd"][Crow, ind] = 1
         else:
             raise BurntToast(
-                "This branch should be inaccessible. Please open an issue on the IDAES "
-                "Github with steps to reproduce this exception so that the IDAES developers "
-                "can address this problem."
+                "This branch should be inaccessible. Please open an issue on "
+                " the IDAES Github with steps to reproduce this exception so "
+                "that the IDAES developers can address this problem."
             )
     if not scaled:
         all_sfs = nlp.get_primals_scaling()
@@ -502,29 +509,30 @@ def linearize_system(
 
 
 def c2d(sys: dict, dt: float):
-    r"""
-    Convert a linear time invariant system from continuous time to discrete time.
-    Start with a system of the form
+    r"""Convert a linear time invariant system from continuous time to discrete
+    time. Start with a system of the form:
 
     .. math:: \dot{x} = A x + B u + B_d d
 
     and create a system
 
-    ..math:: x(t + \Delta t) = \tilde{A} x +  \tilde{B} u + \tilde{B}_d d
+    .. math:: x(t + \Delta t) = \tilde{A} x +  \tilde{B} u + \tilde{B}_d d
 
     Note that the output matrices :math:`C`, :math:`D`, and :math:`D_d`
     do not need to be converted.
 
     Args:
-        sys (dict): A dictionary containing the fields:
-            "A" (numpy array)
-            "B" (numpy array)
-            "Bd" (numpy array)
+        sys (dict): A dictionary containing the keys "A", "B", and "Bd"
+            "A" (numpy.ndarray)
+            "B" (numpy.ndarray)
+            "Bd" (numpy.ndarray)
+        dt (float): The timestep  :math:`\Delta t`
+
     Returns:
-        out (dict): A dictionary containing the following fields:
-            "A" (numpy array)
-            "B" (numpy array)
-            "Bd" (numpy array)
+        dict: A dictionary containing the keys:
+            * A (numpy.ndarray): Discrete time :math:`\tilde{A}` matrix.
+            * B (numpy.ndarray): Discrete time :math:`\tilde{B}` matrix.
+            * Bd (numpy.ndarray): Discrete time :math:`\tilde{B}_d` matrix.
     """
 
     A = sys["A"]

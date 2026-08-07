@@ -5,6 +5,7 @@
     :maxdepth: 1
 
     dyn_utils
+    dynamics/index
     initialization
     math
     misc
