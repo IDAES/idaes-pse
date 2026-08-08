@@ -13,6 +13,7 @@
 
 """Basic unit tests for PETSc solver utilities"""
 
+from unittest.mock import Mock, patch
 import pytest
 import re
 import numpy as np
@@ -457,7 +458,6 @@ def test_petsc_initial_condition_problem():
         expected_var_set.add(m.ydot[0, i])
         if not i == 6:
             expected_var_set.add(m.r[0, i])
-            expected_con_set.add(m.find_component(f"eq_ydot{i}")[0])
             expected_con_set.add(m.find_component(f"eq_r{i}")[0])
 
     actual_var_set = ComponentSet(
@@ -1371,3 +1371,295 @@ def test_find_discretization_equations_deactivated(disc_method, nfe, reduce_inde
         assert value(m.n[0, "B"]) == 0.25
         assert value(m.n[1, "A"]) == approx(0.372149)
         assert value(m.n[1, "B"]) == approx(0.313925)
+
+
+# The tests below were generated with the assistence of Google Gemini 3.5
+@pytest.mark.unit
+@pytest.mark.skipif(not petsc_available(), reason="PETSc solver not available")
+def test_refresh_true_execution_order():
+    # 1) Verify refresh_model is called before get_initial_condition_problem and get_timestep_problem
+    m, _, _, _, _, _, _ = dae_with_non_time_indexed_constraint()
+
+    petsc_obj = PETScIntegrator(
+        m,
+        time_set=m.t,
+        ts_options={
+            "--ts_type": "cn",
+            "--ts_dt": 0.01,
+        },
+    )
+
+    # We use a manager mock to track the precise call order across multiple methods
+    manager = Mock()
+
+    with patch.object(
+        petsc_obj, "refresh_model", wraps=petsc_obj.refresh_model
+    ) as mock_refresh, patch.object(
+        petsc_obj,
+        "get_initial_condition_problem",
+        wraps=petsc_obj.get_initial_condition_problem,
+    ) as mock_ic, patch.object(
+        petsc_obj, "get_timestep_problem", wraps=petsc_obj.get_timestep_problem
+    ) as mock_ts:
+
+        manager.attach_mock(mock_refresh, "refresh_model")
+        manager.attach_mock(mock_ic, "get_initial_condition_problem")
+        manager.attach_mock(mock_ts, "get_timestep_problem")
+
+        petsc_obj.dae_by_time_element(between=[m.t.first(), m.t.at(2)])
+
+        # Verify the sequential call order in the manager's mock calls
+        calls = [call[0] for call in manager.mock_calls]
+
+        assert "refresh_model" in calls
+        assert "get_initial_condition_problem" in calls
+        assert "get_timestep_problem" in calls
+        # The refresh_model keyword exists for both
+        # get_initial_condition_problem and get_timestamp_problem.
+        # Since we refresh the model at the start of dae_by_time_element,
+        # we don't refresh the model when those subproblem methods are called.
+        assert mock_refresh.call_count == 1
+
+        # refresh_model must appear before both of the problem-setup methods
+        idx_refresh = calls.index("refresh_model")
+        idx_ic = calls.index("get_initial_condition_problem")
+        idx_ts = calls.index("get_timestep_problem")
+
+        assert idx_refresh < idx_ic
+        assert idx_refresh < idx_ts
+
+
+@pytest.mark.unit
+@pytest.mark.skipif(not petsc_available(), reason="PETSc solver not available")
+def test_refresh_model_false():
+    # 2) Verify refresh_model is NOT called in dae_by_time_element if refresh_model=False
+    m, _, _, _, _, _, _ = dae_with_non_time_indexed_constraint()
+
+    petsc_obj = PETScIntegrator(
+        m,
+        time_set=m.t,
+        ts_options={
+            "--ts_type": "cn",
+            "--ts_dt": 0.01,
+        },
+    )
+
+    with patch.object(
+        petsc_obj, "refresh_model", wraps=petsc_obj.refresh_model
+    ) as mock_refresh:
+        petsc_obj.dae_by_time_element(
+            between=[m.t.first(), m.t.at(2)], refresh_model=False
+        )
+        mock_refresh.assert_not_called()
+
+
+@pytest.mark.unit
+def test_refresh_model_keyword_in_subproblem_methods():
+    # Verify that get_initial_condition_problem and get_timestep_problem
+    # respect the refresh_model keyword argument.
+    m, _, _, _, _, _, _ = dae_with_non_time_indexed_constraint()
+
+    petsc_obj = PETScIntegrator(
+        m,
+        time_set=m.t,
+    )
+
+    # 1. Test get_initial_condition_problem behavior
+    with patch.object(
+        petsc_obj, "refresh_model", wraps=petsc_obj.refresh_model
+    ) as mock_refresh:
+        # Should call refresh_model when True (default)
+        petsc_obj.get_initial_condition_problem(time_point=0, refresh_model=True)
+        assert mock_refresh.call_count == 1
+
+        # Should NOT call refresh_model when False
+        mock_refresh.reset_mock()
+        petsc_obj.get_initial_condition_problem(time_point=0, refresh_model=False)
+        mock_refresh.assert_not_called()
+
+    # 2. Test get_timestep_problem behavior
+    with patch.object(
+        petsc_obj, "refresh_model", wraps=petsc_obj.refresh_model
+    ) as mock_refresh:
+        # Should call refresh_model when True (default)
+        petsc_obj.get_timestep_problem(time_point=180, refresh_model=True)
+        assert mock_refresh.call_count == 1
+
+        # Should NOT call refresh_model when False
+        mock_refresh.reset_mock()
+        petsc_obj.get_timestep_problem(time_point=180, refresh_model=False)
+        mock_refresh.assert_not_called()
+
+
+@pytest.mark.unit
+def test_petsc_integrator_save_trajectory_coercion():
+    # 1) Verify that --ts_save_trajectory = True gets coerced to 1 in constructor
+    m, _, _, _, _, _, _ = dae_with_non_time_indexed_constraint()
+
+    petsc_obj = PETScIntegrator(
+        m,
+        time_set=m.t,
+        interpolate_results=True,
+        ts_options={
+            "--ts_save_trajectory": True,
+        },
+    )
+
+    # Assert that the option was successfully updated to 1
+    assert petsc_obj.config.ts_options["--ts_save_trajectory"] == 1
+
+
+@pytest.mark.unit
+def test_petsc_integrator_invalid_trajectory_for_interpolation_raises_value_error():
+    # 2) Verify that interpolate_results=True and ts_save_trajectory=False raises ValueError
+    m, _, _, _, _, _, _ = dae_with_non_time_indexed_constraint()
+
+    with pytest.raises(
+        ValueError,
+        match="In order to interpolate model values from the PETSc trajectory, "
+        "the trajectory must be saved. Either set interpolate = False in the "
+        "config or set '--ts_save_trajectory' = 1 in the ts_options dictionary.",
+    ):
+        PETScIntegrator(
+            m,
+            time_set=m.t,
+            interpolate_results=True,
+            ts_options={
+                "--ts_save_trajectory": False,
+            },
+        )
+
+
+@pytest.mark.unit
+def test_petsc_integrator_detect_initial_false_empty_defaults():
+    # Verify that initial_variables and initial_constraints default to empty lists
+    # when detect_initial=False and neither is provided.
+    m, _, _, _, _, _, _ = dae_with_non_time_indexed_constraint()
+
+    petsc_obj = PETScIntegrator(
+        m,
+        time_set=m.t,
+        detect_initial=False,
+        initial_variables=None,
+        initial_constraints=None,
+    )
+
+    # Assert they are assigned to empty lists
+    assert petsc_obj.initial_variables == []
+    assert petsc_obj.initial_constraints == []
+
+
+@pytest.mark.unit
+def test_petsc_integrator_explicit_initial_assignments():
+    # Verify that initial_variables and initial_constraints are assigned correctly
+    # when provided via config arguments (using detect_initial=False to avoid automated additions).
+    m, _, _, _, _, _, _ = dae_with_non_time_indexed_constraint()
+
+    # Select specific components to assign
+    custom_vars = [m.H, m.Fin[0]]
+    custom_cons = [m.H_eqn, m.eq_Fin[0]]
+
+    petsc_obj = PETScIntegrator(
+        m,
+        time_set=m.t,
+        detect_initial=False,
+        initial_variables=custom_vars,
+        initial_constraints=custom_cons,
+    )
+
+    # Assert that the assigned items match the input lists
+    assert petsc_obj.initial_variables == custom_vars
+    assert petsc_obj.initial_constraints == custom_cons
+
+
+@pytest.mark.unit
+def test_petsc_integrator_detect_initial_true_merges_explicit_inputs():
+    # Verify that when detect_initial=True, user-provided initial variables
+    # and constraints are merged with the automatically detected atemporal ones.
+    m, _, _, _, _, _, _ = dae_with_non_time_indexed_constraint()
+
+    # We will pick a time-indexed variable and constraint to manually add,
+    # as they would not be automatically picked up by detect_initial (which only looks at atemporal ones).
+    explicit_var = m.y[180, 1]
+    explicit_con = m.eq_Fin[180]
+
+    petsc_obj = PETScIntegrator(
+        m,
+        time_set=m.t,
+        detect_initial=True,
+        initial_variables=[explicit_var],
+        initial_constraints=[explicit_con],
+    )
+
+    # Assert that the manually passed components are in the final lists
+    assert explicit_var in ComponentSet(petsc_obj.initial_variables)
+    assert explicit_con in ComponentSet(petsc_obj.initial_constraints)
+
+    # Assert that the automatically detected atemporal components are also in the lists
+    assert m.H in ComponentSet(petsc_obj.initial_variables)
+    assert m.H_eqn in ComponentSet(petsc_obj.initial_constraints)
+
+
+@pytest.mark.unit
+def test_get_initial_condition_problem_time_point_default():
+    # Verify that get_initial_condition_problem defaults to the first time point (time_set.at(1))
+    m, _, _, _, _, _, _ = dae_with_non_time_indexed_constraint()
+
+    petsc_obj = PETScIntegrator(
+        m,
+        time_set=m.t,
+    )
+
+    # Track the call to verify the default time point is used
+    with patch.object(
+        petsc_obj,
+        "get_initial_condition_problem",
+        wraps=petsc_obj.get_initial_condition_problem,
+    ) as mock_ic:
+        ic_block = petsc_obj.get_initial_condition_problem()
+
+        # Verify the call signature was triggered with None (allowing the default within the function)
+        mock_ic.assert_called_once_with()
+
+        # To prove that the internal logic used the first time point (which is 0 for this model),
+        # verify that the variables on the generated subsystem block belong to t = 0 (the first index).
+        first_time = m.t.first()  # 0
+
+        # All time-indexed variables on the block should be indexed at the first time point
+        for var in ic_block.component_data_objects(Var):
+            # Skip atemporal variables (like m.H) and references that are not directly indexed by time
+            if var.parent_component() is m.y:
+                # Get the index of the vardata
+                idx = var.index()  # e.g., (0, 1) where index 0 is time
+                assert idx[0] == first_time
+
+
+@pytest.mark.unit
+def test_get_initial_condition_problem_returns_none_if_no_constraints():
+    # Verify that get_initial_condition_problem returns None if there are no
+    # active initial constraints or active time constraints at the evaluated time point.
+    m, _, _, _, _, _, _ = dae_with_non_time_indexed_constraint()
+
+    # Instantiate with detect_initial=False so that atemporal constraints (H_eqn)
+    # are not added automatically.
+    petsc_obj = PETScIntegrator(
+        m,
+        time_set=m.t,
+        detect_initial=False,
+        initial_constraints=[],
+    )
+
+    # Deactivate the active time constraints at t=0
+    for con in petsc_obj.time_constraints:
+        if 0 in con:
+            con[0].deactivate()
+
+    # Refresh model so the solver object's internal state is updated
+    # to reflect the deactivated constraints
+    petsc_obj.refresh_model()
+
+    # Solve the initial condition problem at t=0
+    ic_block = petsc_obj.get_initial_condition_problem(time_point=0)
+
+    # Verify it returns None
+    assert ic_block is None
