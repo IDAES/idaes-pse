@@ -180,8 +180,10 @@ CONFIG.declare(
     ConfigValue(
         default=True,
         domain=bool,
-        description="If True, add non-time-indexed variables and "
-        "constraints to initial_variables and initial_constraints.",
+        description="Whether to guess which variables and constraints "
+        "should go on the initial condition problem or whether only those set "
+        "by the user should be added. See the detect_initial method for more "
+        "information. Default is True.",
     ),
 )
 CONFIG.declare(
@@ -252,18 +254,6 @@ CONFIG.declare(
         "Must be an element of between.",
     ),
 )
-CONFIG.declare(
-    "always_refresh",
-    ConfigValue(
-        default=True,
-        domain=bool,
-        description="Whether to always call refresh_model before running "
-        "dae_by_time_element. If the model has not changed structurally "
-        "(i.e., no components have been activated or deactivated) since "
-        "the model was previously refreshed, avoiding a call to "
-        "refresh_model can save a significant amount of time.",
-    ),
-)
 
 
 @document_kwargs_from_configdict(CONFIG)
@@ -295,7 +285,6 @@ class PETScIntegrator(object):
         self,
         model: BlockData,
         time_set: ContinuousSet,
-        detect_initial: bool = True,
         initial_variables: list = None,
         initial_constraints: list = None,
         **kwargs,
@@ -350,22 +339,16 @@ class PETScIntegrator(object):
         # use case that I am not aware of.
         self._symbolic_solver_labels = True
 
-        self.refresh_model()
-
         if initial_variables is None:
             initial_variables = []
 
         if initial_constraints is None:
             initial_constraints = []
 
-        if detect_initial:
-            self.detect_initial_variables_and_constraints(
-                initial_variables=initial_variables,
-                initial_constraints=initial_constraints,
-            )
-        else:
-            self._initial_variables = initial_variables
-            self._initial_constraints = initial_constraints
+        self._user_specified_initial_variables = initial_variables
+        self._user_specified_initial_constraints = initial_constraints
+
+        self.refresh_model()
 
         disc_condata = []
         for data_dict in self._derivative_differential_vardata_map.values():
@@ -541,6 +524,15 @@ class PETScIntegrator(object):
             else:
                 raise err
 
+        if self.config.detect_initial:
+            self.detect_initial_variables_and_constraints(
+                initial_variables=self._user_specified_initial_variables,
+                initial_constraints=self._user_specified_initial_constraints,
+            )
+        else:
+            self._initial_variables = self._user_specified_initial_variables
+            self._initial_constraints = self._user_specified_initial_constraints
+
     def detect_initial_variables_and_constraints(
         self, initial_variables: list = None, initial_constraints: list = None
     ):
@@ -570,6 +562,7 @@ class PETScIntegrator(object):
     def get_initial_condition_problem(
         self,
         time_point: float = None,
+        refresh_model: bool = True,
     ):
         """
         From the cached, flattened model, construct an initial condition
@@ -587,6 +580,12 @@ class PETScIntegrator(object):
         Args:
             time_point (float): Time point at which to create initial
                 condition problem
+            refresh_model (bool): Whether to call refresh_model before
+                constructing the initial condition problem. If the model has
+                not changed structurally (i.e., no components have been
+                activatedor deactivated) since the model was previously
+                refreshed, avoiding a call to refresh_model can save a
+                significant amount of time.
 
         Returns:
             Block: Subsystem block containing References to the variables and
@@ -595,6 +594,9 @@ class PETScIntegrator(object):
                 and constraint scaling factors from the original model.
 
         """
+        if refresh_model:
+            self.refresh_model()
+
         if time_point is None:
             time_point = self._time_set.at(
                 1
@@ -602,7 +604,11 @@ class PETScIntegrator(object):
 
         constraints = self.initial_constraints  # Returns a copy
         for con in self.time_constraints:
-            if time_point in con and con[time_point] not in self._disc_condata:
+            if (
+                time_point in con
+                and con[time_point].active
+                and con[time_point] not in self._disc_condata
+            ):
                 constraints.append(con[time_point])
 
         variables = [
@@ -622,6 +628,7 @@ class PETScIntegrator(object):
     def get_timestep_problem(
         self,
         time_point: float = None,
+        refresh_model: bool = True,
     ):
         """
         From the cached, flattened model, construct a problem to solve
@@ -638,6 +645,11 @@ class PETScIntegrator(object):
         Args:
             time_point (float): Time at which to create the timestep
                 problem.
+            refresh_model (bool): Whether to call refresh_model before
+                constructing the timestep problem. If the model has not
+                changed structurally (i.e., no components have been activated
+                or deactivated) since the model was previously refreshed, avoiding
+                a call to refresh_model can save a significant amount of time.
 
         Returns:
             t_block (BlockData): Pyomo block with the variables and
@@ -656,6 +668,9 @@ class PETScIntegrator(object):
                 are not fixed by this function.
 
         """
+        if refresh_model:
+            self.refresh_model()
+
         self._validate_no_fixed_nonzero_derivatives()
 
         # Use a ComponentSet to avoid variables from being counted
@@ -721,7 +736,11 @@ class PETScIntegrator(object):
                 v[t_to].value = v[t_from].value
 
     def dae_by_time_element(
-        self, between=None, skip_initial=False, previous_trajectory=None
+        self,
+        between=None,
+        refresh_model: bool = True,
+        skip_initial: bool = False,
+        previous_trajectory=None,
     ):
         """Solve a DAE problem step by step using the PETSc DAE solver.  This
         integrates from one time point to the next.
@@ -729,6 +748,11 @@ class PETScIntegrator(object):
         Args:
             between (list or tuple): List of time points to integrate between. If
                 None use all time points in the model.
+            refresh_model (bool): Whether to call refresh_model before
+                integrating the DAE. If the model has not changed structurally
+                (i.e., no components have been activated or deactivated) since
+                the model was previously refreshed, avoiding a call to
+                refresh_model can save a significant amount of time.
             skip_initial (bool): Don't do the initial condition calculation step,
                 and assume that the initial condition values have already been
                 calculated. This can be useful, for example, if you read initial
@@ -743,15 +767,15 @@ class PETScIntegrator(object):
         if between is None:
             between = self._time_set
         else:
+            between = Set(initialize=sorted(between))
+            between.construct()
             bad_times = between - self._time_set
-            if bad_times:
+            if len(bad_times) > 0:
                 raise ValueError(
                     "Elements of the 'between' argument must be in the time set"
                 )
-            between = Set(initialize=sorted(between))
-            between.construct()
 
-        if self.config.always_refresh:
+        if refresh_model:
             self.refresh_model()
 
         # First calculate the initial conditions and non-time-indexed constraints
@@ -764,7 +788,9 @@ class PETScIntegrator(object):
         save_trajectory = solver_dae.options.get("--ts_save_trajectory", 0)
 
         if not skip_initial:
-            ic_block = self.get_initial_condition_problem(time_point=t0)
+            ic_block = self.get_initial_condition_problem(
+                time_point=t0, refresh_model=False
+            )
             if ic_block is not None:
                 # TODO Why aren't we using get_solver here?
                 initial_solver_obj = SolverFactory(
@@ -793,7 +819,7 @@ class PETScIntegrator(object):
                 # t == between.first() was handled above
                 continue
             timestep_block, differential_vars, variable_fixedness = (
-                self.get_timestep_problem(t)
+                self.get_timestep_problem(t, refresh_model=False)
             )
             self._copy_time(tprev, t)
 
