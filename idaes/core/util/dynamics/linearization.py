@@ -12,6 +12,7 @@
 #################################################################################
 from numpy import any, block, diag, isnan, zeros
 from scipy.linalg import expm
+from scipy.sparse import spdiags, csc_array
 from scipy.sparse.linalg import spsolve
 
 from pyomo.environ import Constraint, value
@@ -197,81 +198,16 @@ def _validate_steady_state(
         raise ValueError("The system was not at steady state: \n\n" + err_msg)
 
 
-def linearize_system(
+def _linearization_preprocessing(
     model,
     time,
     representative_time=None,
     input_vars=None,
     disturbance_vars=None,
     output_vars=None,
-    scaled=False,
     steady_state_derivative_tolerance=1e-6,
     constraint_tolerance=1e-6,
 ):
-    """
-    Function to obtain a linear time invariant state space model by
-    linearizing a set of differential algebraic equations. It takes
-    the general system
-
-    .. math:: 0 = f(x, \\dot{x}, u, d)
-    .. math:: y = h(x, u, d)
-
-    and turns it into the linear system
-
-    .. math:: \\dot{x} = A x + B u + B_d d
-    .. math:: y = C x + D u + D_d d
-
-    Note that the sets of input, disturbance, and output variables
-    should be indexed only by time. This indexing can be achieved
-    by creating a Reference to a slice of a variable that is indexed
-    by multiple sets or is only indirectly indexed by time, e.g., the
-    variable itself is a scalar but its parent block is indexed by time.
-
-    Args:
-        model (Block): Pyomo model that will be linearized
-        time (ContinuousSet): Time domain for set of DAEs
-        representative_time (float): Time index at which the correct
-            equations are active and variables are fixed to create
-            a well-defined system of DAEs. If the differential
-            variables, input variables, and disturbance variables are
-            fixed, the system should be square and be able to be solved
-            for the algebraic and derivative variables.
-        scaled (bool): Whether to return a linear system with variables
-            adjusted by their scaling factors, or to unscale the
-            system matrices before returning.
-        input_variables (list): List of input (:math:`u`) variables.
-        disturbance_variables (list): List of disturbance (:math:`d`)
-        variables.
-        output_variables (list): List of output (:math:`y`) variables.
-        steady_state_derivative_tolerance (float): Tolerance used to
-            test whether the time derivative variables are close
-            enough to zero to consider that the system is at steady
-            state.
-        constraint_tolerance (float): Tolerance used to test whether the
-            DAE constraints are close enough to being satisfied to consider
-            that the system :math:`0 = f(x, xdot, u, d)` is satisfied.
-
-    Returns:
-        dict: A dictionary containing the keys:
-            * "scaled_jac" (`scipy.sparse.csr_matrix`): Jacobian of scaled
-              system evaluated at the point of linearization
-            * "nlp" (`PyomoNLP`): NLP object used to evaluate scaled_jac
-            * "diff_vars (`list`): The list of differential `VarData` in the
-              order they appear in the :math:`A` and :math:`C` matrices
-            * "alg_vars" (`list`): The list of algebraic `VarData`
-            * "input_vars" (`list`): The list of input `VarData` in the order
-              they appear in the :math:`B` and :math:`D` matrices
-            * "disturbance_vars (`list`): The list of disturbance `VarData` in
-              the order they appear in the :math:`B_d` and :math:`D_d` matrices
-            * "output_vars" (`list`): The list of output `VarData` in the order
-              they appear in the :math:`C`, :math:`D`, and :math:`D_d` matrices
-            * "A" (`numpy.ndarray`): The :math:`A` matrix
-            * "B" (`numpy.ndarray`): The :math:`B` matrix
-            * "Bd" (`numpy.ndarray`): The :math:`B_d` matrix
-            * "C" (`numpy.ndarray`): The :math:`C` matrix
-            * "D" (`numpy.ndarray`): The :math:`D` matrix
-            * "Dd" (`numpy.ndarray`): The :math:`D_d` matrix
-    """
     if representative_time is not None:
         t1 = representative_time
     else:
@@ -311,6 +247,7 @@ def linearize_system(
         # the DAE system 0 = f(x, xdot, u, d)
         t_block, diff_vars, _ = integrator.get_timestep_problem(t1)
         jac, nlp = get_jacobian(t_block, equality_constraints_only=True)
+        jac = csc_array(jac)
     finally:
         from_json(model, fixedness, wts=StoreSpec.isfixed())
 
@@ -386,6 +323,95 @@ def linearize_system(
         "disturbance_vars": vardata_lists["dist"],
         "output_vars": vardata_lists["output"],
     }
+    return out, vardata_lists, output_sets, raw_jac_indices
+
+
+def linearize_system(
+    model,
+    time,
+    representative_time=None,
+    input_vars=None,
+    disturbance_vars=None,
+    output_vars=None,
+    scaled=False,
+    steady_state_derivative_tolerance=1e-6,
+    constraint_tolerance=1e-6,
+):
+    """
+    Function to obtain a linear time invariant state space model by
+    linearizing a set of differential algebraic equations. It takes
+    the general system
+
+    .. math:: 0 = f(x, \\dot{x}, u, d)
+    .. math:: y = h(x, u, d)
+
+    and turns it into the linear system
+
+    .. math:: \\dot{x} = A x + B u + B_d d
+    .. math:: y = C x + D u + D_d d
+
+    Note that the sets of input, disturbance, and output variables
+    should be indexed only by time. This indexing can be achieved
+    by creating a Reference to a slice of a variable that is indexed
+    by multiple sets or is only indirectly indexed by time, e.g., the
+    variable itself is a scalar but its parent block is indexed by time.
+
+    Args:
+        model (Block): Pyomo model that will be linearized
+        time (ContinuousSet): Time domain for set of DAEs
+        representative_time (float): Time index at which the correct
+            equations are active and variables are fixed to create
+            a well-defined system of DAEs. If the differential
+            variables, input variables, and disturbance variables are
+            fixed, the system should be square and be able to be solved
+            for the algebraic and derivative variables.
+        scaled (bool): Whether to return a linear system with variables
+            adjusted by their scaling factors, or to unscale the
+            system matrices before returning.
+        input_variables (list): List of input (:math:`u`) variables.
+        disturbance_variables (list): List of disturbance (:math:`d`)
+        variables.
+        output_variables (list): List of output (:math:`y`) variables.
+        steady_state_derivative_tolerance (float): Tolerance used to
+            test whether the time derivative variables are close
+            enough to zero to consider that the system is at steady
+            state.
+        constraint_tolerance (float): Tolerance used to test whether the
+            DAE constraints are close enough to being satisfied to consider
+            that the system :math:`0 = f(x, xdot, u, d)` is satisfied.
+
+    Returns:
+        dict: A dictionary containing the keys:
+            * "scaled_jac" (`scipy.sparse.csc_array`): Jacobian of scaled
+              system evaluated at the point of linearization
+            * "nlp" (`PyomoNLP`): NLP object used to evaluate scaled_jac
+            * "diff_vars (`list`): The list of differential `VarData` in the
+              order they appear in the :math:`A` and :math:`C` matrices
+            * "alg_vars" (`list`): The list of algebraic `VarData`
+            * "input_vars" (`list`): The list of input `VarData` in the order
+              they appear in the :math:`B` and :math:`D` matrices
+            * "disturbance_vars (`list`): The list of disturbance `VarData` in
+              the order they appear in the :math:`B_d` and :math:`D_d` matrices
+            * "output_vars" (`list`): The list of output `VarData` in the order
+              they appear in the :math:`C`, :math:`D`, and :math:`D_d` matrices
+            * "A" (`numpy.ndarray`): The :math:`A` matrix
+            * "B" (`numpy.ndarray`): The :math:`B` matrix
+            * "Bd" (`numpy.ndarray`): The :math:`B_d` matrix
+            * "C" (`numpy.ndarray`): The :math:`C` matrix
+            * "D" (`numpy.ndarray`): The :math:`D` matrix
+            * "Dd" (`numpy.ndarray`): The :math:`D_d` matrix
+    """
+    out, vardata_lists, output_sets, raw_jac_indices = _linearization_preprocessing(
+        model,
+        time,
+        representative_time=representative_time,
+        input_vars=input_vars,
+        disturbance_vars=disturbance_vars,
+        output_vars=output_vars,
+        steady_state_derivative_tolerance=steady_state_derivative_tolerance,
+        constraint_tolerance=constraint_tolerance,
+    )
+    jac = out["scaled_jac"]
 
     jac_deriv_alg = jac[:, raw_jac_indices["deriv"] + raw_jac_indices["alg"]]
     jac_rest = jac[
@@ -499,7 +525,7 @@ def linearize_system(
                 "that the IDAES developers can address this problem."
             )
     if not scaled:
-        all_sfs = nlp.get_primals_scaling()
+        all_sfs = out["nlp"].get_primals_scaling()
         sfx = all_sfs[raw_jac_indices["diff"]]
         sfxdot = all_sfs[raw_jac_indices["deriv"]]
         sfy = all_sfs[raw_jac_indices["output"]]
@@ -516,6 +542,201 @@ def linearize_system(
         out["C"] = diag(1 / sfy) @ out["C"] @ diag(sfx)
         out["D"] = diag(1 / sfy) @ out["D"] @ diag(sfu)
         out["Dd"] = diag(1 / sfy) @ out["Dd"] @ diag(sfd)
+
+    return out
+
+
+def linearize_system_descriptor_form(
+    model,
+    time,
+    representative_time=None,
+    input_vars=None,
+    disturbance_vars=None,
+    output_vars=None,
+    scaled=False,
+    steady_state_derivative_tolerance=1e-6,
+    constraint_tolerance=1e-6,
+):
+    r"""
+    Function to obtain a descriptor-form linear time invariant state space
+    model by linearizing a set of differential algebraic equations. It takes
+    the general system
+
+    .. math:: 0 = f(x, \dot{x}, z, u, d)
+    .. math:: y = h(x, z, u, d)
+
+    and turns it into the linear system
+
+    .. math:: E \dot{x} + F z = A x + B u + B_d d
+    .. math:: y = C x + D u + D_d d
+
+    Note that descriptor form systems often do not separate the differential
+    states :math:`x` from the algebraic states :math:`z` variables, but we
+    do so here to make the system more convenient to solve. The matrix [E, F]
+    must be square and full rank in order for the system to be well-defined.
+
+    A descriptor form system may be preferable to an explicit state space
+    representation (in which :math:`E=I`) if the system matrices have a
+    sparsity structure that would be ruined by inverting :math:`E`.
+
+    Note that the sets of input, disturbance, and output variables
+    should be indexed only by time. This indexing can be achieved
+    by creating a Reference to a slice of a variable that is indexed
+    by multiple sets or is only indirectly indexed by time, e.g., the
+    variable itself is a scalar but its parent block is indexed by time.
+
+    Args:
+        model (Block): Pyomo model that will be linearized
+        time (ContinuousSet): Time domain for set of DAEs
+        representative_time (float): Time index at which the correct
+            equations are active and variables are fixed to create
+            a well-defined system of DAEs. If the differential
+            variables, input variables, and disturbance variables are
+            fixed, the system should be square and be able to be solved
+            for the algebraic and derivative variables.
+        scaled (bool): Whether to return a linear system with variables
+            adjusted by their scaling factors, or to unscale the
+            system matrices before returning.
+        input_variables (list): List of input (:math:`u`) variables.
+        disturbance_variables (list): List of disturbance (:math:`d`)
+        variables.
+        output_variables (list): List of output (:math:`y`) variables.
+        steady_state_derivative_tolerance (float): Tolerance used to
+            test whether the time derivative variables are close
+            enough to zero to consider that the system is at steady
+            state.
+        constraint_tolerance (float): Tolerance used to test whether the
+            DAE constraints are close enough to being satisfied to consider
+            that the system :math:`0 = f(x, xdot, u, d)` is satisfied.
+
+    Returns:
+        dict: A dictionary containing the keys:
+            * "scaled_jac" (`scipy.sparse.csc_array`): Jacobian of scaled
+              system evaluated at the point of linearization
+            * "nlp" (`PyomoNLP`): NLP object used to evaluate scaled_jac
+            * "diff_vars (`list`): The list of differential `VarData` in the
+              order they appear in the :math:`A` and :math:`C` matrices
+            * "alg_vars" (`list`): The list of algebraic `VarData`
+            * "input_vars" (`list`): The list of input `VarData` in the order
+              they appear in the :math:`B` and :math:`D` matrices
+            * "disturbance_vars (`list`): The list of disturbance `VarData` in
+              the order they appear in the :math:`B_d` and :math:`D_d` matrices
+            * "output_vars" (`list`): The list of output `VarData` in the order
+              they appear in the :math:`C`, :math:`D`, and :math:`D_d` matrices
+            * "E" (`csc_array`): The :math:`E` matrix
+            * "F" (`csc_array`): The :math:`F` matrix
+            * "A" (`csc_array`): The :math:`A` matrix
+            * "B" (`csc_array`): The :math:`B` matrix
+            * "Bd" (`csc_array`): The :math:`B_d` matrix
+            * "C" (`csc_array`): The :math:`C` matrix
+            * "D" (`csc_array`): The :math:`D` matrix
+            * "Dd" (`csc_array`): The :math:`D_d` matrix
+    """
+    out, vardata_lists, output_sets, raw_jac_indices = _linearization_preprocessing(
+        model,
+        time,
+        representative_time=representative_time,
+        input_vars=input_vars,
+        disturbance_vars=disturbance_vars,
+        output_vars=output_vars,
+        steady_state_derivative_tolerance=steady_state_derivative_tolerance,
+        constraint_tolerance=constraint_tolerance,
+    )
+    if len(output_sets["deriv"]) > 0:
+        err_msg = (
+            "Cannot use derivative variables as outputs.\n"
+            "Found the following derivative variables:\n\n"
+        )
+        for output in output_sets["deriv"]:
+            err_msg += output.name + "\n"
+        raise NotImplementedError(err_msg)
+
+    jac = out["scaled_jac"]
+
+    # We seek an LTI system of the form:
+    # E @ xdot + F @ z = A @ x + B @ u + B_d @ d
+    # y = C @ x + C_z @ z + D @ u + D_d @ d
+    # We don't actually need estimates of the algebraic states in the LTI system,
+    # however some outputs (y's) may be algebraic states.
+    # Most of these matrices come from indexing and rearranging sys_raw, with a
+    # few elements of C being appropriate unit vectors
+
+    nx = len(vardata_lists["diff"])
+    nz = len(vardata_lists["alg"])
+    nu = len(vardata_lists["input"])
+    nd = len(vardata_lists["dist"])
+    ny = len(vardata_lists["output"])
+
+    out["E"] = jac[:, raw_jac_indices["deriv"]]
+    out["F"] = jac[:, raw_jac_indices["alg"]]
+    out["A"] = jac[:, raw_jac_indices["diff"]]
+    out["B"] = jac[:, raw_jac_indices["input"]]
+    out["Bd"] = jac[:, raw_jac_indices["dist"]]
+
+    out["C"] = zeros((ny, nx))
+    out["Cz"] = zeros((ny, nz))
+    out["D"] = zeros((ny, nu))
+    out["Dd"] = zeros((ny, nd))
+
+    inverse_maps = {
+        "diff": ComponentMap(),
+        "alg": ComponentMap(),
+        "deriv": ComponentMap(),
+        "input": ComponentMap(),
+        "dist": ComponentMap(),
+    }
+    for key, cmap in inverse_maps.items():
+        for i, vardata in enumerate(vardata_lists[key]):
+            if vardata in output_sets[key]:
+                cmap[vardata] = i
+
+    for Crow, output in enumerate(vardata_lists["output"]):
+        if output in output_sets["diff"]:
+            di = inverse_maps["diff"][output]
+            out["C"][Crow, di] = 1
+        elif output in output_sets["alg"]:
+            ai = inverse_maps["alg"][output]
+            out["Cz"][Crow, ai] = 1
+        elif output in output_sets["input"]:
+            # The C row is full of zeros
+            ini = inverse_maps["input"][output]
+            out["D"][Crow, ini] = 1
+            # The Dd row is full of zeros
+        elif output in output_sets["dist"]:
+            # The C and D rows are full of zeros
+            ind = inverse_maps["dist"][output]
+            out["Dd"][Crow, ind] = 1
+        else:
+            raise BurntToast(
+                "This branch should be inaccessible. Please open an issue on "
+                " the IDAES Github with steps to reproduce this exception so "
+                "that the IDAES developers can address this problem."
+            )
+    if not scaled:
+        all_sfs = out["nlp"].get_primals_scaling()
+        sfx = all_sfs[raw_jac_indices["diff"]]
+        sfxdot = all_sfs[raw_jac_indices["deriv"]]
+        sfz = all_sfs[raw_jac_indices["alg"]]
+        sfy = all_sfs[raw_jac_indices["output"]]
+        sfu = all_sfs[raw_jac_indices["input"]]
+        sfd = all_sfs[raw_jac_indices["dist"]]
+
+        con_sfs = out["nlp"].get_eq_constraints_scaling()
+        con_unscale = spdiags(1 / con_sfs)
+
+        # This step could be accomplished more efficiently using
+        # array broadcasting, but using matrices avoids bugs
+        # involving matrices broadcast along the wrong axis
+        out["E"] = con_unscale @ out["E"] @ diag(sfxdot)
+        out["F"] = con_unscale @ out["F"] @ diag(sfz)
+        out["A"] = con_unscale @ out["A"] @ diag(sfx)
+        out["B"] = con_unscale @ out["B"] @ diag(sfu)
+        out["Bd"] = con_unscale @ out["Bd"] @ diag(sfd)
+
+        unscale_y = spdiags(1 / sfy)
+        out["C"] = unscale_y @ out["C"] @ diag(sfx)
+        out["D"] = unscale_y @ out["D"] @ diag(sfu)
+        out["Dd"] = unscale_y @ out["Dd"] @ diag(sfd)
 
     return out
 
