@@ -1373,7 +1373,7 @@ def test_find_discretization_equations_deactivated(disc_method, nfe, reduce_inde
         assert value(m.n[1, "B"]) == approx(0.313925)
 
 
-# The tests below were generated with the assistence of Google Gemini 3.5
+# The tests below were generated with the assistance of Google Gemini 3.5
 @pytest.mark.unit
 @pytest.mark.skipif(not petsc_available(), reason="PETSc solver not available")
 def test_refresh_true_execution_order():
