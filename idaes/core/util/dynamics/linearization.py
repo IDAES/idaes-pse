@@ -12,7 +12,7 @@
 #################################################################################
 from numpy import any, block, diag, isnan, zeros
 from scipy.linalg import expm
-from scipy.sparse import spdiags, csc_array
+from scipy.sparse import diags_array, coo_array, csc_array
 from scipy.sparse.linalg import spsolve
 
 from pyomo.environ import Constraint, value
@@ -22,6 +22,33 @@ from idaes.core.solvers.petsc_object import PETScIntegrator
 from idaes.core.util import from_json, StoreSpec, to_json
 from idaes.core.util.exceptions import BurntToast
 from idaes.core.scaling.util import get_jacobian
+
+
+def _unscale_matrix(left_sfs, M, right_sfs):
+    """
+    This function assumes that an array or matrix has been created in a scaled
+    form by multiplying the rows by left_sfs and dividing the columns by
+    right_sfs. This function reverses that process and returns an array or
+    matrix of the same class as was passed in.
+
+    Args:
+        left_sfs(numpy.ndarray): Array of m scaling factors
+        M(array or matrix): m by n array or matrix
+        right_sfs(numpy.ndarray): Array of n scaling factors
+
+    Returns:
+        Unscaled version of M
+    """
+    M_type = type(M)
+    if len(left_sfs) != M.shape[0] or len(right_sfs) != M.shape[1]:
+        raise ValueError(
+            "The unscaling matrices do not have the correct shape " "to unscale M."
+        )
+    out = (1 / left_sfs)[:, None] * M * right_sfs[None, :]
+    if type(out) is not M_type:
+        out = M_type(out)
+
+    return out
 
 
 # This function was created with the assistance of Google Gemini 3.5 Flash
@@ -532,16 +559,13 @@ def linearize_system(
         sfu = all_sfs[raw_jac_indices["input"]]
         sfd = all_sfs[raw_jac_indices["dist"]]
 
-        # This step could be accomplished more efficiently using
-        # array broadcasting, but using matrices avoids bugs
-        # involving matrices broadcast along the wrong axis
-        out["A"] = diag(1 / sfxdot) @ out["A"] @ diag(sfx)
-        out["B"] = diag(1 / sfxdot) @ out["B"] @ diag(sfu)
-        out["Bd"] = diag(1 / sfxdot) @ out["Bd"] @ diag(sfd)
+        out["A"] = _unscale_matrix(sfxdot, out["A"], sfx)
+        out["B"] = _unscale_matrix(sfxdot, out["B"], sfu)
+        out["Bd"] = _unscale_matrix(sfxdot, out["Bd"], sfd)
 
-        out["C"] = diag(1 / sfy) @ out["C"] @ diag(sfx)
-        out["D"] = diag(1 / sfy) @ out["D"] @ diag(sfu)
-        out["Dd"] = diag(1 / sfy) @ out["Dd"] @ diag(sfd)
+        out["C"] = _unscale_matrix(sfy, out["C"], sfx)
+        out["D"] = _unscale_matrix(sfy, out["D"], sfu)
+        out["Dd"] = _unscale_matrix(sfy, out["Dd"], sfd)
 
     return out
 
@@ -669,14 +693,9 @@ def linearize_system_descriptor_form(
 
     out["E"] = jac[:, raw_jac_indices["deriv"]]
     out["F"] = jac[:, raw_jac_indices["alg"]]
-    out["A"] = jac[:, raw_jac_indices["diff"]]
-    out["B"] = jac[:, raw_jac_indices["input"]]
-    out["Bd"] = jac[:, raw_jac_indices["dist"]]
-
-    out["C"] = zeros((ny, nx))
-    out["Cz"] = zeros((ny, nz))
-    out["D"] = zeros((ny, nu))
-    out["Dd"] = zeros((ny, nd))
+    out["A"] = -jac[:, raw_jac_indices["diff"]]
+    out["B"] = -jac[:, raw_jac_indices["input"]]
+    out["Bd"] = -jac[:, raw_jac_indices["dist"]]
 
     inverse_maps = {
         "diff": ComponentMap(),
@@ -690,28 +709,40 @@ def linearize_system_descriptor_form(
             if vardata in output_sets[key]:
                 cmap[vardata] = i
 
+    indices = {"C": [], "Cz": [], "D": [], "Dd": []}
+
     for Crow, output in enumerate(vardata_lists["output"]):
         if output in output_sets["diff"]:
             di = inverse_maps["diff"][output]
-            out["C"][Crow, di] = 1
+            indices["C"].append((Crow, di, 1.0))
         elif output in output_sets["alg"]:
             ai = inverse_maps["alg"][output]
-            out["Cz"][Crow, ai] = 1
+            indices["Cz"].append((Crow, ai, 1.0))
         elif output in output_sets["input"]:
             # The C row is full of zeros
             ini = inverse_maps["input"][output]
-            out["D"][Crow, ini] = 1
+            indices["D"].append((Crow, ini, 1.0))
             # The Dd row is full of zeros
         elif output in output_sets["dist"]:
-            # The C and D rows are full of zeros
             ind = inverse_maps["dist"][output]
-            out["Dd"][Crow, ind] = 1
+            indices["Dd"].append((Crow, ind, 1.0))
         else:
             raise BurntToast(
                 "This branch should be inaccessible. Please open an issue on "
                 " the IDAES Github with steps to reproduce this exception so "
                 "that the IDAES developers can address this problem."
             )
+
+    ncol = {"C": nx, "Cz": nz, "D": nu, "Dd": nd}
+    for key, lst in indices.items():
+        if len(lst) > 0:
+            row, col, data = zip(*lst)
+        else:
+            row = []
+            col = []
+            data = []
+        out[key] = coo_array((data, (row, col)), shape=(ny, ncol[key])).tocsc()
+
     if not scaled:
         all_sfs = out["nlp"].get_primals_scaling()
         sfx = all_sfs[raw_jac_indices["diff"]]
@@ -722,21 +753,20 @@ def linearize_system_descriptor_form(
         sfd = all_sfs[raw_jac_indices["dist"]]
 
         con_sfs = out["nlp"].get_eq_constraints_scaling()
-        con_unscale = spdiags(1 / con_sfs)
 
-        # This step could be accomplished more efficiently using
-        # array broadcasting, but using matrices avoids bugs
-        # involving matrices broadcast along the wrong axis
-        out["E"] = con_unscale @ out["E"] @ diag(sfxdot)
-        out["F"] = con_unscale @ out["F"] @ diag(sfz)
-        out["A"] = con_unscale @ out["A"] @ diag(sfx)
-        out["B"] = con_unscale @ out["B"] @ diag(sfu)
-        out["Bd"] = con_unscale @ out["Bd"] @ diag(sfd)
-
-        unscale_y = spdiags(1 / sfy)
-        out["C"] = unscale_y @ out["C"] @ diag(sfx)
-        out["D"] = unscale_y @ out["D"] @ diag(sfu)
-        out["Dd"] = unscale_y @ out["Dd"] @ diag(sfd)
+        unscale_dict = {
+            "E": (con_sfs, sfxdot),
+            "F": (con_sfs, sfz),
+            "A": (con_sfs, sfx),
+            "B": (con_sfs, sfu),
+            "Bd": (con_sfs, sfd),
+            "C": (sfy, sfx),
+            # "Cz": (sfy, sfz), TODO test
+            "D": (sfy, sfu),
+            "Dd": (sfy, sfd),
+        }
+        for key, (left, right) in unscale_dict.items():
+            out[key] = _unscale_matrix(left, out[key], right)
 
     return out
 

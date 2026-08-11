@@ -15,7 +15,7 @@ from itertools import combinations
 from unittest.mock import patch
 
 from numpy import array, eye, logspace, nan, ndarray, zeros
-from scipy.sparse import csr_matrix, csc_matrix, coo_matrix
+from scipy.sparse import csr_array, csc_array, coo_array
 
 from pyomo.environ import (
     Block,
@@ -39,10 +39,13 @@ from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
 
 from idaes.core.util.constants import Constants
 from idaes.core.util.dynamics.linearization import (
+    _unscale_matrix,
     _validate_vardata_collections,
     _validate_steady_state,
+    _linearization_preprocessing,
     c2d,
     linearize_system,
+    linearize_system_descriptor_form,
 )
 from idaes.core.util.exceptions import BurntToast
 
@@ -144,6 +147,42 @@ def _make_dae_pendulum(blk, time_init, reduce_index=True):
     else:
         for t in blk.time_set:
             calculate_variable_from_constraint(blk.T[t], blk.vdot_eqn[t, "y"])
+
+
+@pytest.mark.unit
+class TestUnscaleMatrix(object):
+    def output_tester(self, left_sfs, M, right_sfs):
+        for ty in [ndarray, csr_array, csc_array, coo_array]:
+            if ty is ndarray:
+                if type(M) is not ndarray:
+                    M_in = array(M)
+                else:
+                    M_in = M
+            else:
+                M_in = ty(M)
+            out = _unscale_matrix(left_sfs, M_in, right_sfs)
+            assert type(out) is ty
+            for i in range(1):
+                for j in range(1):
+                    assert out[i, j] == pytest.approx(right_sfs[j] / left_sfs[i])
+
+    def test_square(self):
+        left = array([2, 3])
+        M = array([[1, 1], [1, 1]])
+        right = array([5, 7])
+        self.output_tester(left, M, right)
+
+    def test_tall(self):
+        left = array([2, 3, 5])
+        M = array([[1, 1], [1, 1], [1, 1]])
+        right = array([7, 11])
+        self.output_tester(left, M, right)
+
+    def test_wide(self):
+        left = array([2, 3])
+        M = array([[1, 1, 1], [1, 1, 1]])
+        right = array([5, 7, 11])
+        self.output_tester(left, M, right)
 
 
 @pytest.mark.unit
@@ -415,31 +454,214 @@ class TestSteadyStateValidation(object):
         assert "Encountered the inequality constraint con_ineq" in str(exc_info.value)
 
 
+@pytest.fixture
+def scalar_dae_model():
+    """Creates a minimal DAE model: dx/dt = -3*x + 2*u."""
+    m = ConcreteModel()
+    m.time = ContinuousSet(initialize=[0, 1])
+    m.x = Var(m.time, initialize=0.0)
+    m.xdot = DerivativeVar(m.x, wrt=m.time, initialize=0.0)
+    m.u = Var(m.time, initialize=0.0)
+    m.y = Var(m.time, initialize=0.0)
+
+    @m.Constraint(m.time)
+    def ode_eqn(b, t):
+        return b.xdot[t] == -3.0 * b.x[t] + 2.0 * b.u[t]
+
+    @m.Constraint(m.time)
+    def output_eqn(b, t):
+        return b.y[t] == 5.0 * b.x[t]
+
+    fd_factory = TransformationFactory("dae.finite_difference")
+    fd_factory.apply_to(m, wrt=m.time, nfe=1, scheme="BACKWARD")
+    return m
+
+
+@pytest.fixture
+def scalar_dae_with_disturbances():
+    """Test a system with inputs, disturbances, and outputs."""
+    m = ConcreteModel()
+    m.time = ContinuousSet(initialize=[0, 1])
+    m.x = Var(m.time, initialize=0)
+    m.xdot = DerivativeVar(m.x, wrt=m.time, initialize=0.0)
+    m.u = Var(m.time, initialize=0)
+    m.d = Var(m.time, initialize=0)
+    m.y = Var(m.time, initialize=0)
+
+    @m.Constraint(m.time)
+    def ode_eqn(b, t):
+        return 2.0 * b.xdot[t] == -3.0 * b.x[t] + 5.0 * b.u[t] - 7.0 * b.d[t]
+
+    @m.Constraint(m.time)
+    def output_eqn(b, t):
+        return 11.0 * b.y[t] == 13.0 * b.x[t] - 17.0 * b.u[t] + 19.0 * b.d[t]
+
+    fd_factory = TransformationFactory("dae.finite_difference")
+    fd_factory.apply_to(m, wrt=m.time, nfe=1, scheme="BACKWARD")
+
+    m.u.fix(-2.0)
+    m.d.fix(5.0)
+    for t in m.time:
+        m.x[t].set_value(-15.0)
+        m.xdot[t].set_value(0.0)
+        m.y[t].set_value(-6.0)
+
+    return m
+
+
+@pytest.fixture
+def mimo_system():
+    """Multi-input/multi-output system to test variable ordering"""
+    m = ConcreteModel()
+    m.time = ContinuousSet(initialize=[0, 1])
+    m.x = Var(m.time, initialize=0.0)
+    m.xdot = DerivativeVar(m.x, wrt=m.time, initialize=0.0)
+
+    m.u1 = Var(m.time, initialize=0)
+    m.u2 = Var(m.time, initialize=0)
+    m.d1 = Var(m.time, initialize=0)
+    m.d2 = Var(m.time, initialize=0)
+
+    m.y1 = Var(m.time, initialize=0.0)
+    m.y2 = Var(m.time, initialize=0.0)
+
+    @m.Constraint(m.time)
+    def ode_eqn(b, t):
+        return (
+            2.0 * b.xdot[t]
+            == -3.0 * b.x[t]
+            + 5.0 * b.u1[t]
+            + 7.0 * b.u2[t]
+            - 11.0 * b.d1[t]
+            - 13.0 * b.d2[t]
+        )
+
+    @m.Constraint(m.time)
+    def out_eqn1(b, t):
+        return 17.0 * b.y1[t] == (
+            19.0 * b.x[t]
+            + 23.0 * b.u1[t]
+            + 29.0 * b.u2[t]
+            - 31.0 * b.d1[t]
+            - 37.0 * b.d2[t]
+        )
+
+    @m.Constraint(m.time)
+    def out_eqn2(b, t):
+        return -41.0 * b.y2[t] == (
+            43.0 * b.x[t]
+            - 47.0 * b.u1[t]
+            - 53.0 * b.u2[t]
+            + 59.0 * b.d1[t]
+            + 61.0 * b.d2[t]
+        )
+
+    fd_factory = TransformationFactory("dae.finite_difference")
+    fd_factory.apply_to(m, wrt=m.time, nfe=1, scheme="BACKWARD")
+    return m
+
+
+@pytest.fixture
+def dae_nontrivial_mass_matrix():
+    """A coupled system where the derivatives are implicit (mass matrix M != I).
+    2*x1dot + x2dot = -x1 + u  ==> eq1
+    x1dot + 2*x2dot = -x2      ==> eq2
+    """
+    m = ConcreteModel()
+    m.time = ContinuousSet(initialize=[0, 1])
+    m.x1 = Var(m.time, initialize=1.0)
+    m.x2 = Var(m.time, initialize=-1.0)
+    m.x1dot = DerivativeVar(m.x1, wrt=m.time, initialize=0.0)
+    m.x2dot = DerivativeVar(m.x2, wrt=m.time, initialize=0.0)
+    m.u = Var(m.time, initialize=1.0)
+
+    @m.Constraint(m.time)
+    def ode_eqn1(b, t):
+        return 2.0 * b.x1dot[t] + b.x2dot[t] == -b.x1[t] + b.u[t]
+
+    @m.Constraint(m.time)
+    def ode_eqn2(b, t):
+        return b.x1dot[t] + 2.0 * b.x2dot[t] == -b.x2[t]
+
+    fd_factory = TransformationFactory("dae.finite_difference")
+    fd_factory.apply_to(m, wrt=m.time, nfe=1, scheme="BACKWARD")
+
+    m.u.fix(1.0)
+    for t in m.time:
+        m.x1[t].set_value(1.0)
+        m.x2[t].set_value(0)
+        m.x1dot[t].set_value(0.0)
+        m.x2dot[t].set_value(0.0)
+
+    return m
+
+
+@pytest.mark.unit
+class TestLinearizationPreprocessing(object):
+    def test_linearize_system_restores_fixedness(self, scalar_dae_model):
+        """Verify that variable fixedness is perfectly restored even if exceptions occur."""
+        m = scalar_dae_model
+        # Ensure the system is solved / at steady state (xdot = -3*2 + 2*3 = 0 -> u = 3)
+        m.u.fix(3.0)
+        for t in m.time:
+            m.x[t].set_value(2.0)
+            m.xdot[t].set_value(0.0)
+            m.y[t].set_value(10.0)
+
+        m.x[1].unfix()
+
+        # Check pre-fixedness
+        assert m.u[1].fixed is True
+        assert m.x[1].fixed is False
+
+        # Run linearization
+        _linearization_preprocessing(
+            m,
+            m.time,
+            representative_time=1,
+            input_vars=[m.u],
+            output_vars=[m.y],
+        )
+
+        # Check post-fixedness (must remain unchanged)
+        assert m.u[1].fixed is True
+        assert m.x[1].fixed is False
+
+    def test_linearize_system_non_square_dof_failure(self, scalar_dae_model):
+        """Verify RuntimeError is raised if the timestep problem is not square (dof != 0)."""
+        m = scalar_dae_model
+        m.u.unfix()  # Leaves an extra degree of freedom
+
+        with pytest.raises(RuntimeError) as exc_info:
+            _linearization_preprocessing(
+                m,
+                m.time,
+                representative_time=1,
+                input_vars=[],  # Exclude u so it doesn't get factored into square calculation
+                output_vars=[m.y],
+            )
+        assert "degrees of freedom" in str(exc_info.value)
+
+    def test_linearize_system_invalid_variable_category(self, scalar_dae_model):
+        """Verify ValueError is raised if a variable is missing from the total set."""
+        m = scalar_dae_model
+        # Create an external variable completely disconnected from the active constraints
+        m.external_var = Var(m.time, initialize=1.0)
+
+        with pytest.raises(ValueError) as exc_info:
+            _linearization_preprocessing(
+                m,
+                m.time,
+                representative_time=1,
+                input_vars=[m.external_var],
+                output_vars=[m.y],
+            )
+        assert "is not present in the total variables set" in str(exc_info.value)
+
+
 @pytest.mark.unit
 class TestLinearizeSystem(object):
-    @pytest.fixture
-    def scalar_dae_model(self):
-        """Creates a minimal DAE model: dx/dt = -3*x + 2*u."""
-        m = ConcreteModel()
-        m.time = ContinuousSet(initialize=[0, 1])
-        m.x = Var(m.time, initialize=0.0)
-        m.xdot = DerivativeVar(m.x, wrt=m.time, initialize=0.0)
-        m.u = Var(m.time, initialize=0.0)
-        m.y = Var(m.time, initialize=0.0)
-
-        @m.Constraint(m.time)
-        def ode_eqn(b, t):
-            return b.xdot[t] == -3.0 * b.x[t] + 2.0 * b.u[t]
-
-        @m.Constraint(m.time)
-        def output_eqn(b, t):
-            return b.y[t] == 5.0 * b.x[t]
-
-        fd_factory = TransformationFactory("dae.finite_difference")
-        fd_factory.apply_to(m, wrt=m.time, nfe=1, scheme="BACKWARD")
-        return m
-
-    def test_linearize_system_output_fields_and_types(self):
+    def test_output_fields_and_types(self):
         """
         Verify that linearize_system returns a dictionary containing all
         of the specified output keys, with correct types and exact contents
@@ -504,7 +726,7 @@ class TestLinearizeSystem(object):
 
         # 2. Check types of the diagnostic keys
 
-        assert isinstance(out["scaled_jac"], (coo_matrix, csc_matrix, csr_matrix))
+        assert isinstance(out["scaled_jac"], csc_array)
         assert isinstance(out["nlp"], PyomoNLP)
 
         # 3. Check types and specific identity of the variable lists
@@ -571,67 +793,7 @@ class TestLinearizeSystem(object):
         assert len(out["diff_vars"]) == 1
         assert len(out["alg_vars"]) == 1  # m.y is algebraic
 
-    def test_linearize_system_restores_fixedness(self, scalar_dae_model):
-        """Verify that variable fixedness is perfectly restored even if exceptions occur."""
-        m = scalar_dae_model
-        # Ensure the system is solved / at steady state (xdot = -3*2 + 2*3 = 0 -> u = 3)
-        m.u.fix(3.0)
-        for t in m.time:
-            m.x[t].set_value(2.0)
-            m.xdot[t].set_value(0.0)
-            m.y[t].set_value(10.0)
-
-        m.x[1].unfix()
-
-        # Check pre-fixedness
-        assert m.u[1].fixed is True
-        assert m.x[1].fixed is False
-
-        # Run linearization
-        linearize_system(
-            m,
-            m.time,
-            representative_time=1,
-            input_vars=[m.u],
-            output_vars=[m.y],
-        )
-
-        # Check post-fixedness (must remain unchanged)
-        assert m.u[1].fixed is True
-        assert m.x[1].fixed is False
-
-    def test_linearize_system_non_square_dof_failure(self, scalar_dae_model):
-        """Verify RuntimeError is raised if the timestep problem is not square (dof != 0)."""
-        m = scalar_dae_model
-        m.u.unfix()  # Leaves an extra degree of freedom
-
-        with pytest.raises(RuntimeError) as exc_info:
-            linearize_system(
-                m,
-                m.time,
-                representative_time=1,
-                input_vars=[],  # Exclude u so it doesn't get factored into square calculation
-                output_vars=[m.y],
-            )
-        assert "degrees of freedom" in str(exc_info.value)
-
-    def test_linearize_system_invalid_variable_category(self, scalar_dae_model):
-        """Verify ValueError is raised if a variable is missing from the total set."""
-        m = scalar_dae_model
-        # Create an external variable completely disconnected from the active constraints
-        m.external_var = Var(m.time, initialize=1.0)
-
-        with pytest.raises(ValueError) as exc_info:
-            linearize_system(
-                m,
-                m.time,
-                representative_time=1,
-                input_vars=[m.external_var],
-                output_vars=[m.y],
-            )
-        assert "is not present in the total variables set" in str(exc_info.value)
-
-    def test_linearize_system_nonzero_D_matrix(self):
+    def test_nonzero_D_matrix(self):
         """Test a system where there is a direct feedthrough from u to y.
         dx/dt = -x + u
         y = 3*x + 2*u
@@ -677,37 +839,9 @@ class TestLinearizeSystem(object):
         assert out["Bd"].shape == (1, 0)
         assert out["Dd"].shape == (1, 0)
 
-    def test_linearize_system_with_disturbances(self):
-        """Test a system with inputs, disturbances, and outputs.
-        dx/dt = -2*x + u - 3*d
-        y = x + d
-        Should yield: A = [[-2]], B = [[1]], Bd = [[-3]], C = [[1]], D = [[0]], Dd = [[1]]
-        """
-        m = ConcreteModel()
-        m.time = ContinuousSet(initialize=[0, 1])
-        m.x = Var(m.time, initialize=2.0)
-        m.xdot = DerivativeVar(m.x, wrt=m.time, initialize=0.0)
-        m.u = Var(m.time, initialize=7.0)
-        m.d = Var(m.time, initialize=1.0)
-        m.y = Var(m.time, initialize=3.0)
-
-        @m.Constraint(m.time)
-        def ode_eqn(b, t):
-            return b.xdot[t] == -2.0 * b.x[t] + b.u[t] - 3.0 * b.d[t]
-
-        @m.Constraint(m.time)
-        def output_eqn(b, t):
-            return b.y[t] == b.x[t] + b.d[t]
-
-        fd_factory = TransformationFactory("dae.finite_difference")
-        fd_factory.apply_to(m, wrt=m.time, nfe=1, scheme="BACKWARD")
-
-        m.u.fix(7.0)
-        m.d.fix(1.0)
-        for t in m.time:
-            m.x[t].set_value(2.0)
-            m.xdot[t].set_value(0.0)
-            m.y[t].set_value(3.0)
+    def test_linearize_system_with_disturbances(self, scalar_dae_with_disturbances):
+        """Test a system with inputs, disturbances, and outputs."""
+        m = scalar_dae_with_disturbances
 
         out = linearize_system(
             m,
@@ -719,14 +853,14 @@ class TestLinearizeSystem(object):
             scaled=False,
         )
 
-        assert out["A"] == pytest.approx(array([[-2.0]]))
-        assert out["B"] == pytest.approx(array([[1.0]]))
-        assert out["Bd"] == pytest.approx(array([[-3.0]]))
-        assert out["C"] == pytest.approx(array([[1.0]]))
-        assert out["D"] == pytest.approx(array([[0.0]]))
-        assert out["Dd"] == pytest.approx(array([[1.0]]))
+        assert out["A"] == pytest.approx(array([[-1.5]]))
+        assert out["B"] == pytest.approx(array([[2.5]]))
+        assert out["Bd"] == pytest.approx(array([[-3.5]]))
+        assert out["C"] == pytest.approx(array([[13 / 11]]))
+        assert out["D"] == pytest.approx(array([[-17 / 11]]))
+        assert out["Dd"] == pytest.approx(array([[19 / 11]]))
 
-    def test_linearize_system_nontrivial_mass_matrix(self):
+    def test_linearize_system_nontrivial_mass_matrix(self, dae_nontrivial_mass_matrix):
         """Test a coupled system where the derivatives are implicit (mass matrix M != I).
         2*x1dot + x2dot = -x1 + u  ==> eq1
         x1dot + 2*x2dot = -x2      ==> eq2
@@ -741,31 +875,7 @@ class TestLinearizeSystem(object):
         B = [[  2/3 ],
              [ -1/3 ]]
         """
-        m = ConcreteModel()
-        m.time = ContinuousSet(initialize=[0, 1])
-        m.x1 = Var(m.time, initialize=1.0)
-        m.x2 = Var(m.time, initialize=-1.0)
-        m.x1dot = DerivativeVar(m.x1, wrt=m.time, initialize=0.0)
-        m.x2dot = DerivativeVar(m.x2, wrt=m.time, initialize=0.0)
-        m.u = Var(m.time, initialize=1.0)
-
-        @m.Constraint(m.time)
-        def ode_eqn1(b, t):
-            return 2.0 * b.x1dot[t] + b.x2dot[t] == -b.x1[t] + b.u[t]
-
-        @m.Constraint(m.time)
-        def ode_eqn2(b, t):
-            return b.x1dot[t] + 2.0 * b.x2dot[t] == -b.x2[t]
-
-        fd_factory = TransformationFactory("dae.finite_difference")
-        fd_factory.apply_to(m, wrt=m.time, nfe=1, scheme="BACKWARD")
-
-        m.u.fix(1.0)
-        for t in m.time:
-            m.x1[t].set_value(1.0)
-            m.x2[t].set_value(0)
-            m.x1dot[t].set_value(0.0)
-            m.x2dot[t].set_value(0.0)
+        m = dae_nontrivial_mass_matrix
 
         out = linearize_system(
             m, m.time, representative_time=1, input_vars=[m.u], scaled=False
@@ -786,50 +896,13 @@ class TestLinearizeSystem(object):
         assert A_actual == pytest.approx(expected_A)
         assert B_actual == pytest.approx(expected_B)
 
-    def test_linearize_system_preserves_ordering(self):
+    def test_linearize_system_preserves_ordering(self, mimo_system):
         """
         Verify that the order of the inputs and disturbances provided to
         linearize_system is perfectly preserved in the shape and positioning
         of columns in B, Bd, D, and Dd.
         """
-        m = ConcreteModel()
-        m.time = ContinuousSet(initialize=[0, 1])
-        m.x = Var(m.time, initialize=0.0)
-        m.xdot = DerivativeVar(m.x, wrt=m.time, initialize=0.0)
-
-        # Multiple inputs, disturbances, and outputs to test ordering permutations
-        m.u1 = Var(m.time, initialize=0)
-        m.u2 = Var(m.time, initialize=0)
-        m.d1 = Var(m.time, initialize=0)
-        m.d2 = Var(m.time, initialize=0)
-
-        m.y1 = Var(m.time, initialize=0.0)
-        m.y2 = Var(m.time, initialize=0.0)
-
-        @m.Constraint(m.time)
-        def ode_eqn(b, t):
-            # dx/dt = -x + 10*u1 + 20*u2 - 30*d1 - 40*d2
-            return (
-                b.xdot[t]
-                == -b.x[t]
-                + 10.0 * b.u1[t]
-                + 20.0 * b.u2[t]
-                - 30.0 * b.d1[t]
-                - 40.0 * b.d2[t]
-            )
-
-        @m.Constraint(m.time)
-        def out_eqn1(b, t):
-            # y1 = 2*u1 + 3*u2
-            return b.y1[t] == 2.0 * b.u1[t] + 3.0 * b.u2[t]
-
-        @m.Constraint(m.time)
-        def out_eqn2(b, t):
-            # y2 = 4*d1 + 5*d2
-            return b.y2[t] == 4.0 * b.d1[t] + 5.0 * b.d2[t]
-
-        fd_factory = TransformationFactory("dae.finite_difference")
-        fd_factory.apply_to(m, wrt=m.time, nfe=1, scheme="BACKWARD")
+        m = mimo_system
 
         # -- Permutation A --
         out_a = linearize_system(
@@ -842,19 +915,24 @@ class TestLinearizeSystem(object):
             scaled=False,
         )
 
-        # Output vars ordering check
+        # Variable ordering check
+        assert _component_index(out_a["input_vars"], m.u1[1]) == 0
+        assert _component_index(out_a["input_vars"], m.u2[1]) == 1
+        assert _component_index(out_a["disturbance_vars"], m.d1[1]) == 0
+        assert _component_index(out_a["disturbance_vars"], m.d2[1]) == 1
         assert _component_index(out_a["output_vars"], m.y1[1]) == 0
         assert _component_index(out_a["output_vars"], m.y2[1]) == 1
 
-        # Matrix columns mapped to: [u1, u2] and [d1, d2]
-        # B = [10, 20]
-        # Bd = [-30, -40]
-        # D (rows: y1, y2; cols: u1, u2) = [[2, 3], [0, 0]]
-        # Dd (rows: y1, y2; cols: d1, d2) = [[0, 0], [4, 5]]
-        assert array(out_a["B"]) == pytest.approx(array([[10.0, 20.0]]))
-        assert array(out_a["Bd"]) == pytest.approx(array([[-30.0, -40.0]]))
-        assert array(out_a["D"]) == pytest.approx(array([[2.0, 3.0], [0.0, 0.0]]))
-        assert array(out_a["Dd"]) == pytest.approx(array([[0.0, 0.0], [4.0, 5.0]]))
+        expected_out_a = {
+            "A": array([[-1.5]]),
+            "B": array([[2.5, 3.5]]),
+            "Bd": array([[-5.5, -6.5]]),
+            "C": array([[19 / 17], [-43 / 41]]),
+            "D": array([[23 / 17, 29 / 17], [47 / 41, 53 / 41]]),
+            "Dd": array([[-31 / 17, -37 / 17], [-59 / 41, -61 / 41]]),
+        }
+        for key, val in expected_out_a.items():
+            assert out_a[key] == pytest.approx(val)
 
         # -- Permutation B (Reversed Lists) --
         out_b = linearize_system(
@@ -867,19 +945,25 @@ class TestLinearizeSystem(object):
             scaled=False,
         )
 
-        # Output vars ordering check
-        assert _component_index(out_b["output_vars"], m.y2[1]) == 0
+        # Variable ordering check
+        assert _component_index(out_b["input_vars"], m.u1[1]) == 1
+        assert _component_index(out_b["input_vars"], m.u2[1]) == 0
+        assert _component_index(out_b["disturbance_vars"], m.d1[1]) == 1
+        assert _component_index(out_b["disturbance_vars"], m.d2[1]) == 0
         assert _component_index(out_b["output_vars"], m.y1[1]) == 1
+        assert _component_index(out_b["output_vars"], m.y2[1]) == 0
 
         # Matrix columns mapped to: [u2, u1] and [d2, d1]
-        # B = [20, 10]
-        # Bd = [-40, -30]
-        # D (rows: y2, y1; cols: u2, u1) = [[0, 0], [3, 2]]
-        # Dd (rows: y2, y1; cols: d2, d1) = [[5, 4], [0, 0]]
-        assert array(out_b["B"]) == pytest.approx(array([[20.0, 10.0]]))
-        assert array(out_b["Bd"]) == pytest.approx(array([[-40.0, -30.0]]))
-        assert array(out_b["D"]) == pytest.approx(array([[0.0, 0.0], [3.0, 2.0]]))
-        assert array(out_b["Dd"]) == pytest.approx(array([[5.0, 4.0], [0.0, 0.0]]))
+        expected_out_b = {
+            "A": array([[-1.5]]),
+            "B": array([[3.5, 2.5]]),
+            "Bd": array([[-6.5, -5.5]]),
+            "C": array([[-43 / 41], [19 / 17]]),
+            "D": array([[53 / 41, 47 / 41], [29 / 17, 23 / 17]]),
+            "Dd": array([[-61 / 41, -59 / 41], [-37 / 17, -31 / 17]]),
+        }
+        for key, val in expected_out_b.items():
+            assert out_b[key] == pytest.approx(val)
 
     def test_linearize_system_representative_time(self):
         """
@@ -1437,6 +1521,382 @@ class TestLinearizeSystem(object):
             assert "nan values encountered when solving for reduced jacobian" in str(
                 exc_info.value
             )
+
+
+@pytest.mark.unit
+class TestLinearizeSystemDescriptorForm(object):
+    def test_output_fields_and_types(self):
+        """
+        Verify that linearize_system_descriptor_form returns a dictionary containing all
+        of the specified output keys, with correct types (including sparse formats)
+        and exact contents as defined by the function docstring.
+        """
+        m = ConcreteModel()
+        m.time = ContinuousSet(initialize=[0, 1])
+        m.x = Var(m.time, initialize=0.0)
+        m.xdot = DerivativeVar(m.x, wrt=m.time, initialize=0.0)
+        m.u = Var(m.time, initialize=1.0)
+        m.y = Var(m.time, initialize=0.0)
+
+        @m.Constraint(m.time)
+        def ode_eqn(b, t):
+            return b.xdot[t] == -b.x[t] + b.u[t]
+
+        @m.Constraint(m.time)
+        def out_eqn(b, t):
+            return b.y[t] == 2.0 * b.x[t]
+
+        fd_factory = TransformationFactory("dae.finite_difference")
+        fd_factory.apply_to(m, wrt=m.time, nfe=1, scheme="BACKWARD")
+
+        m.u.fix(1.0)
+        for t in m.time:
+            m.x[t].set_value(1.0)
+            m.xdot[t].set_value(0.0)
+            m.y[t].set_value(2.0)
+
+        t1 = 1
+        out = linearize_system_descriptor_form(
+            m,
+            m.time,
+            representative_time=t1,
+            input_vars=[m.u],
+            output_vars=[m.y],
+            scaled=False,
+        )
+
+        expected_keys = {
+            "scaled_jac",
+            "nlp",
+            "diff_vars",
+            "alg_vars",
+            "input_vars",
+            "disturbance_vars",
+            "output_vars",
+            "E",
+            "F",
+            "A",
+            "B",
+            "Bd",
+            "C",
+            "D",
+            "Dd",
+        }
+
+        # 1. Assert all keys exist in the returned dictionary
+        for key in expected_keys:
+            assert (
+                key in out
+            ), f"Expected key '{key}' was not found in the output dictionary."
+
+        # 2. Check types of the diagnostic keys
+        assert isinstance(out["scaled_jac"], csc_array)
+        assert isinstance(out["nlp"], PyomoNLP)
+
+        # 3. Check types and specific identity of the variable lists
+        assert isinstance(out["diff_vars"], list)
+        assert isinstance(out["alg_vars"], list)
+        assert isinstance(out["input_vars"], list)
+        assert isinstance(out["disturbance_vars"], list)
+        assert isinstance(out["output_vars"], list)
+
+        assert len(out["diff_vars"]) == 1
+        assert _component_index(out["diff_vars"], m.x[t1]) == 0
+
+        assert len(out["input_vars"]) == 1
+        assert _component_index(out["input_vars"], m.u[t1]) == 0
+
+        assert len(out["output_vars"]) == 1
+        assert _component_index(out["output_vars"], m.y[t1]) == 0
+
+        assert len(out["disturbance_vars"]) == 0
+
+        # 4. Check types and dimensions of the output descriptor matrices (must be sparse csc_array)
+        for matrix_key in ["E", "F", "A", "B", "Bd", "C", "D", "Dd"]:
+            assert isinstance(
+                out[matrix_key], csc_array
+            ), f"Matrix '{matrix_key}' is not of type csc_array."
+
+        assert out["E"].shape == (
+            2,
+            1,
+        )  # Two active constraints (ode, out), 1 derivative var
+        assert out["F"].shape == (2, 1)  # 1 algebraic state (y)
+        assert out["A"].shape == (2, 1)  # 1 differential state (x)
+        assert out["B"].shape == (2, 1)  # 1 input (u)
+        assert out["Bd"].shape == (2, 0)  # 0 disturbances
+
+        assert out["C"].shape == (1, 1)  # 1 output, 1 diff state
+        assert out["D"].shape == (1, 1)  # 1 output, 1 input
+        assert out["Dd"].shape == (1, 0)  # 1 output, 0 disturbances
+
+    def test_standard(self, scalar_dae_model):
+        """Test basic descriptor linearization, unscaled matrix evaluation."""
+        m = scalar_dae_model
+        m.u.fix(3.0)
+        for t in m.time:
+            m.x[t].set_value(2.0)
+            m.xdot[t].set_value(0.0)
+            m.y[t].set_value(10.0)
+
+        out = linearize_system_descriptor_form(
+            m,
+            m.time,
+            representative_time=1,
+            input_vars=[m.u],
+            output_vars=[m.y],
+            scaled=False,
+        )
+
+        # Equations:
+        # Eq0 (ode): xdot - (-3*x + 2*u) = 0  => xdot = -3*x + 2*u
+        # Eq1 (out): y = 5*x
+
+        # Match variables: xdot (deriv), y (alg state), x (diff state), u (input)
+        # E*xdot + F*z = A*x + B*u + Bd*d
+        assert out["E"].toarray() == pytest.approx(array([[1.0], [0.0]]))
+        assert out["F"].toarray() == pytest.approx(array([[0.0], [1.0]]))
+        assert out["A"].toarray() == pytest.approx(array([[-3.0], [5.0]]))
+        assert out["B"].toarray() == pytest.approx(array([[2.0], [0.0]]))
+
+        # Output equation: y = C*x + Cz*z + D*u + Dd*d
+        # since y is an algebraic variable output:
+        # C = [[0.0]], Cz = [[1.0]], D = [[0.0]]
+        assert out["C"].toarray() == pytest.approx(array([[0.0]]))
+        assert out["Cz"].toarray() == pytest.approx(array([[1.0]]))
+        assert out["D"].toarray() == pytest.approx(array([[0.0]]))
+
+    def test_with_disturbances(self, scalar_dae_with_disturbances):
+        """Test descriptor linearization with inputs, disturbances, and outputs."""
+        m = scalar_dae_with_disturbances
+
+        out = linearize_system_descriptor_form(
+            m,
+            m.time,
+            representative_time=1,
+            input_vars=[m.u],
+            disturbance_vars=[m.d],
+            output_vars=[m.y],
+            scaled=False,
+        )
+
+        expected_outputs = {
+            "E": array([[2.0], [0.0]]),
+            "F": array([[0.0], [11.0]]),
+            "A": array([[-3.0], [13.0]]),
+            "B": array([[5.0], [-17.0]]),
+            "Bd": array([[-7.0], [19.0]]),
+            "C": array([[0.0]]),
+            "Cz": array([[1.0]]),
+            "D": array([[0.0]]),
+            "Dd": array([[0.0]]),
+        }
+        for key, val in expected_outputs.items():
+            assert out[key].toarray() == pytest.approx(val)
+
+    def test_preserves_ordering(self, mimo_system):
+        """Verify that the input and disturbance ordering is preserved in column layouts."""
+        m = mimo_system
+
+        # -- Permutation A --
+        out_a = linearize_system_descriptor_form(
+            m,
+            m.time,
+            representative_time=1,
+            input_vars=[m.u1, m.u2],
+            disturbance_vars=[m.d1, m.d2],
+            output_vars=[m.y1, m.y2],
+            scaled=False,
+        )
+
+        # Variable ordering check
+        assert _component_index(out_a["input_vars"], m.u1[1]) == 0
+        assert _component_index(out_a["input_vars"], m.u2[1]) == 1
+        assert _component_index(out_a["disturbance_vars"], m.d1[1]) == 0
+        assert _component_index(out_a["disturbance_vars"], m.d2[1]) == 1
+        assert _component_index(out_a["output_vars"], m.y1[1]) == 0
+        assert _component_index(out_a["output_vars"], m.y2[1]) == 1
+
+        expected_out_a = {
+            "E": array([[2], [0], [0]]),
+            "F": array([[0, 0], [17, 0], [0, -41]]),
+            "A": array([[-3], [19], [43]]),
+            "B": array([[5, 7], [23, 29], [-47, -53]]),
+            "Bd": array([[-11, -13], [-31, -37], [59, 61]]),
+            "C": array([[0], [0]]),
+            "Cz": array([[1, 0], [0, 1]]),
+            "D": array([[0, 0], [0, 0]]),
+            "Dd": array([[0, 0], [0, 0]]),
+        }
+        for key, val in expected_out_a.items():
+            assert out_a[key].toarray() == pytest.approx(val)
+
+        # -- Permutation B (Reversed Lists) --
+        out_b = linearize_system_descriptor_form(
+            m,
+            m.time,
+            representative_time=1,
+            input_vars=[m.u2, m.u1],
+            disturbance_vars=[m.d2, m.d1],
+            output_vars=[m.y2, m.y1],
+            scaled=False,
+        )
+
+        # Variable ordering check
+        assert _component_index(out_b["input_vars"], m.u1[1]) == 1
+        assert _component_index(out_b["input_vars"], m.u2[1]) == 0
+        assert _component_index(out_b["disturbance_vars"], m.d1[1]) == 1
+        assert _component_index(out_b["disturbance_vars"], m.d2[1]) == 0
+        assert _component_index(out_b["output_vars"], m.y1[1]) == 1
+        assert _component_index(out_b["output_vars"], m.y2[1]) == 0
+
+        # Matrix columns mapped to: [u2, u1] and [d2, d1]
+        expected_out_b = {
+            "E": array([[2], [0], [0]]),
+            "F": array([[0, 0], [17, 0], [0, -41]]),
+            "A": array([[-3], [19], [43]]),
+            "B": array([[7, 5], [29, 23], [-53, -47]]),
+            "Bd": array([[-13, -11], [-37, -31], [61, 59]]),
+            "C": array([[0], [0]]),
+            "Cz": array([[0, 1], [1, 0]]),
+            "D": array([[0, 0], [0, 0]]),
+            "Dd": array([[0, 0], [0, 0]]),
+        }
+        for key, val in expected_out_b.items():
+            assert out_b[key].toarray() == pytest.approx(val)
+
+    def test_scaled_behavior(self, scalar_dae_with_disturbances):
+        """Verify scaling math inside descriptor form."""
+        m = scalar_dae_with_disturbances
+
+        m.scaling_factor = Suffix(direction=Suffix.EXPORT)
+        m.scaling_factor[m.x[1]] = 23.0
+        m.scaling_factor[m.xdot[1]] = 29.0
+        m.scaling_factor[m.u[1]] = 31.0
+        m.scaling_factor[m.d[1]] = 37.0
+        m.scaling_factor[m.y[1]] = 41.0
+
+        m.scaling_factor[m.ode_eqn[1]] = 43.0
+        m.scaling_factor[m.output_eqn[1]] = 47.0
+
+        # Case A: scaled=False
+        out_A = linearize_system_descriptor_form(
+            m,
+            m.time,
+            representative_time=1,
+            input_vars=[m.u],
+            disturbance_vars=[m.d],
+            output_vars=[m.x, m.y, m.u, m.d],
+            scaled=False,
+        )
+
+        expected_outputs_A = {
+            "E": array([[2.0], [0.0]]),
+            "F": array([[0.0], [11.0]]),
+            "A": array([[-3.0], [13.0]]),
+            "B": array([[5.0], [-17.0]]),
+            "Bd": array([[-7.0], [19.0]]),
+            "C": array([[1.0], [0.0], [0.0], [0.0]]),
+            "Cz": array([[0.0], [1.0], [0.0], [0.0]]),
+            "D": array([[0.0], [0.0], [1.0], [0.0]]),
+            "Dd": array([[0.0], [0.0], [0.0], [1.0]]),
+        }
+
+        for key, val in expected_outputs_A.items():
+            assert out_A[key].toarray() == pytest.approx(val)
+
+        # Case B: scaled=True (returns scaled systems matched to variables and constraints scaling)
+        out_B = linearize_system_descriptor_form(
+            m,
+            m.time,
+            representative_time=1,
+            input_vars=[m.u],
+            disturbance_vars=[m.d],
+            output_vars=[m.x, m.y, m.u, m.d],
+            scaled=True,
+        )
+
+        expected_outputs_B = {
+            "E": array([[2.0 * 43 / 29], [0.0]]),
+            "F": array([[0.0], [11.0 * 47 / 41]]),
+            "A": array([[-3.0 * 43 / 23], [13.0 * 47 / 23]]),
+            "B": array([[5.0 * 43 / 31], [-17.0 * 47 / 31]]),
+            "Bd": array([[-7.0 * 43 / 37], [19.0 * 47 / 37]]),
+            "C": array([[1.0], [0.0], [0.0], [0.0]]),
+            "Cz": array([[0.0], [1.0], [0.0], [0.0]]),
+            "D": array([[0.0], [0.0], [1.0], [0.0]]),
+            "Dd": array([[0.0], [0.0], [0.0], [1.0]]),
+        }
+
+        for key, val in expected_outputs_B.items():
+            assert out_B[key].toarray() == pytest.approx(val)
+
+    def test_linearize_system_descriptor_form_output_categories(self):
+        """
+        Verify that output matrices (C, D, Dd) are correctly constructed for
+        applicable categories (differential, algebraic, input, disturbance).
+        Derivative outputs must raise a NotImplementedError in descriptor-form.
+        """
+        m = ConcreteModel()
+        m.time = ContinuousSet(initialize=[0, 1])
+        m.x = Var(m.time, initialize=1.0)
+        m.xdot = DerivativeVar(m.x, wrt=m.time, initialize=0.0)
+        m.z = Var(m.time, initialize=0.0)
+        m.u = Var(m.time, initialize=1.0)
+        m.d = Var(m.time, initialize=1.0)
+
+        @m.Constraint(m.time)
+        def ode_eqn(b, t):
+            return b.xdot[t] == -3.0 * b.x[t] + 5.0 * b.u[t] - 2.0 * b.d[t]
+
+        @m.Constraint(m.time)
+        def alg_eqn(b, t):
+            return b.z[t] == 4.0 * b.x[t] + 6.0 * b.u[t] + 7.0 * b.d[t]
+
+        fd_factory = TransformationFactory("dae.finite_difference")
+        fd_factory.apply_to(m, wrt=m.time, nfe=1, scheme="BACKWARD")
+
+        m.u.fix(1.0)
+        m.d.fix(1.0)
+        for t in m.time:
+            m.x[t].set_value(1.0)
+            m.xdot[t].set_value(0.0)
+            m.z[t].set_value(17.0)
+
+        # 1. Successful run with differential, algebraic, input, and disturbance outputs
+        out = linearize_system_descriptor_form(
+            m,
+            m.time,
+            representative_time=1,
+            input_vars=[m.u],
+            disturbance_vars=[m.d],
+            output_vars=[m.x, m.z, m.u, m.d],
+            scaled=False,
+        )
+
+        assert len(out["output_vars"]) == 4
+        # C, Cz, D, Dd checks
+        # y = [x, z, u, d]^T
+        # C links to diff var x -> row 0
+        assert out["C"].toarray() == pytest.approx(array([[1.0], [0.0], [0.0], [0.0]]))
+        # Cz links to alg var z -> row 1
+        assert out["Cz"].toarray() == pytest.approx(array([[0.0], [1.0], [0.0], [0.0]]))
+        # D links to input u -> row 2
+        assert out["D"].toarray() == pytest.approx(array([[0.0], [0.0], [1.0], [0.0]]))
+        # Dd links to disturbance d -> row 3
+        assert out["Dd"].toarray() == pytest.approx(array([[0.0], [0.0], [0.0], [1.0]]))
+
+        # 2. Assert raising NotImplementedError if a derivative variable is passed as an output
+        with pytest.raises(NotImplementedError) as exc_info:
+            linearize_system_descriptor_form(
+                m,
+                m.time,
+                representative_time=1,
+                input_vars=[m.u],
+                output_vars=[m.xdot],
+                scaled=False,
+            )
+        assert "Cannot use derivative variables as outputs." in str(exc_info.value)
 
 
 @pytest.mark.unit
