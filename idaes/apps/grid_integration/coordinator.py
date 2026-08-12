@@ -666,7 +666,7 @@ class DoubleLoopCoordinator:
 
         gen_name = self.bidder.bidding_model_object.model_data.gen_name
 
-        # fecth the sced signals for the generation from sced instance
+        # fetch the sced signals for the generation from sced instance
         sced_dispatch = sced_instance.data["elements"]["generator"][gen_name]["pg"][
             "values"
         ]
