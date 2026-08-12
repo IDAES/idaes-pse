@@ -71,7 +71,7 @@ The surrogate models are typically a function of:
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, Bool
 
-# TODO: log is reauired for eval - need to work out how to make this explicit
+# TODO: log is required for eval - need to work out how to make this explicit
 # pylint: disable=W0611
 from pyomo.environ import (
     Var,

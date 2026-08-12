@@ -238,8 +238,8 @@ def add_unit_models(m):
     # Unit model for air preheater as three-stream heat exchanger
     # with heat loss to ambient
     # side_1: flue gas
-    # side_2: priamry air
-    # side_3: secondry air
+    # side_2: primary air
+    # side_3: secondary air
     fs.aAPH = HeatExchangerWith3Streams(
         dynamic=False,
         side_1_property_package=prop_gas,
