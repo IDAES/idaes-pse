@@ -10,6 +10,11 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
+"""
+This function contains functions relating to linear time-invariant (LTI) systems
+for dynamic systems. 
+"""
+
 import numpy as np
 from scipy.linalg import expm
 from scipy.sparse import coo_array, csc_array
