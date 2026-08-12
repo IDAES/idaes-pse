@@ -4,4 +4,4 @@
 .. toctree::
     :maxdepth: 1
 
-    linearization
+    linear_time_invariant

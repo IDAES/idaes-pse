@@ -386,7 +386,7 @@ def linearize_system(
 
     Note that the sets of input, disturbance, and output variables
     should be indexed only by time. This indexing can be achieved
-    by creating a Reference to a slice of a variable that is indexed
+    by creating a `Reference` to a slice of a variable that is indexed
     by multiple sets or is only indirectly indexed by time, e.g., the
     variable itself is a scalar but its parent block is indexed by time.
 
@@ -418,13 +418,13 @@ def linearize_system(
         dict: A dictionary containing the keys:
             * "scaled_jac" (`scipy.sparse.csc_array`): Jacobian of scaled
               system evaluated at the point of linearization
-            * "nlp" (`PyomoNLP`): NLP object used to evaluate scaled_jac
-            * "diff_vars (`list`): The list of differential `VarData` in the
+            * "nlp" (`PyomoNLP`): NLP object used to evaluate `scaled_jac`
+            * "diff_vars" (`list`): The list of differential `VarData` in the
               order they appear in the :math:`A` and :math:`C` matrices
             * "alg_vars" (`list`): The list of algebraic `VarData`
             * "input_vars" (`list`): The list of input `VarData` in the order
               they appear in the :math:`B` and :math:`D` matrices
-            * "disturbance_vars (`list`): The list of disturbance `VarData` in
+            * "disturbance_vars" (`list`): The list of disturbance `VarData` in
               the order they appear in the :math:`B_d` and :math:`D_d` matrices
             * "output_vars" (`list`): The list of output `VarData` in the order
               they appear in the :math:`C`, :math:`D`, and :math:`D_d` matrices
@@ -601,7 +601,7 @@ def linearize_system_descriptor_form(
 
     Note that descriptor form systems often do not separate the differential
     states :math:`x` from the algebraic states :math:`z` variables, but we
-    do so here to make the system more convenient to solve. The matrix [E, F]
+    do so here to make the system more convenient to solve. The matrix `[E, F]`
     must be square and full rank in order for the system to be well-defined.
 
     A descriptor form system may be preferable to an explicit state space
@@ -610,7 +610,7 @@ def linearize_system_descriptor_form(
 
     Note that the sets of input, disturbance, and output variables
     should be indexed only by time. This indexing can be achieved
-    by creating a Reference to a slice of a variable that is indexed
+    by creating a `Reference` to a slice of a variable that is indexed
     by multiple sets or is only indirectly indexed by time, e.g., the
     variable itself is a scalar but its parent block is indexed by time.
 
@@ -628,7 +628,7 @@ def linearize_system_descriptor_form(
             system matrices before returning.
         input_variables (list): List of input (:math:`u`) variables.
         disturbance_variables (list): List of disturbance (:math:`d`)
-        variables.
+            variables.
         output_variables (list): List of output (:math:`y`) variables.
         steady_state_derivative_tolerance (float): Tolerance used to
             test whether the time derivative variables are close
@@ -642,13 +642,13 @@ def linearize_system_descriptor_form(
         dict: A dictionary containing the keys:
             * "scaled_jac" (`scipy.sparse.csc_array`): Jacobian of scaled
               system evaluated at the point of linearization
-            * "nlp" (`PyomoNLP`): NLP object used to evaluate scaled_jac
-            * "diff_vars (`list`): The list of differential `VarData` in the
+            * "nlp" (`PyomoNLP`): NLP object used to evaluate `scaled_jac`
+            * "diff_vars" (`list`): The list of differential `VarData` in the
               order they appear in the :math:`A` and :math:`C` matrices
             * "alg_vars" (`list`): The list of algebraic `VarData`
             * "input_vars" (`list`): The list of input `VarData` in the order
               they appear in the :math:`B` and :math:`D` matrices
-            * "disturbance_vars (`list`): The list of disturbance `VarData` in
+            * "disturbance_vars" (`list`): The list of disturbance `VarData` in
               the order they appear in the :math:`B_d` and :math:`D_d` matrices
             * "output_vars" (`list`): The list of output `VarData` in the order
               they appear in the :math:`C`, :math:`D`, and :math:`D_d` matrices
