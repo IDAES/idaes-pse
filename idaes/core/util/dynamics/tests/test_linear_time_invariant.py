@@ -38,7 +38,7 @@ from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
 
 from idaes.core.util.constants import Constants
-from idaes.core.util.dynamics.linearization import (
+from idaes.core.util.dynamics.linear_time_invariant import (
     _unscale_matrix,
     _validate_vardata_collections,
     _validate_steady_state,
@@ -1521,7 +1521,7 @@ class TestLinearizeSystem(object):
 
         # Mock spsolve to raise an arbitrary unexpected exception
         with patch(
-            "idaes.core.util.dynamics.linearization.spsolve",
+            "idaes.core.util.dynamics.linear_time_invariant.spsolve",
             side_effect=KeyError("Unexpected solver error"),
         ):
             with pytest.raises(KeyError) as exc_info:
@@ -1541,7 +1541,7 @@ class TestLinearizeSystem(object):
         # Mock spsolve to return an array containing NaN values
         nan_array = array([[nan, 1.0]])
         with patch(
-            "idaes.core.util.dynamics.linearization.spsolve",
+            "idaes.core.util.dynamics.linear_time_invariant.spsolve",
             return_value=nan_array,
         ):
             with pytest.raises(RuntimeError) as exc_info:
