@@ -12,7 +12,7 @@
 #################################################################################
 """
 This function contains functions relating to linear time-invariant (LTI) systems
-for dynamic systems. 
+for use with dynamic models.
 """
 
 import numpy as np
