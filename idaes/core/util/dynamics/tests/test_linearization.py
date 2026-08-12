@@ -162,6 +162,9 @@ class TestUnscaleMatrix(object):
                 M_in = ty(M)
             out = _unscale_matrix(left_sfs, M_in, right_sfs)
             assert type(out) is ty
+            # Need to convert out to a dense type to index it
+            if hasattr(out, "toarray"):
+                out = out.toarray()
             for i in range(1):
                 for j in range(1):
                     assert out[i, j] == pytest.approx(right_sfs[j] / left_sfs[i])
@@ -839,7 +842,7 @@ class TestLinearizeSystem(object):
         assert out["Bd"].shape == (1, 0)
         assert out["Dd"].shape == (1, 0)
 
-    def test_linearize_system_with_disturbances(self, scalar_dae_with_disturbances):
+    def test_system_with_disturbances(self, scalar_dae_with_disturbances):
         """Test a system with inputs, disturbances, and outputs."""
         m = scalar_dae_with_disturbances
 
@@ -860,7 +863,7 @@ class TestLinearizeSystem(object):
         assert out["D"] == pytest.approx(array([[-17 / 11]]))
         assert out["Dd"] == pytest.approx(array([[19 / 11]]))
 
-    def test_linearize_system_nontrivial_mass_matrix(self, dae_nontrivial_mass_matrix):
+    def test_nontrivial_mass_matrix(self, dae_nontrivial_mass_matrix):
         """Test a coupled system where the derivatives are implicit (mass matrix M != I).
         2*x1dot + x2dot = -x1 + u  ==> eq1
         x1dot + 2*x2dot = -x2      ==> eq2
@@ -896,7 +899,7 @@ class TestLinearizeSystem(object):
         assert A_actual == pytest.approx(expected_A)
         assert B_actual == pytest.approx(expected_B)
 
-    def test_linearize_system_preserves_ordering(self, mimo_system):
+    def test_preserves_ordering(self, mimo_system):
         """
         Verify that the order of the inputs and disturbances provided to
         linearize_system is perfectly preserved in the shape and positioning
@@ -965,7 +968,7 @@ class TestLinearizeSystem(object):
         for key, val in expected_out_b.items():
             assert out_b[key] == pytest.approx(val)
 
-    def test_linearize_system_representative_time(self):
+    def test_representative_time(self):
         """
         Verify that the representative_time argument correctly dictates which
         time index is used to build the timestep problem, extract variables,
@@ -1038,7 +1041,7 @@ class TestLinearizeSystem(object):
         # Assert A matrix reflects p[2] = 5.0
         assert array(out_t2["A"]) == pytest.approx(array([[-5.0]]))
 
-    def test_linearize_system_implicit_representative_time(self):
+    def test_implicit_representative_time(self):
         """
         Verify that omitting representative_time uses the second index of the
         Time ContinuousSet (time.at(2)) automatically.
@@ -1066,7 +1069,7 @@ class TestLinearizeSystem(object):
         assert _component_index(out["output_vars"], m.x[10.0]) == 0
         assert array(out["A"]) == pytest.approx(array([[-2]]))
 
-    def test_linearize_system_scaled_behavior(self):
+    def test_scaled_behavior(self):
         """
         Verify that when scaled=True, variables are adjusted by their scaling factors,
         and when scaled=False, the returned matrices are correctly unscaled.
@@ -1149,7 +1152,7 @@ class TestLinearizeSystem(object):
         assert array(out_scaled["C"]) == pytest.approx(array([[3.2]]))
         assert array(out_scaled["D"]) == pytest.approx(array([[0.0]]))
 
-    def test_linearize_system_constraint_scaling_invariance(self):
+    def test_constraint_scaling_invariance(self):
         """
         Verify that constraint scaling factors DO NOT change the resulting unscaled
         state-space matrices (A, B, C, D).
@@ -1239,7 +1242,7 @@ class TestLinearizeSystem(object):
         assert array(out_scaled_constraints["C"]) == pytest.approx(array(out_base["C"]))
         assert array(out_scaled_constraints["D"]) == pytest.approx(array(out_base["D"]))
 
-    def test_linearize_system_output_categories(self):
+    def test_output_categories(self):
         """
         Verify that output matrices (C, D, Dd) are correctly constructed for
         each of the five possible mathematical variable categories:
@@ -1328,7 +1331,7 @@ class TestLinearizeSystem(object):
         assert array(out["D"])[4, :] == pytest.approx(array([0.0]))
         assert array(out["Dd"])[4, :] == pytest.approx(array([1.0]))
 
-    def test_linearize_system_output_categories_multivariable(self):
+    def test_output_categories_multivariable(self):
         """
         Verify that output matrices (C, D, Dd) are correctly constructed for
         each of the five possible mathematical variable categories when there are
@@ -1439,7 +1442,7 @@ class TestLinearizeSystem(object):
         assert array(out["D"])[4, :] == pytest.approx(array([0.0, 0.0]))
         assert array(out["Dd"])[4, :] == pytest.approx(array([1.0, 0.0]))
 
-    def test_linearize_system_with_sliced_references(self):
+    def test_system_with_sliced_references(self):
         """
         Verify that linearize_system works transparently when passed Reference slices
         to represent variables indexed by sets in addition to the time continuous set.
@@ -1471,7 +1474,7 @@ class TestLinearizeSystem(object):
         assert len(out["output_vars"]) == 1
         assert _component_index(out["output_vars"], m.x_spatial[1, "outlet"]) == 0
 
-    def test_linearized_system_rank_deficient_jacobian_exception(self):
+    def test_rank_deficient_jacobian_exception(self):
         m = ConcreteModel()
         _make_dae_pendulum(m, time_init=[0, 1], reduce_index=False)
 
@@ -1481,7 +1484,7 @@ class TestLinearizeSystem(object):
             exc_info.value
         )
 
-    def test_linearize_system_unexpected_spsolve_exception(self, scalar_dae_model):
+    def test_unexpected_spsolve_exception(self, scalar_dae_model):
         """Verify that unexpected exceptions raised by spsolve are re-raised."""
         m = scalar_dae_model
 
@@ -1500,7 +1503,7 @@ class TestLinearizeSystem(object):
                 )
             assert "Unexpected solver error" in str(exc_info.value)
 
-    def test_linearize_system_nan_values_in_spsolve_result(self, scalar_dae_model):
+    def test_nan_values_in_spsolve_result(self, scalar_dae_model):
         """Verify that returning nan values from spsolve triggers a modeling error."""
         m = scalar_dae_model
 

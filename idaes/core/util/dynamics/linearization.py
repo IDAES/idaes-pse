@@ -10,9 +10,9 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-from numpy import any, block, diag, isnan, zeros
+import numpy as np
 from scipy.linalg import expm
-from scipy.sparse import diags_array, coo_array, csc_array
+from scipy.sparse import coo_array, csc_array
 from scipy.sparse.linalg import spsolve
 
 from pyomo.environ import Constraint, value
@@ -42,10 +42,12 @@ def _unscale_matrix(left_sfs, M, right_sfs):
     M_type = type(M)
     if len(left_sfs) != M.shape[0] or len(right_sfs) != M.shape[1]:
         raise ValueError(
-            "The unscaling matrices do not have the correct shape " "to unscale M."
+            "The unscaling matrices do not have the correct shape to unscale M."
         )
     out = (1 / left_sfs)[:, None] * M * right_sfs[None, :]
-    if type(out) is not M_type:
+    # Scipy likes to change sparse matrix formats after multiplication/division,
+    # so make sure we return the same type as the one that was fed in.
+    if not isinstance(out, M_type):
         out = M_type(out)
 
     return out
@@ -105,7 +107,7 @@ def _validate_vardata_collections(vardata_lists, vardata_sets):
                 ]
                 raise ValueError(
                     f"The variable sets '{cat_a}' and '{cat_b}' are not "
-                    "disjoint. Shared variables: {intersection}"
+                    f"disjoint. Shared variables: {intersection}"
                 )
 
     # 3. Ensure input, disturbance, and output variables are in the total set
@@ -471,7 +473,7 @@ def linearize_system(
                 )
             else:
                 sys_raw = sys_raw.reshape((1, 1))
-    if any(isnan(sys_raw)):
+    if np.any(np.isnan(sys_raw)):
         # Should we also check for nans in the jacobian pre-solve?
         raise RuntimeError(
             "nan values encountered when solving for reduced jacobian. "
@@ -500,9 +502,9 @@ def linearize_system(
     out["B"] = AB_raw[:, nx : nx + nu]
     out["Bd"] = AB_raw[:, nx + nu : nx + nu + nd]
 
-    out["C"] = zeros((ny, nx))
-    out["D"] = zeros((ny, nu))
-    out["Dd"] = zeros((ny, nd))
+    out["C"] = np.zeros((ny, nx))
+    out["D"] = np.zeros((ny, nu))
+    out["Dd"] = np.zeros((ny, nd))
 
     inverse_maps = {
         "diff": ComponentMap(),
@@ -516,9 +518,7 @@ def linearize_system(
             if vardata in output_sets[key]:
                 cmap[vardata] = i
 
-    for Crow, output, out_idx in zip(
-        range(ny), vardata_lists["output"], raw_jac_indices["output"]
-    ):
+    for Crow, output in enumerate(vardata_lists["output"]):
         if output in output_sets["diff"]:
             # Because we've rearranged the rows/columns when creating
             # A, we need to find the *new* index corresponding to the
@@ -802,12 +802,12 @@ def c2d(sys: dict, dt: float):
     if "B" in sys:
         B = sys["B"]
     else:
-        B = zeros((A.shape[0], 0))
+        B = np.zeros((A.shape[0], 0))
 
     if "Bd" in sys:
         Bd = sys["Bd"]
     else:
-        Bd = zeros((A.shape[0], 0))
+        Bd = np.zeros((A.shape[0], 0))
 
     nx = A.shape[0]
     if B.shape[0] != nx:
@@ -817,7 +817,7 @@ def c2d(sys: dict, dt: float):
         raise ValueError(f"Bd matrix has {Bd.shape[0]} rows, but {nx} were expected.")
     nd = Bd.shape[1]
 
-    A_aug = block([[A, B, Bd], [zeros((nu + nd, nx + nu + nd))]])
+    A_aug = np.block([[A, B, Bd], [np.zeros((nu + nd, nx + nu + nd))]])
 
     A_tilde_aug = expm(A_aug * dt)
 
