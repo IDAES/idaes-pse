@@ -1450,29 +1450,60 @@ class TestLinearizeSystem(object):
         m = ConcreteModel()
         m.time = ContinuousSet(initialize=[0, 1])
         m.space = Set(initialize=["inlet", "outlet"])
-
-        # A state variable indexed by both time AND space
         m.x_spatial = Var(m.time, m.space, initialize=0)
+        m.u_spatial = Var(m.time, m.space, initialize=0)
+        m.d_spatial = Var(m.time, m.space, initialize=0)
         m.xdot_spatial = DerivativeVar(m.x_spatial, wrt=m.time, initialize=0)
 
         @m.Constraint(m.time, m.space)
         def ode_eqn(b, t, s):
-            # dx/dt = -2*x
-            return b.xdot_spatial[t, s] == -2.0 * b.x_spatial[t, s]
+            if s == "inlet":
+                return (
+                    b.xdot_spatial[t, s]
+                    == -2.0 * b.x_spatial[t, s]
+                    + 3 * b.u_spatial[t, s]
+                    - 5 * b.d_spatial[t, s]
+                )
+            else:
+                return (
+                    7 * b.xdot_spatial[t, s]
+                    == -11 * b.x_spatial[t, s]
+                    + 13 * b.u_spatial[t, s]
+                    - 17 * b.d_spatial[t, s]
+                )
 
         fd_factory = TransformationFactory("dae.finite_difference")
         fd_factory.apply_to(m, wrt=m.time, nfe=1, scheme="BACKWARD")
 
-        # Create Reference slices indexed only by time
         x_outlet_ref = Reference(m.x_spatial[:, "outlet"])
+        u_inlet_spatial = Reference(m.u_spatial[:, "inlet"])
+        u_outlet_spatial = Reference(m.u_spatial[:, "outlet"])
+        d_inlet_spatial = Reference(m.d_spatial[:, "inlet"])
+        d_outlet_spatial = Reference(m.d_spatial[:, "outlet"])
 
         out = linearize_system(
-            m, m.time, representative_time=1, output_vars=[x_outlet_ref], scaled=False
+            m,
+            m.time,
+            representative_time=1,
+            input_vars=[u_outlet_spatial, u_inlet_spatial],
+            disturbance_vars=[d_inlet_spatial, d_outlet_spatial],
+            output_vars=[x_outlet_ref],
+            scaled=False,
         )
-
-        assert len(out["diff_vars"]) == 2  # Spatial states at 'inlet' and 'outlet'
+        assert len(out["diff_vars"]) == 2
         assert len(out["output_vars"]) == 1
         assert _component_index(out["output_vars"], m.x_spatial[1, "outlet"]) == 0
+
+        expected_out = {
+            "A": array([[-2, 0], [0, -11 / 7]]),
+            "B": array([[0, 3], [13 / 7, 0]]),
+            "Bd": array([[-5, 0], [0, -17 / 7]]),
+            "C": array([[0, 1]]),
+            "D": zeros(shape=(1, 2)),
+            "Dd": zeros(shape=(1, 2)),
+        }
+        for key, val in expected_out.items():
+            assert out[key] == pytest.approx(val)
 
     def test_rank_deficient_jacobian_exception(self):
         m = ConcreteModel()
@@ -1697,6 +1728,39 @@ class TestLinearizeSystemDescriptorForm(object):
         for key, val in expected_outputs.items():
             assert out[key].toarray() == pytest.approx(val)
 
+    def test_nontrivial_mass_matrix(self, dae_nontrivial_mass_matrix):
+        """Test a coupled system where the derivatives are implicit (mass matrix M != I).
+        2*x1dot + x2dot = -x1 + u  ==> eq1
+        x1dot + 2*x2dot = -x2      ==> eq2
+
+        Rewritten explicitly (M_inv * rhs):
+        [x1dot] = [ 2  1 ]^-1 * [-x1 + u] = [ 2/3  -1/3 ] * [-x1 + u] = -2/3*x1 + 1/3*x2 + 2/3*u
+        [x2dot]   [ 1  2 ]      [-x2    ]   [-1/3   2/3 ]   [-x2    ]   1/3*x1 - 2/3*x2 - 1/3*u
+
+        Our A matrix should be:
+        A = [[ -2/3,  1/3 ],
+             [  1/3, -2/3 ]]
+        B = [[  2/3 ],
+             [ -1/3 ]]
+        """
+        m = dae_nontrivial_mass_matrix
+
+        out = linearize_system_descriptor_form(
+            m, m.time, representative_time=1, input_vars=[m.u], scaled=False
+        )
+        expected_out = {
+            "E": array([[2, 1], [1, 2]]),
+            "F": zeros(shape=(2, 0)),
+            "A": array([[-1, 0], [0, -1]]),
+            "B": array([[1], [0]]),
+            "C": zeros(shape=(0, 2)),
+            "Cz": zeros(shape=(0, 0)),
+            "D": zeros(shape=(0, 1)),
+            "Dd": zeros(shape=(0, 0)),
+        }
+        for key, val in expected_out.items():
+            assert out[key].toarray() == pytest.approx(val)
+
     def test_preserves_ordering(self, mimo_system):
         """Verify that the input and disturbance ordering is preserved in column layouts."""
         m = mimo_system
@@ -1834,7 +1898,7 @@ class TestLinearizeSystemDescriptorForm(object):
         for key, val in expected_outputs_B.items():
             assert out_B[key].toarray() == pytest.approx(val)
 
-    def test_linearize_system_descriptor_form_output_categories(self):
+    def test_output_categories(self):
         """
         Verify that output matrices (C, D, Dd) are correctly constructed for
         applicable categories (differential, algebraic, input, disturbance).
@@ -1900,6 +1964,168 @@ class TestLinearizeSystemDescriptorForm(object):
                 scaled=False,
             )
         assert "Cannot use derivative variables as outputs." in str(exc_info.value)
+
+    def test_representative_time(self):
+        """
+        Verify that the representative_time argument correctly dictates which
+        time index is used to build the timestep problem, extract variables,
+        and evaluate the linearized matrices.
+
+        We set up a system with a time-varying parameter (p) that changes over time:
+        dx/dt = -p[t]*x + u
+        At t=1, p[1] = 1.0  => dx/dt = -1.0*x + u  => A = [[-1.0]]
+        At t=2, p[2] = 5.0  => dx/dt = -5.0*x + u  => A = [[-5.0]]
+        """
+        m = ConcreteModel()
+        m.time = ContinuousSet(initialize=[0, 1, 2])
+        m.x = Var(m.time, initialize=1.0)
+        m.xdot = DerivativeVar(m.x, wrt=m.time, initialize=0.0)
+        m.u = Var(m.time, initialize=1.0)
+        m.p = Param(m.time, initialize={0: 1.0, 1: 1.0, 2: 5.0}, mutable=True)
+
+        @m.Constraint(m.time)
+        def ode_eqn(b, t):
+            return b.xdot[t] == -b.p[t] * b.x[t] + b.u[t]
+
+        fd_factory = TransformationFactory("dae.finite_difference")
+        fd_factory.apply_to(m, wrt=m.time, nfe=2, scheme="BACKWARD")
+
+        m.u.fix(1.0)
+
+        # Establish operating steady-state for t=1 (p=1.0, x=1.0, u=1.0)
+        m.x[1].set_value(1.0)
+        m.xdot[1].set_value(0.0)
+
+        # Establish operating steady-state for t=2 (p=5.0, x=0.2, u=1.0)
+        m.x[2].set_value(0.2)
+        m.xdot[2].set_value(0.0)
+
+        # --- Case A: representative_time = 1 ---
+        out_t1 = linearize_system_descriptor_form(
+            m,
+            m.time,
+            representative_time=1,
+            input_vars=[m.u],
+            output_vars=[m.x],
+            scaled=False,
+        )
+
+        # Assert correct variable slice is extracted (t = 1)
+        assert len(out_t1["diff_vars"]) == 1
+        assert _component_index(out_t1["diff_vars"], m.x[1]) == 0
+        assert _component_index(out_t1["input_vars"], m.u[1]) == 0
+        assert _component_index(out_t1["output_vars"], m.x[1]) == 0
+
+        # Assert A matrix reflects p[1] = 1.0
+        assert out_t1["A"].toarray() == pytest.approx(array([[-1.0]]))
+
+        # --- Case B: representative_time = 2 ---
+        out_t2 = linearize_system_descriptor_form(
+            m,
+            m.time,
+            representative_time=2,
+            input_vars=[m.u],
+            output_vars=[m.x],
+            scaled=False,
+        )
+
+        # Assert correct variable slice is extracted (t = 2)
+        assert len(out_t2["diff_vars"]) == 1
+        assert _component_index(out_t2["diff_vars"], m.x[2]) == 0
+        assert _component_index(out_t2["input_vars"], m.u[2]) == 0
+        assert _component_index(out_t2["output_vars"], m.x[2]) == 0
+
+        # Assert A matrix reflects p[2] = 5.0
+        assert out_t2["A"].toarray() == pytest.approx(array([[-5.0]]))
+
+    def test_implicit_representative_time(self):
+        """
+        Verify that omitting representative_time uses the second index of the
+        Time ContinuousSet (time.at(2)) automatically.
+        """
+        m = ConcreteModel()
+        m.time = ContinuousSet(initialize=[0.0, 10.0, 20.0])  # time.at(2) will be 10.0
+        m.x = Var(m.time, initialize=0)
+        m.xdot = DerivativeVar(m.x, wrt=m.time, initialize=0)
+        m.p = Param(m.time, initialize={0: -1, 10: -2, 20: -3})
+
+        @m.Constraint(m.time)
+        def ode_eqn(b, t):
+            return b.xdot[t] == b.p[t] * b.x[t]
+
+        fd_factory = TransformationFactory("dae.finite_difference")
+        fd_factory.apply_to(m, wrt=m.time, nfe=1, scheme="BACKWARD")
+
+        # Omit representative_time
+        out = linearize_system_descriptor_form(
+            m, m.time, input_vars=[], output_vars=[m.x], scaled=False
+        )
+
+        # Confirm variables and equations evaluated at t = 10.0
+        assert out["A"].toarray() == pytest.approx(array([[-2]]))
+
+    def test_system_with_sliced_references(self):
+        """Verify that descriptor-form linearization works with Reference slices."""
+        m = ConcreteModel()
+        m.time = ContinuousSet(initialize=[0, 1])
+        m.space = Set(initialize=["inlet", "outlet"])
+        m.x_spatial = Var(m.time, m.space, initialize=0)
+        m.u_spatial = Var(m.time, m.space, initialize=0)
+        m.d_spatial = Var(m.time, m.space, initialize=0)
+        m.xdot_spatial = DerivativeVar(m.x_spatial, wrt=m.time, initialize=0)
+
+        @m.Constraint(m.time, m.space)
+        def ode_eqn(b, t, s):
+            if s == "inlet":
+                return (
+                    b.xdot_spatial[t, s]
+                    == -2.0 * b.x_spatial[t, s]
+                    + 3 * b.u_spatial[t, s]
+                    - 5 * b.d_spatial[t, s]
+                )
+            else:
+                return (
+                    7 * b.xdot_spatial[t, s]
+                    == -11 * b.x_spatial[t, s]
+                    + 13 * b.u_spatial[t, s]
+                    - 17 * b.d_spatial[t, s]
+                )
+
+        fd_factory = TransformationFactory("dae.finite_difference")
+        fd_factory.apply_to(m, wrt=m.time, nfe=1, scheme="BACKWARD")
+
+        x_outlet_ref = Reference(m.x_spatial[:, "outlet"])
+        u_inlet_spatial = Reference(m.u_spatial[:, "inlet"])
+        u_outlet_spatial = Reference(m.u_spatial[:, "outlet"])
+        d_inlet_spatial = Reference(m.d_spatial[:, "inlet"])
+        d_outlet_spatial = Reference(m.d_spatial[:, "outlet"])
+
+        out = linearize_system_descriptor_form(
+            m,
+            m.time,
+            representative_time=1,
+            input_vars=[u_outlet_spatial, u_inlet_spatial],
+            disturbance_vars=[d_inlet_spatial, d_outlet_spatial],
+            output_vars=[x_outlet_ref],
+            scaled=False,
+        )
+        assert len(out["diff_vars"]) == 2
+        assert len(out["output_vars"]) == 1
+        assert _component_index(out["output_vars"], m.x_spatial[1, "outlet"]) == 0
+
+        expected_out = {
+            "E": array([[1, 0], [0, 7]]),
+            "F": zeros(shape=(2, 0)),
+            "A": array([[-2, 0], [0, -11]]),
+            "B": array([[0, 3], [13, 0]]),
+            "Bd": array([[-5, 0], [0, -17]]),
+            "C": array([[0, 1]]),
+            "Cz": zeros(shape=(1, 0)),
+            "D": zeros(shape=(1, 2)),
+            "Dd": zeros(shape=(1, 2)),
+        }
+        for key, val in expected_out.items():
+            assert out[key].toarray() == pytest.approx(val)
 
 
 @pytest.mark.unit
