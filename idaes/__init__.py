@@ -186,7 +186,7 @@ class ScalingFactorLogFilter(logging.Filter):
 
         1. Assigning scaling factors to Expressions
         2. Assigning scaling factors to fixed variables or deactivated
-        constraints.
+            constraints.
 
     The new scaling API addressed (1) by adding the scaling_hint suffix to
     contain scaling factors for Expressions, but (2) is always going to
