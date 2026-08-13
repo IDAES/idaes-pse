@@ -183,9 +183,11 @@ class ScalingFactorLogFilter(logging.Filter):
     Filter out Pyomo warning messages regarding scaling_factor suffixes
     containing members not exported during an .nl file write. These warnings
     are caused by two things:
-        1) Assigning scaling factors to Expressions
-        2) Assigning scaling factors to fixed variables or deactivated
+
+        1. Assigning scaling factors to Expressions
+        2. Assigning scaling factors to fixed variables or deactivated
         constraints.
+
     The new scaling API addressed (1) by adding the scaling_hint suffix to
     contain scaling factors for Expressions, but (2) is always going to
     happen because of the way variables are fixed and constraints are
