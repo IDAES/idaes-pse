@@ -33,6 +33,7 @@ from . import config
 __version__ = version("idaes-pse")
 
 
+# TODO Is this obsolete?
 def _handle_optional_compat_activation(
     env_var: str = "IDAES_ACTIVATE_V1_COMPAT",
 ):
@@ -173,3 +174,47 @@ class temporary_config_ctx(object):
         global cfg  # pylint: disable=global-statement
         cfg = self.orig_config
         reconfig()
+
+
+# This code to intercept Pyomo .nl writer warnings was written with
+# the assistance of Google Gemini 3.6
+class ScalingFactorLogFilter(logging.Filter):
+    """
+    Filter out Pyomo warning messages regarding scaling_factor suffixes
+    containing members not exported during an .nl file write. These warnings
+    are caused by two things:
+        1) Assigning scaling factors to Expressions
+        2) Assigning scaling factors to fixed variables or deactivated
+        constraints.
+    The new scaling API addressed (1) by adding the scaling_hint suffix to
+    contain scaling factors for Expressions, but (2) is always going to
+    happen because of the way variables are fixed and constraints are
+    deactivated during initialization.
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        """
+        Prevent log record creation/emission if it contains scaling factor
+        suffix warning text.
+        """
+        msg = record.getMessage()
+        if "scaling_factor" in msg and (
+            "not exported as part of the NL file" in msg
+            or "not Var, Constraint, Objective" in msg
+        ):
+            return False
+        return True
+
+
+# Attach directly to Pyomo's central pyomo_logger handlers
+try:
+    from pyomo.common.log import pyomo_logger
+
+    log_filter = ScalingFactorLogFilter()
+    pyomo_logger.addFilter(log_filter)
+
+    # Ensure handlers already attached to Pyomo's logger also catch it
+    for handler in pyomo_logger.handlers:
+        handler.addFilter(log_filter)
+except ImportError:
+    pass
