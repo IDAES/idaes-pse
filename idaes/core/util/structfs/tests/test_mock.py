@@ -13,10 +13,18 @@
 
 import pytest
 
-from idaes.core.util.structfs import FlowsheetRunner, _MockFlowsheetRunner, Steps, real_flowsheet_runner
+from idaes.core.util.structfs import (
+    FlowsheetRunner,
+    _MockFlowsheetRunner,
+    Steps,
+    real_flowsheet_runner,
+)
+
 
 @pytest.mark.unit
-@pytest.mark.parametrize("clazz,mock", [(_MockFlowsheetRunner, True), (FlowsheetRunner, False)])
+@pytest.mark.parametrize(
+    "clazz,mock", [(_MockFlowsheetRunner, True), (FlowsheetRunner, False)]
+)
 def test_flowsheet_runner(clazz, mock):
     if not mock and not real_flowsheet_runner:
         return  # do nothing
@@ -38,4 +46,3 @@ def test_flowsheet_runner(clazz, mock):
     # Call the decorated function and check that the mock method was called
     runner.run_steps()
     assert calls == ["a", "b"]
-    

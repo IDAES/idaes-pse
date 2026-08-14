@@ -12,7 +12,7 @@
 #################################################################################
 """
 Mock structured flowsheet.
-This is used in place of the real structured flowsheet when 
+This is used in place of the real structured flowsheet when
 the idaes_fi package is not installed.
 
 Usage::
@@ -34,32 +34,37 @@ In the case of the mock, it will run each step in the order defined in the file.
     def initialize(ctx):
         m = ctx.model
         # ..etc..
-    
+
     # ..etc..
 
 def main():
     FS.run_steps()
 ````
 """
+
 from unittest.mock import Mock
 
 __author__ = "Dan Gunter (LBNL)"
+
 
 class _MockFlowsheetRunner:
     def __init__(self, *args, **kwargs):
         self._args, self._kwargs = args, kwargs
         self.ctx = Mock()
         self._steps = []
-        
+
     def __getattr__(self, name):
         return Mock()
-        
+
     def step(self, *args, **kwargs):
         def decorator(func):
             self._steps.append(func)
+
             def wrapper(ctx=self.ctx):
                 func(ctx)
+
             return wrapper
+
         return decorator
 
     def label(self, *args, **kwargs):
@@ -69,9 +74,11 @@ class _MockFlowsheetRunner:
         for func in self._steps:
             func(self.ctx)
 
+
 try:
     from idaes_fi.structfs import FlowsheetRunner  # noqa: F401
     from idaes_fi.structfs.common import Steps  # noqa: F401
+
     real_flowsheet_runner = True
 except ImportError:
     FlowsheetRunner = _MockFlowsheetRunner
