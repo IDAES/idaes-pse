@@ -49,6 +49,7 @@ def test_scaler_object_mole_basis():
         pure_component="h2o", amount_basis=AmountBasis.MOLE
     )
 
+    # Test that scaler is set for indexed state block
     m.fs.sb = m.fs.prop_water.build_state_block([0])
 
     assert m.fs.sb[0].default_scaler is hstate.HelmholtzEoSScaler
@@ -102,26 +103,27 @@ def test_scaler_object_mass_basis():
         pure_component="h2o", amount_basis=AmountBasis.MASS
     )
 
-    m.fs.sb = m.fs.prop_water.build_state_block([0])
+    # Test that scaler is set for scalar state block
+    m.fs.sb = m.fs.prop_water.build_state_block()
 
-    assert m.fs.sb[0].default_scaler is hstate.HelmholtzEoSScaler
-    scaler_obj = m.fs.sb[0].default_scaler()
+    assert m.fs.sb.default_scaler is hstate.HelmholtzEoSScaler
+    scaler_obj = m.fs.sb.default_scaler()
 
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "This scaler requires the user to provide a default scaling factor for fs.sb[0].flow_mass, but no default scaling factor was set."
+            "This scaler requires the user to provide a default scaling factor for fs.sb.flow_mass, but no default scaling factor was set."
         ),
     ):
-        scaler_obj.scale_model(m.fs.sb[0])
+        scaler_obj.scale_model(m.fs.sb)
 
     scaler_obj.default_scaling_factors["flow_mass"] = 1 / 137
-    scaler_obj.scale_model(m.fs.sb[0])
+    scaler_obj.scale_model(m.fs.sb)
 
     from idaes.core.scaling import report_scaling_factors
 
     report_scaling_factors(m.fs.sb)
-    sb = m.fs.sb[0]
+    sb = m.fs.sb
     assert len(sb.scaling_factor) == 3
 
     # Variables

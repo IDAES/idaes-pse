@@ -80,7 +80,7 @@ assuming that the installation was done using one of the methods described earli
 
         idaes --version
 
-3. Run the ``idaes get-extension`` command to install compiled binaries compatible with the newly upgraded IDAES version. The ``--extra petsc`` argument installs the optional PETSc solver. These binaries include solvers and function libraries.  See :ref:`Binary Packages <tutorials/getting_started/binaries:Binary Packages>` for more details.::
+3. Run the ``idaes get-extensions`` command to install compiled binaries compatible with the newly upgraded IDAES version. The ``--extra petsc`` argument installs the optional PETSc solver. These binaries include solvers and function libraries.  See :ref:`Binary Packages <tutorials/getting_started/binaries:Binary Packages>` for more details.::
 
     idaes get-extensions --extra petsc
 

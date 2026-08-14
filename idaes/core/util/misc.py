@@ -16,7 +16,6 @@ This module contains miscellaneous utility functions for use in IDAES models.
 """
 
 from enum import Enum
-import sys
 
 import pyomo.environ as pyo
 from pyomo.common.config import ConfigBlock
@@ -235,12 +234,34 @@ def print_compact_form(expr, stream=None):
     Returns:
         None
     """
-    if stream is None:
-        stream = sys.stdout
 
     if hasattr(expr, "expr"):
         # We have a Constraint or Expression
         # We want to print the expression, not the object name
         expr = expr.expr
 
-    stream.write(compact_expression_to_string(expr))
+    if stream is None:
+        print(compact_expression_to_string(expr))
+    else:
+        stream.write(compact_expression_to_string(expr))
+
+
+# Credit to Florian Brucker on Stack Overflow for this implementation
+# https://stackoverflow.com/a/50992575
+def make_ordinal(n: int):
+    """
+    Convert an integer into its ordinal representation.
+    For example, it turns "1" into "1st, "3" into "3rd",
+    and "62" into "62nd".
+
+    Args:
+        n: integer from which to form an ordinal
+
+    Returns:
+        ord: string representation of ordinal
+    """
+    if 11 <= (n % 100) <= 13:
+        suffix = "th"
+    else:
+        suffix = ["th", "st", "nd", "rd", "th"][min(n % 10, 4)]
+    return str(n) + suffix

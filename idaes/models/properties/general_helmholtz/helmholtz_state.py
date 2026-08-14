@@ -133,7 +133,7 @@ class HelmholtzEoSScaler(CustomScalerBase):
             )
         self.scale_variable_by_default(model.flow_vol, overwrite=overwrite)
         if self.get_scaling_factor(model.flow_vol) is None:
-            nom_flow_mass = self.get_expression_nominal_value(model.flow_mass)
+            nom_flow_mass = abs(self.get_expression_nominal_value(model.flow_mass))
             # Geometric mean of the mass density of steam at 100 C and 1 MPa and liquid water
             nom_dens_mass = pyo.sqrt(1000 * 5)
             self.set_component_scaling_factor(

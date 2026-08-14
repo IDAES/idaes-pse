@@ -404,12 +404,13 @@ class Test1PhaseDefinedStateTrueWithBounds(object):
         scaler_obj = blk.default_scaler()
         scaler_obj.default_scaling_factors["flow_mol_phase"] = 0.01
         scaler_obj.default_scaling_factors["enth_mol_phase"] = 1e-4
+        scaler_obj.default_scaling_factors["dens_mol_phase"] = 137
 
         with caplog.at_level(idaeslog.WARNING):
             scaler_obj.scale_model(blk)
         assert len(caplog.text) == 0
 
-        assert len(blk.scaling_factor) == 17
+        assert len(blk.scaling_factor) == 18
         assert len(blk.scaling_hint) == 6
 
         # Variables
@@ -427,6 +428,8 @@ class Test1PhaseDefinedStateTrueWithBounds(object):
 
         assert blk.scaling_factor[blk.pressure] == 1e-5
         assert blk.scaling_factor[blk.temperature] == 1 / 300
+
+        assert blk.scaling_factor[blk.dens_mol_phase["p1"]] == 137
 
         # Constraints
         assert blk.scaling_factor[blk.total_flow_balance] == 1e-2
@@ -1453,11 +1456,13 @@ class TestCommon(object):
         scaler = blk.default_scaler()
         scaler.default_scaling_factors["flow_mol_phase"] = 1 / 100
         scaler.default_scaling_factors["enth_mol_phase"] = 1e-4
+        scaler.default_scaling_factors["dens_mol_phase"] = 137
+
         with caplog.at_level(idaeslog.WARNING):
             scaler.scale_model(blk)
         assert len(caplog.text) == 0
 
-        assert len(blk.scaling_factor) == 25
+        assert len(blk.scaling_factor) == 27
         assert len(blk.scaling_hint) == 9
 
         # Variables
@@ -1491,6 +1496,9 @@ class TestCommon(object):
 
         assert blk.scaling_factor[blk.phase_fraction_constraint["a"]] == 1e-2
         assert blk.scaling_factor[blk.phase_fraction_constraint["b"]] == 1e-2
+
+        assert blk.scaling_factor[blk.dens_mol_phase["a"]] == 137
+        assert blk.scaling_factor[blk.dens_mol_phase["b"]] == 137
 
         # Expressions
         assert blk.scaling_hint[blk.flow_mol_phase_comp["a", "c1"]] == 1e-1

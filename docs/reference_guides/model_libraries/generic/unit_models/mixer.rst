@@ -26,7 +26,7 @@ Mixer units have the following variables (:math:`i` indicates index by inlet):
 Variable Name                Symbol                Notes
 ============================ ===================== ===========================================================================
 phase_equilibrium_generation :math:`X_{eq, t, r}`  Only if has_phase_equilibrium = True, Generation term for phase equilibrium
-minimum_pressure             :math:`P_{min, t, i}` Only if momentum_mixing_type = MomemntumMixingType.minimize
+minimum_pressure             :math:`P_{min, t, i}` Only if momentum_mixing_type = MomentumMixingType.minimize
 ============================ ===================== ===========================================================================
 
 Parameters
@@ -37,7 +37,7 @@ Mixer units have the following parameters:
 ============= ================ =====================================================================================
 Variable Name Symbol           Notes
 ============= ================ =====================================================================================
-eps_pressure  :math:`\epsilon` Only if momentum_mixing_type = MomemntumMixingType.minimize, smooth minimum parameter
+eps_pressure  :math:`\epsilon` Only if momentum_mixing_type = MomentumMixingType.minimize, smooth minimum parameter
 ============= ================ =====================================================================================
 
 Constraints
