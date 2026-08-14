@@ -226,21 +226,24 @@ class QGESSCostingData(FlowsheetCostingBlockData):
     #     9. Sensors & Controls accounts
     #     10. University of Kentucky Fire Clay Seam (Hazard No. 4) Rejects
 
+    # location domain validator
+    def location_validator(v):
+        """
+        Validate location argument.
+        """
+        if isinstance(v, list) and all(isinstance(i, str) for i in v):
+            return ListOf(str)(v)
+        raise ValueError(
+            "Argument 'location' must be a list of strings in form ['country', 'city/region', 'val'] "
+            "where 'val' can be 'min', 'max', or 'average'. Must define `country` and `city`. If `val` "
+            "is not defined, the default value is `average`."
+        )
+
     CONFIG.declare(
         "location",
         ConfigValue(
             default=["United States", "Washington DC / Northeast", "average"],
-            domain=lambda v: (
-                ListOf(str)(v)
-                if (isinstance(v, list) and all(isinstance(i, str) for i in v))
-                else (_ for _ in ()).throw(
-                    ValueError(
-                        "Argument 'location' must be a list of strings in form ['country', 'city/region', 'val'] "
-                        "where 'val' can be 'min', 'max', or 'average'. Must define `country` and `city`. If `val` "
-                        "is not defined, the default value is `average`."
-                    )
-                )
-            ),
+            domain=location_validator,
             description="Basis location for costing. Must be a supported list of three strings passed as [country, city, value];"
             "see the IDAES 'location_factors.json' dictionary for a list of supported countries and cities. The entry 'value' "
             "defaults to 'average' but can be specified as 'min' or 'max' as well to retrieve the corresponding data entry. For "
