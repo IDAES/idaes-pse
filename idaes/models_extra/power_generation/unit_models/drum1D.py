@@ -498,7 +498,6 @@ discretizing length domain (default=3)""",
 
         # Define the continuous domains for model
         self.dimensionless_radial_domain = ContinuousSet(bounds=(0, 1))
-        # self.radial_domain = ContinuousSet(bounds=(self.drum_ri, self.drum_ro))
 
         @self.Expression(self.dimensionless_radial_domain)
         def radial_coordinate(b, r):
