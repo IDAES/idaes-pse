@@ -517,6 +517,12 @@ discretizing length domain (default=3)""",
             self.dTdt = DerivativeVar(
                 self.drum_wall_temperature, wrt=self.flowsheet().time
             )
+        else:
+
+            @self.Expression(self.flowsheet().time, self.dimensionless_radial_domain)
+            def dTdt(b, t, r):
+                return 0
+
         self.dTdr_reduced = DerivativeVar(
             self.drum_wall_temperature, wrt=self.dimensionless_radial_domain
         )
@@ -649,22 +655,11 @@ discretizing length domain (default=3)""",
                 or r == b.dimensionless_radial_domain.last()
             ):
                 return Constraint.Skip
-            if self.config.dynamic is True:
-                return (
-                    b.dTdt[t, r]
-                    == b.diff_therm_metal * b.d2Tdr2[t, r]
-                    + b.diff_therm_metal
-                    * (1 / self.radial_coordiante[r])
-                    * b.dTdr[t, r]
-                )
-            else:
-                return (
-                    0
-                    == b.diff_therm_metal * b.d2Tdr2[t, r]
-                    + b.diff_therm_metal
-                    * (1 / self.radial_coordinate[r])
-                    * b.dTdr[t, r]
-                )
+            return (
+                b.dTdt[t, r]
+                == b.diff_therm_metal * b.d2Tdr2[t, r]
+                + b.diff_therm_metal * (1 / self.radial_coordinate[r]) * b.dTdr[t, r]
+            )
 
         @self.Constraint(self.flowsheet().time, doc="Inner Wall Boundary")
         def inner_wall_bc_eqn(b, t):
@@ -700,13 +695,10 @@ discretizing length domain (default=3)""",
             # Dimensionful equivalents
             R1 = b.radial_coordinate[r1]
             R2 = b.radial_coordinate[r2]
-            if self.config.dynamic is True:
-                dTdt = b.dTdt[t, R1]
-            else:
-                dTdt = 0
-            return dTdt == 4 * b.diff_therm_metal * (R1 + R2) / (R2 - R1) ** 2 / (
-                3 * R1 + R2
-            ) * (
+
+            return b.dTdt[t, r1] == 4 * b.diff_therm_metal * (R1 + R2) / (
+                R2 - R1
+            ) ** 2 / (3 * R1 + R2) * (
                 b.drum_wall_temperature[t, r2] - b.drum_wall_temperature[t, r1]
             ) + 8 * b.diff_therm_metal / b.therm_cond_metal * b.heat_transfer_in[
                 t
@@ -729,13 +721,10 @@ discretizing length domain (default=3)""",
             # Dimensionful equivalents
             Rf = b.radial_coordinate[rf]
             Rfm1 = b.radial_coordinate[rfm1]
-            if self.config.dynamic is True:
-                dTdt = b.dTdt[t, rf]
-            else:
-                dTdt = 0
-            return dTdt == 4 * b.diff_therm_metal * (Rf + Rfm1) / (Rf - Rfm1) ** 2 / (
-                3 * Rf + Rfm1
-            ) * (
+
+            return b.dTdt[t, rf] == 4 * b.diff_therm_metal * (Rf + Rfm1) / (
+                Rf - Rfm1
+            ) ** 2 / (3 * Rf + Rfm1) * (
                 b.drum_wall_temperature[t, rfm1] - b.drum_wall_temperature[t, rf]
             ) + 8 * b.diff_therm_metal / b.therm_cond_metal * b.heat_transfer_out[
                 t
