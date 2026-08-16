@@ -112,11 +112,10 @@ from idaes.core.util.exceptions import InitializationError
 import hda_ideal_VLE as thermo_props
 import hda_reaction as reaction_props
 
-from idaes.core.util.structfs import load_flowsheet_runner
+from idaes.core.util.structfs import load_flowsheet_runner, Steps
 
 def main(**load_kw):
-    FlowsheetRunner, Steps = load_flowsheet_runner(**load_kw)
-    FS = FlowsheetRunner()
+    FS = load_flowsheet_runner(**load_kw)()
 
     @FS.step(Steps.build)
     def build_model(ctx):
