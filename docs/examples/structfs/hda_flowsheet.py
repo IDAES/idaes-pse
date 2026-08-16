@@ -114,6 +114,7 @@ import hda_reaction as reaction_props
 
 from idaes.core.util.structfs import load_flowsheet_runner, Steps
 
+
 def main(**load_kw):
     FS = load_flowsheet_runner(**load_kw)()
 
@@ -127,9 +128,7 @@ def main(**load_kw):
         add_expr(m)
         ctx.model = m
 
-
     # We now need to add the property packages to the flowsheet. Unlike Module 1, where we only had a thermo property package, for this flowsheet we will also need to add a reaction property package.
-
 
     @FS.label(Steps.build, "add_props")
     def add_property_packages(m):
@@ -137,7 +136,6 @@ def main(**load_kw):
         m.fs.reaction_params = reaction_props.HDAReactionParameterBlock(
             property_package=m.fs.thermo_params
         )
-
 
     @FS.label(Steps.build, "add_units")
     def add_units(m):
@@ -190,7 +188,6 @@ def main(**load_kw):
             has_pressure_change=True,
         )
 
-
     @FS.label(Steps.build, "create_arcs")
     def connect_units(m):
         """Connect Unit Models using Arcs"""
@@ -204,7 +201,6 @@ def main(**load_kw):
 
         TransformationFactory("network.expand_arcs").apply_to(m)
 
-
     @FS.label(Steps.build, "add_expressions")
     def add_expr(m):
         """Add expressions to compute purity and operating costs"""
@@ -217,7 +213,8 @@ def main(**load_kw):
             )
         )
         m.fs.cooling_cost = Expression(
-            expr=0.212e-7 * (-m.fs.F101.heat_duty[0]) + 0.212e-7 * (-m.fs.R101.heat_duty[0])
+            expr=0.212e-7 * (-m.fs.F101.heat_duty[0])
+            + 0.212e-7 * (-m.fs.R101.heat_duty[0])
         )
         m.fs.heating_cost = Expression(
             expr=2.2e-7 * m.fs.H101.heat_duty[0] + 1.9e-7 * m.fs.F102.heat_duty[0]
@@ -225,7 +222,6 @@ def main(**load_kw):
         m.fs.operating_cost = Expression(
             expr=(3600 * 24 * 365 * (m.fs.heating_cost + m.fs.cooling_cost))
         )
-
 
     @FS.step(Steps.set_operating_conditions)
     def set_op_cond(ctx):
@@ -280,7 +276,6 @@ def main(**load_kw):
         m.fs.S101.split_fraction[0, "purge"].fix(0.2)
         m.fs.C101.outlet.pressure.fix(350000)
 
-
     @FS.step(Steps.initialize)
     def initialization(ctx):
         m = ctx.model
@@ -322,18 +317,15 @@ def main(**load_kw):
 
         seq.run(m, init_function)
 
-
     @FS.step(Steps.set_solver)
     def set_solver(ctx):
         ctx.solver = SolverFactory("ipopt")
-
 
     @FS.step(Steps.solve_initial)
     def solve(ctx):
         """Perform the initial model solve."""
         ctx["status"] = results = ctx.solver.solve(ctx.model, tee=ctx["tee"])
         assert results.solver.termination_condition == TerminationCondition.optimal
-
 
     @FS.step(Steps.solve_optimization)
     def solve_opt(ctx):
@@ -381,7 +373,12 @@ if __name__ == "__main__":
     import argparse
 
     prs = argparse.ArgumentParser()
-    prs.add_argument("-m", "--mock", action="store_true", help="Force use of mock FlowsheetRunner (even if idaes_fi is available)")
+    prs.add_argument(
+        "-m",
+        "--mock",
+        action="store_true",
+        help="Force use of mock FlowsheetRunner (even if idaes_fi is available)",
+    )
     args = prs.parse_args()
 
     main(force_mock=args.mock)
