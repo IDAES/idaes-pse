@@ -11,9 +11,8 @@
 # for full copyright and license information.
 #################################################################################
 """
-Mock structured flowsheet.
-This is used in place of the real structured flowsheet when
-the idaes_fi package is not installed.
+Mock structured flowsheet. This is used in place of the 'real' structured flowsheet
+when the `idaes_fi` package is not installed.
 
 Usage::
 
@@ -38,8 +37,8 @@ use `run_steps()` to run the flowsheet programmatically::
 
     # ..etc..
 
-def main():
-    FS.run_steps()
+    def main():
+        FS.run_steps()
 
 The rules for order of running are the same as in the library:
 
