@@ -13,25 +13,19 @@
 
 import pytest
 
-from idaes.core.util.structfs import (
-    FlowsheetRunner,
-    _MockFlowsheetRunner,
-    Steps,
-    real_flowsheet_runner,
-)
+from idaes.core.util.structfs import load_flowsheet_runner, Steps
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize(
-    "clazz,mock", [(_MockFlowsheetRunner, True), (FlowsheetRunner, False)]
-)
-def test_flowsheet_runner(clazz, mock):
-    if not mock and not real_flowsheet_runner:
-        return  # do nothing
+@pytest.mark.parametrize("mock", [True, False])
+def test_flowsheet_runner(mock):
+    FlowsheetRunner = load_flowsheet_runner(force_mock=mock)
+    if not mock and hasattr(FlowsheetRunner, "mock"):
+        return  # do nothing; real lib not available
 
     print(f"\n** test {('real', 'mock')[mock]} flowsheet runner **")
 
-    runner = clazz()
+    runner = FlowsheetRunner()
     calls = []
 
     @runner.step(Steps.build)

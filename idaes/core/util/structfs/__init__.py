@@ -17,11 +17,13 @@ the idaes_fi package is not installed.
 
 Usage::
 
-    from idaes.core.util.structfs import FlowsheetRunner, Steps
+    from idaes.core.util.structfs import load_structfs
+
+    FlowsheetRunner, Steps = load_structfs()
 
 Regardless of whether the `FlowsheetRunner` is real or mocked, you can
 use `run_steps()` to run the flowsheet programmatically.
-In the case of the mock, it will run each step in the order defined in the file.
+In the case of the mock, it will run each step in order.
 
     FS = FlowsheetRunner()
 
@@ -42,23 +44,57 @@ def main():
 ````
 """
 
+from typing import Type
+from collections.abc import Sequence
 from unittest.mock import Mock
 
 __author__ = "Dan Gunter (LBNL)"
 
 
+def load_flowsheet_runner(force_mock: bool = False) -> Type:
+    """Load real or mock FlowsheetRunner.
+
+    Args:
+        force_mock: If True, return the mocked, do-nothing-different, wrapper
+                    class even if the `idaes_fi` package is available.
+
+    Returns:
+        If the `idaes_fi` (flowsheet inspector) package is available, return the
+        FlowsheetRunner class from that package. Otherwise, return a mock
+        FlowsheetRunner class that will accept the same API but not do anything
+        except call the wrapped functions when `run_steps()` is invoked (i.e., it will
+        not provide information for the Flowsheet Inspector UI).
+    """
+    if force_mock:
+        clazz = _MockFlowsheetRunner
+    else:
+        try:
+            from idaes_fi.structfs import FlowsheetRunner  # noqa: F401
+
+            clazz = FlowsheetRunner
+        except ImportError:
+            clazz = _MockFlowsheetRunner
+    return clazz
+
+
+# ----- end of public interface -----#
+
+
 class _MockFlowsheetRunner:
+
+    mock = True
+
     def __init__(self, *args, **kwargs):
-        self._args, self._kwargs = args, kwargs
+        self._step_names = kwargs.get("steps", None)
         self.ctx = Mock()
-        self._steps = []
+        self._steps = {}
 
     def __getattr__(self, name):
         return Mock()
 
-    def step(self, *args, **kwargs):
+    def step(self, name: str, *args, **kwargs):
         def decorator(func):
-            self._steps.append(func)
+            self._steps[name] = func
 
             def wrapper(ctx=self.ctx):
                 func(ctx)
@@ -68,19 +104,57 @@ class _MockFlowsheetRunner:
         return decorator
 
     def label(self, *args, **kwargs):
-        pass
+        def decorator(func):
+            def wrapper(ctx=self.ctx):
+                func(ctx)
+
+            return wrapper
+
+        return decorator
 
     def run_steps(self, *args, **kwargs):
-        for func in self._steps:
-            func(self.ctx)
+        if self._step_names is None:
+            for name in _SimpleSteps.index:
+                (func := self._step_names.get(name, None)) and func(self.ctx)
+        elif self._step_names:
+            for name in self._step_names:
+                (func := self._step_names.get(name, None)) and func(self.ctx)
+        else:  # dynamic case
+            for func in self._steps.values():
+                func(self.ctx)
 
 
-try:
-    from idaes_fi.structfs import FlowsheetRunner  # noqa: F401
-    from idaes_fi.structfs.common import Steps  # noqa: F401
+class Steps:
+    """Names of steps so that editor autocomplete, etc., will help
+    to avoid typos.
+    """
 
-    real_flowsheet_runner = True
-except ImportError:
-    FlowsheetRunner = _MockFlowsheetRunner
-    Steps = Mock()
-    real_flowsheet_runner = False
+    build = "build"
+    set_solver = "set_solver"
+    initialize = "initialize"
+    set_operating_conditions = "set_operating_conditions"
+    set_scaling = "set_scaling"
+    solve_initial = "solve_initial"
+    set_autoscaling = "set_autoscaling"
+    add_costing = "add_costing"
+    initialize_costing = "initialize_costing"
+    setup_optimization = "setup_optimization"
+    solve_optimization = "solve_optimization"
+
+    index = (
+        build,
+        set_solver,
+        initialize,
+        set_operating_conditions,
+        set_scaling,
+        solve_initial,
+        set_autoscaling,
+        add_costing,
+        initialize_costing,
+        setup_optimization,
+        solve_optimization,
+    )
+
+    @classmethod
+    def __len__(cls):
+        return len(cls.index)
