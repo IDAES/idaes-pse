@@ -86,6 +86,12 @@ class _MockFlowsheetRunner:
 
     def __init__(self, *args, **kwargs):
         self._step_names = kwargs.get("steps", None)
+        if self._step_names is None:
+            # use pre-defined steps by default
+            self._step_names = Steps.index
+        elif not self._step_names:
+             # normalize empty to tuple, meaning dynamic
+            self._step_names = ()
         self.ctx = Mock()
         self._steps = {}
 
@@ -94,6 +100,9 @@ class _MockFlowsheetRunner:
 
     def step(self, name: str, *args, **kwargs):
         def decorator(func):
+            if self._step_names != () and name not in self._step_names:
+                steppenlist = ", ".join(self._step_names)
+                raise KeyError(f"Unknown step: '{name}' not in: {steppenlist}")
             self._steps[name] = func
 
             def wrapper(ctx=self.ctx):
@@ -114,11 +123,11 @@ class _MockFlowsheetRunner:
 
     def run_steps(self, *args, **kwargs):
         if self._step_names is None:
-            for name in _SimpleSteps.index:
-                (func := self._step_names.get(name, None)) and func(self.ctx)
+            for name in Steps.index:
+                (func := self._steps.get(name, None)) and func(self.ctx)
         elif self._step_names:
             for name in self._step_names:
-                (func := self._step_names.get(name, None)) and func(self.ctx)
+                (func := self._steps.get(name, None)) and func(self.ctx)
         else:  # dynamic case
             for func in self._steps.values():
                 func(self.ctx)

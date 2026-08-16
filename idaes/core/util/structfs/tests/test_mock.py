@@ -40,3 +40,108 @@ def test_flowsheet_runner(mock):
     # Call the decorated function and check that the mock method was called
     runner.run_steps()
     assert calls == ["a", "b"]
+
+@pytest.mark.unit
+def test_step_order_user():
+    rn = load_flowsheet_runner(force_mock=True)(steps=("a", "b", "c"))
+    calls = []
+
+    @rn.step("a")
+    def step_a(ctx):
+        calls.append("a")
+
+    @rn.step("b")
+    def step_b(ctx):
+        calls.append("b")
+
+    @rn.step("c")
+    def step_c(ctx):
+        calls.append("c")
+
+    rn.run_steps(save_report=False)
+    assert calls == ["a", "b", "c"]
+
+
+@pytest.mark.unit
+def test_step_order_default():
+    rn = load_flowsheet_runner(force_mock=True)()
+    calls = []
+
+    @rn.step(Steps.initialize)
+    def step_b(ctx):
+        calls.append("b")
+
+    @rn.step(Steps.solve_initial)
+    def step_c(ctx):
+        calls.append("c")
+
+    @rn.step(Steps.build)
+    def step_a(ctx):
+        calls.append("a")
+
+    rn.run_steps(save_report=False)
+    assert calls == ["a", "b", "c"]
+
+
+@pytest.mark.unit
+def test_step_order_dynamic():
+    rn = load_flowsheet_runner(force_mock=True)(steps=())
+    calls = []
+
+    @rn.step(Steps.initialize)
+    def step_b(ctx):
+        calls.append("b")
+
+    @rn.step(Steps.solve_initial)
+    def step_c(ctx):
+        calls.append("c")
+
+    @rn.step(Steps.build)
+    def step_a(ctx):
+        calls.append("a")
+
+    rn.run_steps(save_report=False)
+    assert calls == ["b", "c", "a"]  # dynamic order: as registered, not default
+
+
+@pytest.mark.unit
+def test_step_order_user_extra():
+    rn = load_flowsheet_runner(force_mock=True)(steps=("a", "b"))
+    calls = []
+
+    @rn.step("a")
+    def step_a(ctx):
+        calls.append("a")
+
+    @rn.step("b")
+    def step_b(ctx):
+        calls.append("b")
+
+    with pytest.raises(KeyError):
+
+        @rn.step("c")
+        def step_c(ctx):
+            calls.append("c")
+
+
+@pytest.mark.unit
+def test_step_order_default_extra():
+    rn = load_flowsheet_runner(force_mock=True)()
+    calls = []
+
+    @rn.step(Steps.build)
+    def step_a(ctx):
+        calls.append("a")
+
+    @rn.step(Steps.solve_optimization)
+    def step_b(ctx):
+        calls.append("b")
+
+    with pytest.raises(KeyError):
+
+        @rn.step("new_step")
+        def step_c(ctx):
+            calls.append("c")
+
+    rn.run_steps(save_report=False)
+    assert calls == ["a", "b"]  # only the registered steps run
