@@ -17,13 +17,12 @@ the idaes_fi package is not installed.
 
 Usage::
 
-    from idaes.core.util.structfs import load_structfs
+    from idaes.core.util.structfs import load_flowsheet_runner, Steps
 
-    FlowsheetRunner, Steps = load_structfs()
+    FlowsheetRunner = load_flowsheet_runner()
 
 Regardless of whether the `FlowsheetRunner` is real or mocked, you can
-use `run_steps()` to run the flowsheet programmatically.
-In the case of the mock, it will run each step in order.
+use `run_steps()` to run the flowsheet programmatically::
 
     FS = FlowsheetRunner()
 
@@ -41,6 +40,18 @@ In the case of the mock, it will run each step in order.
 
 def main():
     FS.run_steps()
+
+The rules for order of running are the same as in the library:
+
+1. If no arguments are passed to the constructor, the names and order of steps 
+   will be the sequence in `Steps.index`.
+2. If a sequence of strings is passed to the constructor, use this sequence as 
+   the names and order of steps to run.
+3. If an explicit empty argument, e.g. `()` or `[]`, is passed to the 
+   constructor, run the steps in the order in which they are encountered.
+
+For cases (1) and (2), any step name that is not in the sequence will result in a
+KeyError being raised by the decorator function (`FS.step`).
 ````
 """
 
