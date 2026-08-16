@@ -42,11 +42,11 @@ use `run_steps()` to run the flowsheet programmatically::
 
 The rules for order of running are the same as in the library:
 
-1. If no arguments are passed to the constructor, the names and order of steps 
+1. If no arguments are passed to the constructor, the names and order of steps
    will be the sequence in `Steps.index`.
-2. If a sequence of strings is passed to the constructor, use this sequence as 
+2. If a sequence of strings is passed to the constructor, use this sequence as
    the names and order of steps to run.
-3. If an explicit empty argument, e.g. `()` or `[]`, is passed to the 
+3. If an explicit empty argument, e.g. `()` or `[]`, is passed to the
    constructor, run the steps in the order in which they are encountered.
 
 For cases (1) and (2), any step name that is not in the sequence will result in a
@@ -100,7 +100,7 @@ class _MockFlowsheetRunner:
             # use pre-defined steps by default
             self._step_names = Steps.index
         elif not self._step_names:
-             # normalize empty to tuple, meaning dynamic
+            # normalize empty to tuple, meaning dynamic
             self._step_names = ()
         self.ctx = Mock()
         self._steps = {}

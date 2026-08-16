@@ -41,6 +41,7 @@ def test_flowsheet_runner(mock):
     runner.run_steps()
     assert calls == ["a", "b"]
 
+
 @pytest.mark.unit
 def test_step_order_user():
     rn = load_flowsheet_runner(force_mock=True)(steps=("a", "b", "c"))
