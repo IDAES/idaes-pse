@@ -37,6 +37,7 @@ drop. The exit of the drum model is the liquid outlet.
 Created on October 27 2020 by Boiler Team (J. Ma, M. Zamarripa)
 """
 
+import re
 import pytest
 
 # Import Pyomo libraries
@@ -44,10 +45,14 @@ import pyomo.environ as pyo
 
 # Import IDAES core
 from idaes.core import FlowsheetBlock
+from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 # Import Unit Model Modules
 from idaes.models.properties import iapws95
+from idaes.models.properties.examples.saponification_thermo import (
+    SaponificationParameterBlock,
+)
 
 # from idaes.models_extra.power_generation.unit_models.drum_1D import Drum1D
 from idaes.models_extra.power_generation.unit_models.drum1D import Drum1D
@@ -101,6 +106,43 @@ def test_basic_build(build_drum1D):
     assert m.fs.unit.config.has_heat_transfer
     assert m.fs.unit.config.has_pressure_change
     assert m.fs.unit.config.property_package is m.fs.prop_water
+
+
+@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")
+@pytest.mark.unit
+def test_wrong_property_package():
+    m = pyo.ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.prop_sapon = SaponificationParameterBlock()
+    m.fs.prop_water = iapws95.Iapws95ParameterBlock(
+        phase_presentation=iapws95.PhaseType.LG
+    )
+    with pytest.raises(
+        ConfigurationError,
+        match=re.escape(
+            "The Drum1D model requires a Helmholtz property package with a "
+            "Mixed phase presentation."
+        ),
+    ):
+        m.fs.unit = Drum1D(
+            property_package=m.fs.prop_sapon,
+            has_holdup=False,
+            has_heat_transfer=True,
+            has_pressure_change=True,
+        )
+    with pytest.raises(
+        ConfigurationError,
+        match=re.escape(
+            "The Drum1D model requires a Helmholtz property package with a "
+            "Mixed phase presentation."
+        ),
+    ):
+        m.fs.unit = Drum1D(
+            property_package=m.fs.prop_water,
+            has_holdup=False,
+            has_heat_transfer=True,
+            has_pressure_change=True,
+        )
 
 
 @pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS not available")

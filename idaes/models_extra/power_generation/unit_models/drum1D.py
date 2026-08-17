@@ -55,6 +55,8 @@ Created: October 27 2020
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
+import copy
+
 # Import Pyomo libraries
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
@@ -90,7 +92,11 @@ from idaes.core.util.config import is_physical_parameter_block
 # from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 import idaes.core.util.scaling as iscale
+from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.solvers import get_solver
+
+from idaes.models.properties.general_helmholtz import HelmholtzParameterBlockData
+from idaes.models.properties.general_helmholtz.helmholtz_functions import PhaseType
 
 from idaes.models_extra.power_generation.unit_models.helm.phase_separator import (
     HelmPhaseSeparator,
@@ -258,12 +264,24 @@ discretizing length domain (default=3)""",
         # Call UnitModel.build to setup dynamics
         super().build()
 
+        if (
+            not isinstance(self.config.property_package, HelmholtzParameterBlockData)
+            or self.config.property_package.config.phase_presentation != PhaseType.MIX
+        ):
+            raise ConfigurationError(
+                "The Drum1D model requires a Helmholtz property package with a "
+                "Mixed phase presentation."
+            )
+
+        pp_args = copy.copy(self.config.property_package_args)
+        pp_args["has_phase_equilibrium"] = False
+
         # Build Control Volume
         self.control_volume = ControlVolume0DBlock(
             dynamic=self.config.dynamic,
             has_holdup=self.config.has_holdup,
             property_package=self.config.property_package,
-            property_package_args=self.config.property_package_args,
+            property_package_args=pp_args,
         )
 
         self.control_volume.add_geometry()
@@ -284,12 +302,15 @@ discretizing length domain (default=3)""",
         )
 
         self.flash = HelmPhaseSeparator(
-            dynamic=False, property_package=self.config.property_package
+            dynamic=False,
+            property_package=self.config.property_package,
+            property_package_args=pp_args,
         )
 
         self.mixer = HelmMixer(
             dynamic=False,
             property_package=self.config.property_package,
+            property_package_args=pp_args,
             momentum_mixing_type=MomentumMixingType.equality,
             inlet_list=["FeedWater", "SaturatedWater"],
         )
