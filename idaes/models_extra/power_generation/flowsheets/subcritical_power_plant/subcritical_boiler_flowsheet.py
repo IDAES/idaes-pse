@@ -106,6 +106,7 @@ def add_unit_models(m):
     fs.blowdown_split = HelmSplitter(
         dynamic=False,
         property_package=prop_water,
+        property_package_args={"has_phase_equilibrium": False},
         outlet_list=["FW_Downcomer", "FW_Blowdown"],
     )
 
@@ -231,6 +232,7 @@ def add_unit_models(m):
     fs.Attemp = HelmMixer(
         dynamic=False,
         property_package=prop_water,
+        property_package_args={"has_phase_equilibrium": False},
         momentum_mixing_type=MomentumMixingType.equality,
         inlet_list=["Steam_inlet", "Water_inlet"],
     )
