@@ -742,10 +742,22 @@ def copy_values_at_time(
             init_log.warning(msg)
             continue
 
+        def _safe_set_value(src, tgt):
+            try:
+                val = value(src)
+            except ValueError as err:
+                # Uninitialized variable
+                if "No value for uninitialized" in str(err):
+                    val = None
+                else:
+                    raise
+            tgt.set_value(val)
+
         if n == 1:
             if not copy_fixed and var_target[t_target].fixed:
                 continue
-            var_target[t_target].set_value(var_source[t_source].value)
+            _safe_set_value(src=var_source[t_source], tgt=var_target[t_target])
+
         elif n >= 2:
             index_info = get_index_set_except(var_target, time_target)
             non_time_index_set = index_info["set_except"]
@@ -755,7 +767,9 @@ def copy_values_at_time(
                 target_index = index_getter(non_time_index, t_target)
                 if not copy_fixed and var_target[target_index].fixed:
                     continue
-                var_target[target_index].set_value(value(var_source[source_index]))
+                _safe_set_value(
+                    src=var_source[source_index], tgt=var_target[target_index]
+                )
 
     blk_visited = set()
     for blk_target in fs_tgt.component_objects(Block):
