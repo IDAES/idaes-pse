@@ -15,7 +15,7 @@
 This module contains utility functions for dynamic IDAES models.
 """
 
-from pyomo.environ import Block, Constraint, Var
+from pyomo.environ import Block, Constraint, value, Var
 from pyomo.dae import DerivativeVar
 from pyomo.dae.flatten import flatten_dae_components
 from pyomo.dae.set_utils import (
@@ -755,7 +755,7 @@ def copy_values_at_time(
                 target_index = index_getter(non_time_index, t_target)
                 if not copy_fixed and var_target[target_index].fixed:
                     continue
-                var_target[target_index].set_value(var_source[source_index].value)
+                var_target[target_index].set_value(value(var_source[source_index]))
 
     blk_visited = set()
     for blk_target in fs_tgt.component_objects(Block):

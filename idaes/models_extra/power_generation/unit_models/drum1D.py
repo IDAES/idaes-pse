@@ -523,11 +523,14 @@ discretizing length domain (default=3)""",
                 return 0
 
         self.dTdr_reduced = DerivativeVar(
-            self.drum_wall_temperature, wrt=self.dimensionless_radial_domain
+            self.drum_wall_temperature,
+            wrt=self.dimensionless_radial_domain,
+            initialize=0,
         )
         self.d2Tdr2_reduced = DerivativeVar(
             self.drum_wall_temperature,
             wrt=(self.dimensionless_radial_domain, self.dimensionless_radial_domain),
+            initialize=0,
         )
 
         @self.Expression(self.flowsheet().time, self.dimensionless_radial_domain)
