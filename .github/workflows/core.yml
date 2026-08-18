@@ -298,7 +298,7 @@ jobs:
           echo "" > pytest.ini
       - name: Install and run compatibility tests
         run: |
-          pip install "git+https://github.com/IDAES/idaes-compatibility@0.23.8"
+          pip install "git+https://github.com/IDAES/idaes-compatibility@main"
           pytest --pyargs idaes_compatibility
       - name: Environment summary
         if: always()
