@@ -368,6 +368,8 @@ def main(**load_kw):
         results = ctx.solver.solve(ctx.model, tee=ctx["tee"])
         ctx["results"] = results
 
+    return FS
+
 
 if __name__ == "__main__":
     import argparse
