@@ -38,9 +38,6 @@ class ArcConstraintScaler(CustomScalerBase):
     are set appropriately.
     """
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
     def scale_model(self, **kwargs):
         """
         Do not use this method, use one of the scale_arc_constraints
