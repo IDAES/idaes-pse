@@ -23,9 +23,6 @@ Currently, this costing package only includes methods for capital costing of
 unit operations.
 """
 
-# TODO: Missing docstrings
-# pylint: disable=missing-class-docstring
-
 import pyomo.environ as pyo
 
 # TODO: HX1D not supported - does not define area (has shell_area & tube_area)
@@ -65,6 +62,10 @@ __author__ = "Miguel Zamarripa, Andrew Lee"
 
 
 class HXType(StrEnum):
+    """
+    HX types
+    """
+
     floating_head = "floating_head"
     fixed_head = "fixed_head"
     Utube = "Utube"
@@ -72,6 +73,10 @@ class HXType(StrEnum):
 
 
 class HXMaterial(StrEnum):
+    """
+    HX materials
+    """
+
     CarbonSteelCarbonSteel = "CarbonSteelCarbonSteel"
     CarbonSteelBrass = "CarbonSteelBrass"
     CarbonSteelStainlessSteel = "CarbonSteelStainlessSteel"
@@ -85,6 +90,10 @@ class HXMaterial(StrEnum):
 
 
 class HXTubeLength(StrEnum):
+    """
+    HX tube lengths
+    """
+
     EightFoot = "8ft"
     TwelveFoot = "12ft"
     SixteenFoot = "16ft"
@@ -92,6 +101,10 @@ class HXTubeLength(StrEnum):
 
 
 class VesselMaterial(StrEnum):
+    """
+    Vessel materials
+    """
+
     CarbonSteel = "Carbon_steel"
     LowAlloySteel = "LowAlloySteel"
     StainlessSteel304 = "StainlessSteel304"
@@ -105,12 +118,20 @@ class VesselMaterial(StrEnum):
 
 
 class TrayType(StrEnum):
+    """
+    Tray types
+    """
+
     Sieve = "Sieve"
     Valve = "Valve"
     BubbleCap = "BubbleCap"
 
 
 class TrayMaterial(StrEnum):
+    """
+    Tray materials
+    """
+
     CarbonSteel = "CarbonSteel"
     StainlessSteel303 = "StainlessSteel303"
     StainlessSteel316 = "StainlessSteel316"
@@ -119,12 +140,20 @@ class TrayMaterial(StrEnum):
 
 
 class HeaterMaterial(StrEnum):
+    """
+    Heater materials
+    """
+
     CarbonSteel = "CarbonSteel"
     CrMoSteel = "CrMoSteel"
     StainlessSteel = "StainlessSteel"
 
 
 class HeaterSource(StrEnum):
+    """
+    Heater sources
+    """
+
     Fuel = "Fuel"
     Reformer = "Reformer"
     Pyrolysis = "Pyrolysis"
@@ -135,24 +164,40 @@ class HeaterSource(StrEnum):
 
 
 class CompressorType(StrEnum):
+    """
+    Compressor types
+    """
+
     Centrifugal = "Centrifugal"
     Reciprocating = "Reciprocating"
     Screw = "Screw"
 
 
 class CompressorDriveType(StrEnum):
+    """
+    Compressor drive types
+    """
+
     ElectricMotor = "ElectricMotor"
     SteamTurbine = "SteamTurbine"
     gasTurbine = "GasTurbine"
 
 
 class CompressorMaterial(StrEnum):
+    """
+    Compressor materials
+    """
+
     CarbonSteel = "CarbonSteel"
     StainlessSteel = "StainlessSteel"
     NickelAlloy = "NickelAlloy"
 
 
 class PumpMaterial(StrEnum):
+    """
+    Pump materials
+    """
+
     CastIron = "CastIron"
     DuctileIron = "DuctileIron"
     CastSteel = "CastSteel"
@@ -167,18 +212,30 @@ class PumpMaterial(StrEnum):
 
 
 class PumpType(StrEnum):
+    """
+    Pump types
+    """
+
     Centrifugal = "Centrifugal"
     ExternalGear = "ExternalGear"
     Reciprocating = "Reciprocating"
 
 
 class PumpMotorType(StrEnum):
+    """
+    Pump motor types
+    """
+
     Open = "open"
     Enclosed = "enclosed"
     ExplosionProof = "explosion_proof"
 
 
 class FanType(StrEnum):
+    """
+    Fan types
+    """
+
     CentrifugalBackward = "CentrifugalBackward"
     CentrifugalStraight = "CentrifugalStraight"
     VaneAxial = "VaneAxial"
@@ -186,6 +243,10 @@ class FanType(StrEnum):
 
 
 class FanMaterial(StrEnum):
+    """
+    Fan materials
+    """
+
     CarbonSteel = "CarbonSteel"
     Fiberglass = "Fiberglass"
     StainlessSteel = "StainlessSteel"
@@ -193,11 +254,19 @@ class FanMaterial(StrEnum):
 
 
 class BlowerType(StrEnum):
+    """
+    Blower types
+    """
+
     Centrifugal = "Centrifugal"
     Rotary = "Rotary"
 
 
 class BlowerMaterial(StrEnum):
+    """
+    Blower materials
+    """
+
     CarbonSteel = "CarbonSteel"
     Aluminum = "Aluminum"
     Fiberglass = "Fiberglass"
@@ -207,6 +276,14 @@ class BlowerMaterial(StrEnum):
 
 @declare_process_block_class("SSLWCosting")
 class SSLWCostingData(FlowsheetCostingBlockData):
+    """
+    Capital costing methods derived from Process and Product Design
+    Principles: Synthesis, Analysis, and Evaluation Seider, Seader,
+    Lewin, Windagdo, 3rd Ed. John Wiley and Sons Chapter 22. Cost
+    Accounting and Capital Cost Estimation 22.2 Cost Indexes and
+    Capital Investment.
+    """
+
     # Register currency and conversion rates based on CE Index
     register_idaes_currency_units()
 
@@ -1665,6 +1742,9 @@ class SSLWCostingData(FlowsheetCostingBlockData):
 
 # -----------------------------------------------------------------------------
 def _make_common_vars(blk, integer=True):
+    """
+    Build common variables for costing methods
+    """
     # Build generic costing variables (most costing models need these vars)
     blk.base_cost_per_unit = pyo.Var(
         initialize=1e5,
