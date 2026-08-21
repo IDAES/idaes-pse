@@ -25,7 +25,6 @@ from types import MethodType
 from pyomo.environ import (
     Constraint,
     Expression,
-    NonNegativeReals,
     Var,
     units as pyunits,
 )
@@ -88,7 +87,6 @@ def define_state(blk):
     blk.flow_mol_phase = Var(
         blk.phase_list,
         initialize=f_init,
-        domain=NonNegativeReals,
         bounds=f_bounds,
         doc="Total molar flowrate",
         units=units.FLOW_MOLE,
@@ -102,14 +100,12 @@ def define_state(blk):
     )
     blk.pressure = Var(
         initialize=p_init,
-        domain=NonNegativeReals,
         bounds=p_bounds,
         doc="State pressure",
         units=units.PRESSURE,
     )
     blk.temperature = Var(
         initialize=t_init,
-        domain=NonNegativeReals,
         bounds=t_bounds,
         doc="State temperature",
         units=units.TEMPERATURE,
