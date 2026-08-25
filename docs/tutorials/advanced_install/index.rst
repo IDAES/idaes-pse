@@ -57,15 +57,22 @@ Of course, replace MYNAME with your username. This will download all the files i
 
 Add Upstream Remote
 ^^^^^^^^^^^^^^^^^^^
-In order to guarantee that your fork can be synchronized with the "main" idaes-pse repo in the GitHub IDAES organization, you need to add a pointer to that repository as a *remote*. This repository will be called *upstream* and linked with the following command::
+In order to guarantee that your fork can be synchronized with the "main" idaes-pse repo in the GitHub IDAES organization, you need to add a pointer to that repository as a *remote*. This repository will be called *upstream*. The ``--tags`` option ensures that version tags used to determine the IDAES package version are included, and ``-f`` fetches the upstream repository immediately::
 
-    git remote add upstream https://github.com/IDAES/idaes-pse.git
+    git remote add --tags -f upstream https://github.com/IDAES/idaes-pse.git
+
+If you already have an ``upstream`` remote, configure it to fetch tags and fetch it once::
+
+    git config remote.upstream.tagOpt --tags
+    git fetch upstream
+
+This is a one-time configuration. Future ``git fetch upstream`` commands will fetch new version tags automatically, so no additional step is needed after each IDAES release.
 
 To check to see if you added the remote correctly use the following command::
 
      git remote -v
 
-You should see that there are two remotes, origin and upstream. Both have two lines showing the remote name, the url, and the access (fetch or push). Origin is the pointer to your fork and was automatically added with the clone command, while upstream is the pointer to the main idaes-pse repo that you just added.
+You should see that there are two remotes, origin and upstream. Both have two lines showing the remote name, the URL, and the access (fetch or push). Origin is the pointer to your fork and was automatically added with the clone command, while upstream is the pointer to the main idaes-pse repo that you just added.
 
 Create the Python Environment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
