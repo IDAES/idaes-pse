@@ -1,0 +1,1730 @@
+[
+    {
+        "country": "Afghanistan",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.91,
+            "max": 0.96,
+            "average": 0.935
+        }
+    },
+    {
+        "country": "Albania",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.89,
+            "max": 0.93,
+            "average": 0.91
+        }
+    },
+    {
+        "country": "Algeria",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.9,
+            "max": 0.95,
+            "average": 0.925
+        }
+    },
+    {
+        "country": "Angola",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.92,
+            "max": 0.97,
+            "average": 0.945
+        }
+    },
+    {
+        "country": "Argentina",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.92,
+            "max": 0.95,
+            "average": 0.935
+        }
+    },
+    {
+        "country": "Armenia",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.9,
+            "max": 0.94,
+            "average": 0.92
+        }
+    },
+    {
+        "country": "Australia",
+        "city": "Melbourne",
+        "location_factor": {
+            "min": 1.02,
+            "max": 1.02,
+            "average": 1.02
+        }
+    },
+    {
+        "country": "Australia",
+        "city": "Perth",
+        "location_factor": {
+            "min": 1.03,
+            "max": 1.03,
+            "average": 1.03
+        }
+    },
+    {
+        "country": "Australia",
+        "city": "Sydney",
+        "location_factor": {
+            "min": 1.03,
+            "max": 1.03,
+            "average": 1.03
+        }
+    },
+    {
+        "country": "Austria",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 1.04,
+            "max": 1.04,
+            "average": 1.04
+        }
+    },
+    {
+        "country": "Azerbaijan",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.92,
+            "max": 0.97,
+            "average": 0.945
+        }
+    },
+    {
+        "country": "Bahrain",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.92,
+            "max": 0.95,
+            "average": 0.935
+        }
+    },
+    {
+        "country": "Bangladesh",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.9,
+            "max": 0.92,
+            "average": 0.91
+        }
+    },
+    {
+        "country": "Belarus",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.93,
+            "max": 0.96,
+            "average": 0.945
+        }
+    },
+    {
+        "country": "Belgium",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 1.01,
+            "max": 1.04,
+            "average": 1.025
+        }
+    },
+    {
+        "country": "Belize",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.91,
+            "max": 0.95,
+            "average": 0.93
+        }
+    },
+    {
+        "country": "Benin",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.9,
+            "max": 0.95,
+            "average": 0.925
+        }
+    },
+    {
+        "country": "Bhutan",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.9,
+            "max": 0.95,
+            "average": 0.925
+        }
+    },
+    {
+        "country": "Bolivia",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.9,
+            "max": 0.94,
+            "average": 0.92
+        }
+    },
+    {
+        "country": "Bosnia and Herzegovina",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.9,
+            "max": 0.95,
+            "average": 0.925
+        }
+    },
+    {
+        "country": "Botswana",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.9,
+            "max": 0.95,
+            "average": 0.925
+        }
+    },
+    {
+        "country": "Brazil",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.88,
+            "max": 0.96,
+            "average": 0.92
+        }
+    },
+    {
+        "country": "Bulgaria",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.9,
+            "max": 0.95,
+            "average": 0.925
+        }
+    },
+    {
+        "country": "Burkina Faso",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.88,
+            "max": 0.95,
+            "average": 0.915
+        }
+    },
+    {
+        "country": "Burundi",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.88,
+            "max": 0.95,
+            "average": 0.915
+        }
+    },
+    {
+        "country": "Cambodia",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.84,
+            "max": 0.94,
+            "average": 0.89
+        }
+    },
+    {
+        "country": "Cameroon",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.9,
+            "max": 0.95,
+            "average": 0.925
+        }
+    },
+    {
+        "country": "Canada",
+        "city": "Calgary AB",
+        "location_factor": {
+            "min": 1.05,
+            "max": 1.1,
+            "average": 1.075
+        }
+    },
+    {
+        "country": "Canada",
+        "city": "Charlottetown PEI",
+        "location_factor": {
+            "min": 0.96,
+            "max": 0.99,
+            "average": 0.975
+        }
+    },
+    {
+        "country": "Canada",
+        "city": "Edmonton AB",
+        "location_factor": {
+            "min": 1.04,
+            "max": 1.13,
+            "average": 1.085
+        }
+    },
+    {
+        "country": "Canada",
+        "city": "Fort McMurray AB",
+        "location_factor": {
+            "min": 1.4,
+            "max": 1.55,
+            "average": 1.475
+        }
+    },
+    {
+        "country": "Canada",
+        "city": "Halifax NS",
+        "location_factor": {
+            "min": 0.96,
+            "max": 0.99,
+            "average": 0.975
+        }
+    },
+    {
+        "country": "Canada",
+        "city": "Hamilton ON",
+        "location_factor": {
+            "min": 0.95,
+            "max": 0.98,
+            "average": 0.965
+        }
+    },
+    {
+        "country": "Canada",
+        "city": "Laval QC",
+        "location_factor": {
+            "min": 0.95,
+            "max": 0.97,
+            "average": 0.96
+        }
+    },
+    {
+        "country": "Canada",
+        "city": "Lethbridge AB",
+        "location_factor": {
+            "min": 0.97,
+            "max": 0.99,
+            "average": 0.98
+        }
+    },
+    {
+        "country": "Canada",
+        "city": "London ONT",
+        "location_factor": {
+            "min": 0.95,
+            "max": 0.98,
+            "average": 0.965
+        }
+    },
+    {
+        "country": "Canada",
+        "city": "Moncton NB",
+        "location_factor": {
+            "min": 0.94,
+            "max": 0.97,
+            "average": 0.955
+        }
+    },
+    {
+        "country": "Canada",
+        "city": "Montreal QC",
+        "location_factor": {
+            "min": 0.96,
+            "max": 0.98,
+            "average": 0.97
+        }
+    },
+    {
+        "country": "Canada",
+        "city": "Québec City QC",
+        "location_factor": {
+            "min": 0.96,
+            "max": 0.98,
+            "average": 0.97
+        }
+    },
+    {
+        "country": "Canada",
+        "city": "Regina SK",
+        "location_factor": {
+            "min": 0.96,
+            "max": 0.98,
+            "average": 0.97
+        }
+    },
+    {
+        "country": "Canada",
+        "city": "Sarnia ON",
+        "location_factor": {
+            "min": 0.95,
+            "max": 0.98,
+            "average": 0.965
+        }
+    },
+    {
+        "country": "Canada",
+        "city": "St John's NL",
+        "location_factor": {
+            "min": 0.96,
+            "max": 0.98,
+            "average": 0.97
+        }
+    },
+    {
+        "country": "Canada",
+        "city": "Toronto ON",
+        "location_factor": {
+            "min": 0.97,
+            "max": 0.99,
+            "average": 0.98
+        }
+    },
+    {
+        "country": "Canada",
+        "city": "Whitehorse YT",
+        "location_factor": {
+            "min": 0.98,
+            "max": 1.00,
+            "average": 0.99
+        }
+    },
+    {
+        "country": "Canada",
+        "city": "Winnipeg MB",
+        "location_factor": {
+            "min": 0.95,
+            "max": 0.97,
+            "average": 0.96
+        }
+    },
+    {
+        "country": "Canada",
+        "city": "Windsor ON",
+        "location_factor": {
+            "min": 0.95,
+            "max": 0.98,
+            "average": 0.965
+        }
+    },
+    {
+        "country": "Canada",
+        "city": "Vancouver BC",
+        "location_factor": {
+            "min": 1.0,
+            "max": 1.03,
+            "average": 1.015
+        }
+    },
+    {
+        "country": "Canada",
+        "city": "Victoria BC",
+        "location_factor": {
+            "min": 0.97,
+            "max": 1.0,
+            "average": 0.985
+        }
+    },
+    {
+        "country": "Central African Republic",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.9,
+            "max": 0.94,
+            "average": 0.92
+        }
+    },
+    {
+        "country": "Chad",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.89,
+            "max": 0.93,
+            "average": 0.91
+        }
+    },
+    {
+        "country": "Chile",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.91,
+            "max": 0.95,
+            "average": 0.93
+        }
+    },
+    {
+        "country": "China",
+        "city": "Beijing",
+        "location_factor": {
+            "min": 0.9,
+            "max": 0.95,
+            "average": 0.925
+        }
+    },
+    {
+        "country": "China",
+        "city": "Chengdu",
+        "location_factor": {
+            "min": 0.88,
+            "max": 0.93,
+            "average": 0.905
+        }
+    },
+    {
+        "country": "China",
+        "city": "Harbin",
+        "location_factor": {
+            "min": 0.88,
+            "max": 0.93,
+            "average": 0.905
+        }
+    },
+    {
+        "country": "China",
+        "city": "Guangzhou",
+        "location_factor": {
+            "min": 0.9,
+            "max": 0.95,
+            "average": 0.925
+        }
+    },
+    {
+        "country": "China",
+        "city": "Shanghai",
+        "location_factor": {
+            "min": 0.9,
+            "max": 0.95,
+            "average": 0.925
+        }
+    },
+    {
+        "country": "Colombia",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.9,
+            "max": 0.93,
+            "average": 0.915
+        }
+    },
+    {
+        "country": "Democratic Republic of the Congo",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.9,
+            "max": 0.94,
+            "average": 0.92
+        }
+    },
+    {
+        "country": "Costa Rica",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.92,
+            "max": 0.94,
+            "average": 0.93
+        }
+    },
+    {
+        "country": "Côte d'Ivoire",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.9,
+            "max": 0.93,
+            "average": 0.915
+        }
+    },
+    {
+        "country": "Croatia",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.9,
+            "max": 0.95,
+            "average": 0.925
+        }
+    },
+    {
+        "country": "Cuba",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.92,
+            "max": 0.94,
+            "average": 0.93
+        }
+    },
+    {
+        "country": "Cyprus",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.92,
+            "max": 0.94,
+            "average": 0.93
+        }
+    },
+    {
+        "country": "Czech Republic",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.89,
+            "max": 0.93,
+            "average": 0.91
+        }
+    },
+    {
+        "country": "Denmark",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 1.05,
+            "max": 1.09,
+            "average": 1.07
+        }
+    },
+    {
+        "country": "Dominican Republic",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.92,
+            "max": 0.95,
+            "average": 0.935
+        }
+    },
+    {
+        "country": "Ecuador",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.91,
+            "max": 0.94,
+            "average": 0.925
+        }
+    },
+    {
+        "country": "Egypt",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.86,
+            "max": 0.94,
+            "average": 0.9
+        }
+    },
+    {
+        "country": "El Salvador",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.92,
+            "max": 0.94,
+            "average": 0.93
+        }
+    },
+    {
+        "country": "Eritrea",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.88,
+            "max": 0.93,
+            "average": 0.905
+        }
+    },
+    {
+        "country": "Estonia",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.9,
+            "max": 0.94,
+            "average": 0.92
+        }
+    },
+    {
+        "country": "Ethiopia",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.89,
+            "max": 0.93,
+            "average": 0.91
+        }
+    },
+    {
+        "country": "Finland",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 1.06,
+            "max": 1.1,
+            "average": 1.08
+        }
+    },
+    {
+        "country": "France",
+        "city": "Bordeaux",
+        "location_factor": {
+            "min": 0.97,
+            "max": 1.02,
+            "average": 0.995
+        }
+    },
+    {
+        "country": "France",
+        "city": "Lyon",
+        "location_factor": {
+            "min": 0.97,
+            "max": 1.03,
+            "average": 1.0
+        }
+    },
+    {
+        "country": "France",
+        "city": "Marseille / Fos",
+        "location_factor": {
+            "min": 0.97,
+            "max": 1.01,
+            "average": 0.99
+        }
+    },
+    {
+        "country": "France",
+        "city": "Nice",
+        "location_factor": {
+            "min": 0.98,
+            "max": 1.02,
+            "average": 1.0
+        }
+    },
+    {
+        "country": "France",
+        "city": "Paris",
+        "location_factor": {
+            "min": 1.0,
+            "max": 1.05,
+            "average": 1.025
+        }
+    },
+    {
+        "country": "Gabon",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.89,
+            "max": 0.94,
+            "average": 0.915
+        }
+    },
+    {
+        "country": "The Gambia",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.89,
+            "max": 0.93,
+            "average": 0.91
+        }
+    },
+    {
+        "country": "Georgia",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.92,
+            "max": 0.95,
+            "average": 0.935
+        }
+    },
+    {
+        "country": "Germany",
+        "city": "Berlin",
+        "location_factor": {
+            "min": 1.01,
+            "max": 1.04,
+            "average": 1.025
+        }
+    },
+    {
+        "country": "Germany",
+        "city": "Hamburg",
+        "location_factor": {
+            "min": 1.01,
+            "max": 1.04,
+            "average": 1.025
+        }
+    },
+    {
+        "country": "Germany",
+        "city": "Munich",
+        "location_factor": {
+            "min": 1.02,
+            "max": 1.05,
+            "average": 1.035
+        }
+    },
+    {
+        "country": "Ghana",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.89,
+            "max": 0.94,
+            "average": 0.915
+        }
+    },
+    {
+        "country": "Greece",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.91,
+            "max": 0.93,
+            "average": 0.92
+        }
+    },
+    {
+        "country": "Guatemala",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.91,
+            "max": 0.94,
+            "average": 0.925
+        }
+    },
+    {
+        "country": "Guinea-Bissau",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.9,
+            "max": 0.93,
+            "average": 0.915
+        }
+    },
+    {
+        "country": "Guinea",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.88,
+            "max": 0.92,
+            "average": 0.9
+        }
+    },
+    {
+        "country": "Guyana",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.85,
+            "max": 0.94,
+            "average": 0.895
+        }
+    },
+    {
+        "country": "Haiti",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.87,
+            "max": 0.93,
+            "average": 0.9
+        }
+    },
+    {
+        "country": "Honduras",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.9,
+            "max": 0.93,
+            "average": 0.915
+        }
+    },
+    {
+        "country": "Hong Kong",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.9,
+            "max": 0.93,
+            "average": 0.915
+        }
+    },
+    {
+        "country": "Hungary",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.88,
+            "max": 0.92,
+            "average": 0.9
+        }
+    },
+    {
+        "country": "India",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.85,
+            "max": 0.92,
+            "average": 0.885
+        }
+    },
+    {
+        "country": "Indonesia",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.75,
+            "max": 0.86,
+            "average": 0.805
+        }
+    },
+    {
+        "country": "Iran",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.87,
+            "max": 0.93,
+            "average": 0.9
+        }
+    },
+    {
+        "country": "Iraq",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.88,
+            "max": 0.96,
+            "average": 0.92
+        }
+    },
+    {
+        "country": "Ireland",
+        "city": "Cork",
+        "location_factor": {
+            "min": 0.95,
+            "max": 1.02,
+            "average": 0.985
+        }
+    },
+    {
+        "country": "Ireland",
+        "city": "Dublin",
+        "location_factor": {
+            "min": 0.95,
+            "max": 1.03,
+            "average": 0.99
+        }
+    },
+    {
+        "country": "Ireland",
+        "city": "Galway",
+        "location_factor": {
+            "min": 0.95,
+            "max": 1.0,
+            "average": 0.975
+        }
+    },
+    {
+        "country": "Israel",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.92,
+            "max": 0.94,
+            "average": 0.93
+        }
+    },
+    {
+        "country": "Italy",
+        "city": "Bari",
+        "location_factor": {
+            "min": 0.93,
+            "max": 0.96,
+            "average": 0.945
+        }
+    },
+    {
+        "country": "Italy",
+        "city": "Milan",
+        "location_factor": {
+            "min": 0.94,
+            "max": 0.99,
+            "average": 0.965
+        }
+    },
+    {
+        "country": "Italy",
+        "city": "Rome",
+        "location_factor": {
+            "min": 0.94,
+            "max": 0.98,
+            "average": 0.96
+        }
+    },
+    {
+        "country": "Jamaica",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.89,
+            "max": 0.93,
+            "average": 0.91
+        }
+    },
+    {
+        "country": "Japan",
+        "city": "Osaka",
+        "location_factor": {
+            "min": 1.05,
+            "max": 1.07,
+            "average": 1.06
+        }
+    },
+    {
+        "country": "Japan",
+        "city": "Tokyo",
+        "location_factor": {
+            "min": 1.06,
+            "max": 1.11,
+            "average": 1.085
+        }
+    },
+    {
+        "country": "Japan",
+        "city": "Yokohama",
+        "location_factor": {
+            "min": 1.05,
+            "max": 1.07,
+            "average": 1.06
+        }
+    },
+    {
+        "country": "Jordan",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.88,
+            "max": 0.92,
+            "average": 0.9
+        }
+    },
+    {
+        "country": "Kazakhstan",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.89,
+            "max": 0.96,
+            "average": 0.925
+        }
+    },
+    {
+        "country": "Kenya",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.9,
+            "max": 0.95,
+            "average": 0.925
+        }
+    },
+    {
+        "country": "Kyrgyzstan",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.9,
+            "max": 0.93,
+            "average": 0.915
+        }
+    },
+    {
+        "country": "Kuwait",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.92,
+            "max": 0.97,
+            "average": 0.945
+        }
+    },
+    {
+        "country": "Laos",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.83,
+            "max": 0.94,
+            "average": 0.885
+        }
+    },
+    {
+        "country": "Latvia",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.92,
+            "max": 0.95,
+            "average": 0.935
+        }
+    },
+    {
+        "country": "Lebanon",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.9,
+            "max": 0.95,
+            "average": 0.925
+        }
+    },
+    {
+        "country": "Libya",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.91,
+            "max": 0.94,
+            "average": 0.925
+        }
+    },
+    {
+        "country": "Lithuania",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.91,
+            "max": 0.96,
+            "average": 0.935
+        }
+    },
+    {
+        "country": "Madagascar",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.88,
+            "max": 0.94,
+            "average": 0.91
+        }
+    },
+    {
+        "country": "Malawi",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.89,
+            "max": 0.93,
+            "average": 0.91
+        }
+    },
+    {
+        "country": "Malaysia",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.83,
+            "max": 0.92,
+            "average": 0.875
+        }
+    },
+    {
+        "country": "Mali",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.87,
+            "max": 0.94,
+            "average": 0.905
+        }
+    },
+    {
+        "country": "Malta",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.9,
+            "max": 0.95,
+            "average": 0.925
+        }
+    },
+    {
+        "country": "Mexico",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.84,
+            "max": 0.92,
+            "average": 0.88
+        }
+    },
+    {
+        "country": "Mongolia",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.89,
+            "max": 0.93,
+            "average": 0.91
+        }
+    },
+    {
+        "country": "Morocco",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.89,
+            "max": 0.95,
+            "average": 0.92
+        }
+    },
+    {
+        "country": "Mozambique",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.88,
+            "max": 0.94,
+            "average": 0.91
+        }
+    },
+    {
+        "country": "Myanmar",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.85,
+            "max": 0.93,
+            "average": 0.89
+        }
+    },
+    {
+        "country": "Namibia",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.88,
+            "max": 0.94,
+            "average": 0.91
+        }
+    },
+    {
+        "country": "Nepal",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.89,
+            "max": 0.94,
+            "average": 0.915
+        }
+    },
+    {
+        "country": "The Netherlands",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 1.0,
+            "max": 1.05,
+            "average": 1.025
+        }
+    },
+    {
+        "country": "New Zealand",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 1.01,
+            "max": 1.04,
+            "average": 1.025
+        }
+    },
+    {
+        "country": "Nicaragua",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.89,
+            "max": 0.94,
+            "average": 0.915
+        }
+    },
+    {
+        "country": "Niger",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.88,
+            "max": 0.93,
+            "average": 0.905
+        }
+    },
+    {
+        "country": "Nigeria",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.93,
+            "max": 0.98,
+            "average": 0.955
+        }
+    },
+    {
+        "country": "Norway",
+        "city": "Bergen",
+        "location_factor": {
+            "min": 1.1,
+            "max": 1.16,
+            "average": 1.13
+        }
+    },
+    {
+        "country": "Norway",
+        "city": "Oslo",
+        "location_factor": {
+            "min": 1.12,
+            "max": 1.17,
+            "average": 1.145
+        }
+    },
+    {
+        "country": "Norway",
+        "city": "Stavanger",
+        "location_factor": {
+            "min": 1.1,
+            "max": 1.16,
+            "average": 1.13
+        }
+    },
+    {
+        "country": "Oman",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.93,
+            "max": 0.98,
+            "average": 0.955
+        }
+    },
+    {
+        "country": "Panama",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.89,
+            "max": 0.93,
+            "average": 0.91
+        }
+    },
+    {
+        "country": "Pakistan",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.87,
+            "max": 0.93,
+            "average": 0.9
+        }
+    },
+    {
+        "country": "Paraguay",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.89,
+            "max": 0.94,
+            "average": 0.915
+        }
+    },
+    {
+        "country": "Peru",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.89,
+            "max": 0.95,
+            "average": 0.92
+        }
+    },
+    {
+        "country": "Philippines",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.86,
+            "max": 0.93,
+            "average": 0.895
+        }
+    },
+    {
+        "country": "Poland",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.91,
+            "max": 0.94,
+            "average": 0.925
+        }
+    },
+    {
+        "country": "Portugal",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.89,
+            "max": 0.93,
+            "average": 0.91
+        }
+    },
+    {
+        "country": "Romania",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.89,
+            "max": 0.94,
+            "average": 0.915
+        }
+    },
+    {
+        "country": "Russia",
+        "city": "Moscow",
+        "location_factor": {
+            "min": 0.94,
+            "max": 0.97,
+            "average": 0.955
+        }
+    },
+    {
+        "country": "Russia",
+        "city": "Nizhnyi Novgorod",
+        "location_factor": {
+            "min": 0.92,
+            "max": 0.95,
+            "average": 0.935
+        }
+    },
+    {
+        "country": "Russia",
+        "city": "St Petersburg",
+        "location_factor": {
+            "min": 0.92,
+            "max": 0.96,
+            "average": 0.94
+        }
+    },
+    {
+        "country": "Russia",
+        "city": "Vladivostok",
+        "location_factor": {
+            "min": 0.92,
+            "max": 0.96,
+            "average": 0.94
+        }
+    },
+    {
+        "country": "Rwanda",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.88,
+            "max": 0.93,
+            "average": 0.905
+        }
+    },
+    {
+        "country": "Saudi Arabia",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.93,
+            "max": 0.98,
+            "average": 0.955
+        }
+    },
+    {
+        "country": "Senegal",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.88,
+            "max": 0.94,
+            "average": 0.91
+        }
+    },
+    {
+        "country": "Singapore",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.9,
+            "max": 0.95,
+            "average": 0.925
+        }
+    },
+    {
+        "country": "South Africa",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.92,
+            "max": 0.95,
+            "average": 0.935
+        }
+    },
+    {
+        "country": "South Korea",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.92,
+            "max": 0.96,
+            "average": 0.94
+        }
+    },
+    {
+        "country": "Spain",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.92,
+            "max": 0.94,
+            "average": 0.93
+        }
+    },
+    {
+        "country": "Sri Lanka",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.78,
+            "max": 0.89,
+            "average": 0.835
+        }
+    },
+    {
+        "country": "Sudan",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.88,
+            "max": 0.95,
+            "average": 0.915
+        }
+    },
+    {
+        "country": "Sweden",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 1.07,
+            "max": 1.13,
+            "average": 1.1
+        }
+    },
+    {
+        "country": "Switzerland",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 1.07,
+            "max": 1.14,
+            "average": 1.105
+        }
+    },
+    {
+        "country": "Syria",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.91,
+            "max": 0.95,
+            "average": 0.93
+        }
+    },
+    {
+        "country": "Tajikistan",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.89,
+            "max": 0.94,
+            "average": 0.915
+        }
+    },
+    {
+        "country": "Taiwan",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.9,
+            "max": 0.94,
+            "average": 0.92
+        }
+    },
+    {
+        "country": "Thailand",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.85,
+            "max": 0.93,
+            "average": 0.89
+        }
+    },
+    {
+        "country": "Togo",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.89,
+            "max": 0.94,
+            "average": 0.915
+        }
+    },
+    {
+        "country": "Tunisia",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.89,
+            "max": 0.95,
+            "average": 0.92
+        }
+    },
+    {
+        "country": "Turkey",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.89,
+            "max": 0.94,
+            "average": 0.915
+        }
+    },
+    {
+        "country": "UAE",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.93,
+            "max": 0.98,
+            "average": 0.955
+        }
+    },
+    {
+        "country": "Uganda",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.9,
+            "max": 0.95,
+            "average": 0.925
+        }
+    },
+    {
+        "country": "Ukraine",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.91,
+            "max": 0.95,
+            "average": 0.93
+        }
+    },
+    {
+        "country": "United Kingdom",
+        "city": "Birmingham",
+        "location_factor": {
+            "min": 1.03,
+            "max": 1.06,
+            "average": 1.045
+        }
+    },
+    {
+        "country": "United Kingdom",
+        "city": "Cambridge",
+        "location_factor": {
+            "min": 1.03,
+            "max": 1.07,
+            "average": 1.05
+        }
+    },
+    {
+        "country": "United Kingdom",
+        "city": "Edinburgh",
+        "location_factor": {
+            "min": 1.03,
+            "max": 1.06,
+            "average": 1.045
+        }
+    },
+    {
+        "country": "United Kingdom",
+        "city": "Liverpool / Speke",
+        "location_factor": {
+            "min": 1.02,
+            "max": 1.05,
+            "average": 1.035
+        }
+    },
+    {
+        "country": "United Kingdom",
+        "city": "London",
+        "location_factor": {
+            "min": 1.06,
+            "max": 1.11,
+            "average": 1.085
+        }
+    },
+    {
+        "country": "United Kingdom",
+        "city": "Manchester",
+        "location_factor": {
+            "min": 1.03,
+            "max": 1.07,
+            "average": 1.05
+        }
+    },
+    {
+        "country": "United Kingdom",
+        "city": "Oxford",
+        "location_factor": {
+            "min": 1.03,
+            "max": 1.07,
+            "average": 1.05
+        }
+    },
+    {
+        "country": "United States",
+        "city": "Washington DC / Northeast",
+        "location_factor": {
+            "min": 1.0,
+            "max": 1.0,
+            "average": 1.0
+        }
+    },
+    {
+        "country": "United States",
+        "city": "Gulf Coast",
+        "location_factor": {
+            "min": 0.9091,
+            "max": 0.9091,
+            "average": 0.9091
+        }
+    },
+    {
+        "country": "United States",
+        "city": "Southwest",
+        "location_factor": {
+            "min": 0.8636,
+            "max": 0.8636,
+            "average": 0.8636
+        }
+    },
+    {
+        "country": "United States",
+        "city": "Midwest",
+        "location_factor": {
+            "min": 1.0455,
+            "max": 1.0455,
+            "average": 1.0455
+        }
+    },
+    {
+        "country": "United States",
+        "city": "West Coast",
+        "location_factor": {
+            "min": 1.1363,
+            "max": 1.1363,
+            "average": 1.1363
+        }
+    },
+    {
+        "country": "Uruguay",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.93,
+            "max": 0.95,
+            "average": 0.94
+        }
+    },
+    {
+        "country": "Uzbekistan",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.93,
+            "max": 0.96,
+            "average": 0.945
+        }
+    },
+    {
+        "country": "Venezuela",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.93,
+            "max": 0.96,
+            "average": 0.945
+        }
+    },
+    {
+        "country": "Vietnam",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.86,
+            "max": 0.9,
+            "average": 0.88
+        }
+    },
+    {
+        "country": "Yemen",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.89,
+            "max": 0.95,
+            "average": 0.92
+        }
+    },
+    {
+        "country": "Zambia",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.88,
+            "max": 0.94,
+            "average": 0.91
+        }
+    },
+    {
+        "country": "Zimbabwe",
+        "city": "aggregate",
+        "location_factor": {
+            "min": 0.87,
+            "max": 0.93,
+            "average": 0.9
+        }
+    }
+]
