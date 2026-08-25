@@ -65,7 +65,7 @@ grid = [
 ]
 omlt = [
   "omlt==1.1",  # fix the version for now as package evolves
-  # TensorFlow does not yet publish distributions for Python 3.14.
+  # TODO: Remove the marker when TensorFlow publishes Python 3.14 distributions.
   "tensorflow; python_version < '3.14'",
   "onnx",
 ]
