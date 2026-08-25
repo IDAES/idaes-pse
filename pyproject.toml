@@ -24,6 +24,7 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Programming Language :: Python :: Implementation :: CPython",
   "Topic :: Scientific/Engineering :: Mathematics",
   "Topic :: Scientific/Engineering :: Chemistry",
@@ -64,7 +65,8 @@ grid = [
 ]
 omlt = [
   "omlt==1.1",  # fix the version for now as package evolves
-  "tensorflow",
+  # TensorFlow does not yet publish distributions for Python 3.14.
+  "tensorflow; python_version < '3.14'",
   "onnx",
 ]
 testing = ["pytest", "addheader", "pyyaml"]
