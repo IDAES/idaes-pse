@@ -431,7 +431,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         # Material of construction factor Eq. 22.44 in the reference
         blk.material_factor = pyo.Var(
             initialize=3.5,
-            domain=pyo.NonNegativeReals,
+            bounds=(0, None),
             doc="Construction material correction factor",
         )
 
@@ -466,7 +466,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
 
         # Assume higher pressure fluid is tube side
         blk.pressure_factor = pyo.Var(
-            initialize=1, domain=pyo.NonNegativeReals, doc="Pressure design factor"
+            initialize=1, bounds=(0, None), doc="Pressure design factor"
         )
 
         try:
@@ -555,14 +555,13 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         # Build generic costing variables
         blk.base_cost_per_unit = pyo.Var(
             initialize=1e5,
-            domain=pyo.NonNegativeReals,
+            bounds=(0, None),
             units=pyo.units.USD_CE500,
             doc="Base cost per unit",
         )
 
         blk.capital_cost = pyo.Var(
             initialize=1e4,
-            domain=pyo.NonNegativeReals,
             bounds=(0, None),
             units=pyo.units.USD_CE500,
             doc="Capital cost of all units",
@@ -653,7 +652,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         # Calculate weight of vessel
         blk.weight = pyo.Var(
             initialize=1000,
-            domain=pyo.NonNegativeReals,
+            bounds=(0, None),
             doc="Weight of vessel in lb",
             units=pyo.units.pound,
         )
@@ -735,7 +734,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         blk.base_cost_platforms_ladders = pyo.Var(
             initialize=1000,
             units=pyo.units.USD_CE500,
-            domain=pyo.NonNegativeReals,
+            bounds=(0, None),
             doc="Base cost of platforms and ladders",
         )
 
@@ -797,7 +796,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         blk.base_cost_trays = pyo.Var(
             initialize=1e6,
             units=pyo.units.USD_CE500,
-            domain=pyo.NonNegativeReals,
+            bounds=(0, None),
             doc="Purchase cost of trays",
         )
 
@@ -846,7 +845,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         # Calculate base cost of a single tray
         blk.base_cost_per_tray = pyo.Var(
             initialize=1e4,
-            domain=pyo.NonNegativeReals,
+            bounds=(0, None),
             units=pyo.units.USD_CE500,
             doc="Base cost of a single tray",
         )
@@ -1030,7 +1029,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
 
         # Pressure design factor calculation
         blk.pressure_factor = pyo.Var(
-            initialize=1.1, domain=pyo.NonNegativeReals, doc="Pressure design factor"
+            initialize=1.1, bounds=(0, None), doc="Pressure design factor"
         )
 
         @blk.Constraint()
@@ -1355,7 +1354,6 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         # Build costing variables
         blk.capital_cost = pyo.Var(
             initialize=1e4,
-            domain=pyo.NonNegativeReals,
             bounds=(0, None),
             units=pyo.units.USD_CE500,
             doc="Capital cost of all units",
@@ -1364,7 +1362,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         if integer is True:
             domain = pyo.Integers
         else:
-            domain = pyo.NonNegativeReals
+            domain = pyo.Reals
         blk.number_of_units = pyo.Var(
             initialize=1,
             domain=domain,
@@ -1446,7 +1444,6 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         # Add common variables
         blk.capital_cost = pyo.Var(
             initialize=1e4,
-            domain=pyo.NonNegativeReals,
             bounds=(0, None),
             units=pyo.units.USD_CE500,
             doc="Capital cost of all units",
@@ -1455,7 +1452,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         if integer is True:
             domain = pyo.Integers
         else:
-            domain = pyo.NonNegativeReals
+            domain = pyo.Reals
         blk.number_of_units = pyo.Var(
             initialize=1,
             domain=domain,
@@ -1493,7 +1490,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         # Calculate pump head
         blk.pump_head = pyo.Var(
             initialize=10,
-            domain=pyo.NonNegativeReals,
+            bounds=(0, None),
             doc="Pump Head in feet of fluid flowing (Pressure rise/density)",
             units=pyo.units.pound_force * pyo.units.foot / pyo.units.pound,
         )
@@ -1507,7 +1504,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         # H = pump head in feet of flowing (pressure rise/liquid density)
         blk.size_factor = pyo.Var(
             initialize=10000,
-            domain=pyo.NonNegativeReals,
+            bounds=(0, None),
             doc="Pump size factor, f(Q,pump_head)",
         )
 
@@ -1578,7 +1575,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         # Base pump cost per unit
         blk.base_pump_cost_per_unit = pyo.Var(
             initialize=1e5,
-            domain=pyo.NonNegativeReals,
+            bounds=(0, None),
             units=pyo.units.USD_CE394,
             doc="Base cost of pump (less motor) per unit",
         )
@@ -1612,7 +1609,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
 
         blk.pump_capital_cost = pyo.Var(
             initialize=100000,
-            domain=pyo.NonNegativeReals,
+            bounds=(0, None),
             units=pyo.units.USD_CE500,
             doc="Capital cost of pumps (less motors)",
         )
@@ -1646,7 +1643,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
 
         blk.base_motor_cost_per_unit = pyo.Var(
             initialize=10000,
-            domain=pyo.NonNegativeReals,
+            bounds=(0, None),
             units=pyo.units.USD_CE394,
             doc="Motor base purchase cost per unit",
         )
@@ -1670,7 +1667,7 @@ class SSLWCostingData(FlowsheetCostingBlockData):
 
         blk.motor_capital_cost = pyo.Var(
             initialize=100000,
-            domain=pyo.NonNegativeReals,
+            bounds=(0, None),
             units=pyo.units.USD_CE500,
             doc="Capital cost of all motors",
         )
@@ -1751,14 +1748,13 @@ def _make_common_vars(blk, integer=True):
     # Build generic costing variables (most costing models need these vars)
     blk.base_cost_per_unit = pyo.Var(
         initialize=1e5,
-        domain=pyo.NonNegativeReals,
+        bounds=(0, None),
         units=pyo.units.USD_CE500,
         doc="Base cost per unit",
     )
 
     blk.capital_cost = pyo.Var(
         initialize=1e4,
-        domain=pyo.NonNegativeReals,
         bounds=(0, None),
         units=pyo.units.USD_CE500,
         doc="Capital cost of all units",
@@ -1767,7 +1763,7 @@ def _make_common_vars(blk, integer=True):
     if integer is True:
         domain = pyo.Integers
     else:
-        domain = pyo.NonNegativeReals
+        domain = pyo.Reals
     blk.number_of_units = pyo.Var(
         initialize=1, domain=domain, bounds=(1, 100), doc="Number of units to install."
     )
