@@ -81,11 +81,11 @@ def build_drum1D():
         has_heat_transfer=True,
         has_pressure_change=True,
         finite_elements=4,
-        drum_inner_diameter=1.2,
-        drum_thickness=0.119,
     )
 
     m.fs.unit.drum_length.fix(15.3256)
+    m.fs.unit.drum_diameter.fix(1.2)  # Inner diameter
+    m.fs.unit.drum_thickness.fix(0.119)  # Wall thickness
     m.fs.unit.level[:].fix(0.6)
     m.fs.unit.number_downcomer.fix(6)
     m.fs.unit.downcomer_diameter.fix(0.38)

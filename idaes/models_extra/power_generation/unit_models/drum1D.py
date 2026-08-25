@@ -60,6 +60,7 @@ import copy
 # Import Pyomo libraries
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
+from pyomo.common.deprecation import deprecation_warning
 from pyomo.environ import (
     value,
     Var,
@@ -109,6 +110,8 @@ from idaes.core.util.constants import Constants as const
 
 __author__ = "Boiler Subsystem Team (J. Ma, M. Zamarripa)"
 __version__ = "2.0.0"
+
+_log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("Drum1D")
@@ -241,18 +244,18 @@ discretizing length domain (default=3)""",
     CONFIG.declare(
         "drum_inner_diameter",
         ConfigValue(
-            default=1.0,
-            description="inside diameter of drum",
-            doc="define inside diameter of drum",
+            default=None,
+            description="DEPRECATED. Fix drum_diameter directly.",
+            doc="DEPRECATED. Fix drum_diameter directly.",
         ),
     )
 
     CONFIG.declare(
         "drum_thickness",
         ConfigValue(
-            default=0.1,
-            description="drum wall thickness",
-            doc="define drum wall thickness",
+            default=None,
+            description="DEPRECATED. Fix drum_thickness directly.",
+            doc="DEPRECATED. Fix drum_thickness directly.",
         ),
     )
 
@@ -384,15 +387,37 @@ discretizing length domain (default=3)""",
         """
         Define the Geometry of the Unit
         """
+        if self.config.drum_inner_diameter is None:
+            drum_d_init = 1.0
+        else:
+            deprecation_warning(
+                msg="Providing the drum diameter as a config argument is deprecated. "
+                "It has been converted to a Var, so it can be fixed to a value directly.",
+                logger=_log,
+                version="2.13.0",
+                remove_in="2.14.0",
+            )
+            drum_d_init = self.config.drum_inner_diameter
+
+        if self.config.drum_thickness is None:
+            drum_t_init = 0.1
+        else:
+            deprecation_warning(
+                msg="Providing the drum thickness as a config argument is deprecated. "
+                "It has been converted to a Var, so it can be fixed to a value directly.",
+                logger=_log,
+                version="2.13.0",
+                remove_in="2.14.0",
+            )
+            drum_t_init = self.config.drum_thickness
+
         # Inside diameter of drum
-        self.drum_diameter = Param(
-            initialize=self.config.drum_inner_diameter, doc="Inside Diameter of Drum"
-        )
+        self.drum_diameter = Var(initialize=drum_d_init, doc="Inside Diameter of Drum")
+        self.drum_diameter.fix()
 
         # Thickness of drum wall
-        self.drum_thickness = Param(
-            initialize=self.config.drum_thickness, doc="Wall Thickness of Drum"
-        )
+        self.drum_thickness = Var(initialize=drum_t_init, doc="Wall Thickness of Drum")
+        self.drum_thickness.fix()
 
         # Thickness of insulation layer
         self.insulation_thickness = Var(
@@ -423,7 +448,7 @@ discretizing length domain (default=3)""",
             return b.drum_ri + b.drum_thickness
 
         # Outside diameter expression
-        @self.Expression(doc="Outside Radius of Drum")
+        @self.Expression(doc="Outside diameter of drum")
         def drum_do(b):
             return b.drum_diameter + 2 * b.drum_thickness
 
@@ -431,6 +456,13 @@ discretizing length domain (default=3)""",
         @self.Expression(doc="Inner Surface Area")
         def drum_area(b):
             return const.pi * b.drum_diameter * b.drum_length
+
+        # Define the continuous domain for the drum wall model
+        self.dimensionless_radial_domain = ContinuousSet(bounds=(0, 1))
+
+        @self.Expression(self.dimensionless_radial_domain)
+        def radial_coordinate(b, r):
+            return b.drum_ri + r * b.drum_thickness
 
     def _make_performance(self):
         """
@@ -517,13 +549,6 @@ discretizing length domain (default=3)""",
             doc="Nu Number of Free Convection of Air",
         )
 
-        # Define the continuous domains for model
-        self.dimensionless_radial_domain = ContinuousSet(bounds=(0, 1))
-
-        @self.Expression(self.dimensionless_radial_domain)
-        def radial_coordinate(b, r):
-            return b.drum_ri + r * (b.drum_ro - b.drum_ri)
-
         # Temperature across wall thickness
         self.drum_wall_temperature = Var(
             self.flowsheet().time,
@@ -556,11 +581,11 @@ discretizing length domain (default=3)""",
 
         @self.Expression(self.flowsheet().time, self.dimensionless_radial_domain)
         def dTdr(b, t, r):
-            return b.dTdr_reduced[t, r] / (self.drum_ro - self.drum_ri)
+            return b.dTdr_reduced[t, r] / b.drum_thickness
 
         @self.Expression(self.flowsheet().time, self.dimensionless_radial_domain)
         def d2Tdr2(b, t, r):
-            return b.d2Tdr2_reduced[t, r] / (self.drum_ro - self.drum_ri) ** 2
+            return b.d2Tdr2_reduced[t, r] / b.drum_thickness**2
 
         discretizer = TransformationFactory("dae.finite_difference")
         discretizer.apply_to(
@@ -681,7 +706,7 @@ discretizing length domain (default=3)""",
             return (
                 b.dTdt[t, r]
                 == b.diff_therm_metal * b.d2Tdr2[t, r]
-                + b.diff_therm_metal * (1 / self.radial_coordinate[r]) * b.dTdr[t, r]
+                + b.diff_therm_metal * (1 / b.radial_coordinate[r]) * b.dTdr[t, r]
             )
 
         @self.Constraint(self.flowsheet().time, doc="Inner Wall Boundary")
@@ -1124,6 +1149,9 @@ discretizing length domain (default=3)""",
         def delta_sigma_z_r(b, t, r):
             return abs(b.sigma_z[t, r] - b.sigma_r[t, r])
 
+        # TODO put stress geometry in _set_geometry and convert expressions
+        # calculated outside of expression rules into named Expressions which
+        # can be called locally in those rules.
         # Calculate stress based on EN12952 standard
         # -----------------------------------------------------------------
         # mechanical stress of circumferential direction
@@ -1183,7 +1211,7 @@ discretizing length domain (default=3)""",
                 * 1e-5
                 * b.control_volume.properties_out[t].pressure
                 * r_ms_drum
-                / self.drum_thickness
+                / b.drum_thickness
             )
 
         # thermal stress at circumferential direction

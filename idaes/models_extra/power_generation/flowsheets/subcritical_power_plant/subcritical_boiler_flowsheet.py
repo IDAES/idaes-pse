@@ -98,8 +98,6 @@ def add_unit_models(m):
         has_heat_transfer=True,
         has_pressure_change=True,
         finite_elements=4,
-        drum_inner_diameter=1.8,
-        drum_thickness=0.13,
     )
 
     # Unit model for splitter from drum to downcomers and blowdown
@@ -505,6 +503,8 @@ def set_inputs(m):
 
     # drum inputs
     fs.aDrum.drum_length.fix(16.0)
+    fs.aDrum.drum_diameter.fix(1.8)  # Inner diameter
+    fs.aDrum.drum_thickness.fix(0.13)  # Wall thickness
     fs.aDrum.level[:].fix(0.9)
     fs.aDrum.number_downcomer.fix(8)
     fs.aDrum.downcomer_diameter.fix(0.375)
