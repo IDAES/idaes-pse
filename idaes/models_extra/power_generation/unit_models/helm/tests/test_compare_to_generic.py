@@ -16,6 +16,7 @@ import pytest
 
 import pyomo.environ as pyo
 import idaes.core
+from idaes.core.scaling.util import jacobian_cond
 import idaes.models.unit_models as cmodels
 import idaes.models_extra.power_generation.unit_models.helm as hmodels
 from idaes.models.properties.general_helmholtz import helmholtz_available
@@ -165,8 +166,18 @@ def test_compressor_pump_compare():
     m.fs.unit2.outlet.pressure[0].fix(Pout)
     m.fs.unit2.efficiency_isentropic.fix(eff)
 
+    helmholtz_scaler = m.fs.properties.default_state_scaler_class()
+    helmholtz_scaler.default_scaling_factors["flow_mol"] = 1e-4
+    m.fs.properties.default_state_scaler_object = helmholtz_scaler
+
+    compressor_scaler = m.fs.unit2.default_scaler()
+    compressor_scaler.scale_model(m.fs.unit2)
+
     m.fs.unit1.initialize()
     m.fs.unit2.initialize()
+
+    assert jacobian_cond(m.fs.unit2, scaled=False) == pytest.approx(1.09755e9, rel=1e-3)
+    assert jacobian_cond(m.fs.unit2, scaled=True) == pytest.approx(68.0093, rel=1e-3)
 
     # The pump calculations are a bit more approximate assuming incompressible
     # fluid entropy is independent of pressure, so the results here should be
