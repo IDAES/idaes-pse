@@ -48,8 +48,25 @@ def test_pump():
     m.fs.unit2.outlet.pressure[0].fix(Pout)
     m.fs.unit1.efficiency_pump.fix(eff)
     m.fs.unit2.efficiency_pump.fix(eff)
+
+    helmholtz_scaler = m.fs.properties.default_state_scaler_class()
+    helmholtz_scaler.default_scaling_factors["flow_mol"] = 1e-4
+    m.fs.properties.default_state_scaler_object = helmholtz_scaler
+
+    generic_pump_scaler = m.fs.unit1.default_scaler()
+    generic_pump_scaler.scale_model(m.fs.unit1)
+
+    helm_pump_scaler = m.fs.unit2.default_scaler()
+    helm_pump_scaler.scale_model(m.fs.unit2)
+
     m.fs.unit1.initialize()
     m.fs.unit2.initialize()
+
+    assert jacobian_cond(m.fs.unit1, scaled=False) == pytest.approx(4.21702e5, rel=1e-3)
+    assert jacobian_cond(m.fs.unit1, scaled=True) == pytest.approx(1.0458e4, rel=1e-3)
+
+    assert jacobian_cond(m.fs.unit2, scaled=False) == pytest.approx(3.20007e5, rel=1e-3)
+    assert jacobian_cond(m.fs.unit2, scaled=True) == pytest.approx(25.9220, rel=1e-3)
 
     assert pyo.value(m.fs.unit1.control_volume.work[0]) == pytest.approx(
         pyo.value(m.fs.unit2.control_volume.work[0]), rel=1e-7
@@ -127,8 +144,29 @@ def test_compressor():
     m.fs.unit2.outlet.pressure[0].fix(Pout)
     m.fs.unit1.efficiency_isentropic.fix(eff)
     m.fs.unit2.efficiency_isentropic.fix(eff)
+
+    helmholtz_scaler = m.fs.properties.default_state_scaler_class()
+    helmholtz_scaler.default_scaling_factors["flow_mol"] = 1e-3
+    m.fs.properties.default_state_scaler_object = helmholtz_scaler
+
+    generic_compressor_scaler = m.fs.unit1.default_scaler()
+    generic_compressor_scaler.scale_model(m.fs.unit1)
+
+    helm_compressor_scaler = m.fs.unit2.default_scaler()
+    helm_compressor_scaler.scale_model(m.fs.unit2)
+
     m.fs.unit1.initialize()
     m.fs.unit2.initialize()
+
+    assert jacobian_cond(m.fs.unit1, scaled=False) == pytest.approx(
+        4.56644e12, rel=1e-3
+    )
+    assert jacobian_cond(m.fs.unit1, scaled=True) == pytest.approx(2.73067e4, rel=1e-3)
+
+    assert jacobian_cond(m.fs.unit2, scaled=False) == pytest.approx(
+        1.41623e11, rel=1e-3
+    )
+    assert jacobian_cond(m.fs.unit2, scaled=True) == pytest.approx(4.18022e3, rel=1e-3)
 
     assert pyo.value(
         m.fs.unit1.control_volume.properties_out[0].temperature
@@ -170,11 +208,17 @@ def test_compressor_pump_compare():
     helmholtz_scaler.default_scaling_factors["flow_mol"] = 1e-4
     m.fs.properties.default_state_scaler_object = helmholtz_scaler
 
+    pump_scaler = m.fs.unit1.default_scaler()
+    pump_scaler.scale_model(m.fs.unit1)
+
     compressor_scaler = m.fs.unit2.default_scaler()
     compressor_scaler.scale_model(m.fs.unit2)
 
     m.fs.unit1.initialize()
     m.fs.unit2.initialize()
+
+    assert jacobian_cond(m.fs.unit1, scaled=False) == pytest.approx(3.2001e5, rel=1e-3)
+    assert jacobian_cond(m.fs.unit1, scaled=True) == pytest.approx(25.9220, rel=1e-3)
 
     assert jacobian_cond(m.fs.unit2, scaled=False) == pytest.approx(1.09755e9, rel=1e-3)
     assert jacobian_cond(m.fs.unit2, scaled=True) == pytest.approx(68.0093, rel=1e-3)
