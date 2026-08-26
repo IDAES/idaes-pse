@@ -104,8 +104,29 @@ def test_turbine():
     m.fs.unit2.outlet.pressure[0].fix(Pout)
     m.fs.unit1.efficiency_isentropic.fix(0.9)
     m.fs.unit2.efficiency_isentropic.fix(0.9)
+
+    helmholtz_scaler = m.fs.properties.default_state_scaler_class()
+    helmholtz_scaler.default_scaling_factors["flow_mol"] = 1e-3
+    m.fs.properties.default_state_scaler_object = helmholtz_scaler
+
+    generic_turbine_scaler = m.fs.unit1.default_scaler()
+    generic_turbine_scaler.scale_model(m.fs.unit1)
+
+    helm_turbine_scaler = m.fs.unit2.default_scaler()
+    helm_turbine_scaler.scale_model(m.fs.unit2)
+
     m.fs.unit1.initialize()
     m.fs.unit2.initialize()
+
+    assert jacobian_cond(m.fs.unit1, scaled=False) == pytest.approx(
+        6.28161e11, rel=1e-3
+    )
+    assert jacobian_cond(m.fs.unit1, scaled=True) == pytest.approx(7750.81, rel=1e-3)
+
+    assert jacobian_cond(m.fs.unit2, scaled=False) == pytest.approx(
+        5.09370e10, rel=1e-3
+    )
+    assert jacobian_cond(m.fs.unit2, scaled=True) == pytest.approx(2689.86, rel=1e-3)
 
     assert pyo.value(
         m.fs.unit1.control_volume.properties_out[0].temperature
