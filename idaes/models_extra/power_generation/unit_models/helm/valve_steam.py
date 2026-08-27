@@ -362,10 +362,9 @@ ValveFunctionType.custom}""",
                 self.valve_opening.unfix()
             elif v.fixed and self.pressure_flow_equation.active:
                 self.inlet.flow_mol[t].unfix()
-        # import pdb; pdb.set_trace()
-        # with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-        #     opt.solve(self, tee=slc.tee)
-        opt.solve(self, tee=True)
+
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            opt.solve(self, tee=slc.tee)
 
         init_log.info("Steam valve initialization complete")
 
