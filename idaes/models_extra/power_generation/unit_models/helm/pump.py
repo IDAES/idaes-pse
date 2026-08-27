@@ -89,8 +89,12 @@ class HelmPumpScaler(CustomScalerBase):
             sf_work = self.get_scaling_factor(
                 model.control_volume.work[t], default=1e-3, warning=True
             )
-            self.set_component_scaling_factor(model.work_fluid[t], sf_work)
-            self.set_component_scaling_factor(model.shaft_work[t], sf_work)
+            self.set_component_scaling_factor(
+                model.work_fluid[t], sf_work, overwrite=overwrite
+            )
+            self.set_component_scaling_factor(
+                model.shaft_work[t], sf_work, overwrite=overwrite
+            )
 
     def constraint_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: pyo.ComponentMap = None

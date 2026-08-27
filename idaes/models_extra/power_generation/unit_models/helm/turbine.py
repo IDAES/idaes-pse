@@ -74,9 +74,11 @@ class HelmIsentropicTurbineScaler(CustomScalerBase):
                 default=1e-4,
                 warning=True,
             )
-            self.set_component_scaling_factor(model.h_is[t], sf_H)
-            self.set_component_scaling_factor(model.work_isentropic[t], sf_F * sf_H)
-            self.set_component_scaling_factor(model.h_o[t], sf_H)
+            self.set_component_scaling_factor(model.h_is[t], sf_H, overwrite=overwrite)
+            self.set_component_scaling_factor(
+                model.work_isentropic[t], sf_F * sf_H, overwrite=overwrite
+            )
+            self.set_component_scaling_factor(model.h_o[t], sf_H, overwrite=overwrite)
 
     def constraint_scaling_routine(
         self, model, overwrite: bool = False, submodel_scalers: pyo.ComponentMap = None
