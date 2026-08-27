@@ -332,7 +332,7 @@ ValveFunctionType.custom}""",
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)
 
-        # Store values for presure so they can be restored after estimating
+        # Store values for pressure so they can be restored after estimating
         # the outlet state
         P = {t: self.outlet.pressure[t].value for t in self.flowsheet().time}
         # Propagate state variables to outlet block
