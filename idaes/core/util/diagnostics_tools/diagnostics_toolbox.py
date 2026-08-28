@@ -26,6 +26,7 @@ from pyomo.environ import (
     Constraint,
     Objective,
     value,
+    Var,
 )
 from pyomo.core.base.block import BlockData
 from pyomo.core.base.constraint import ConstraintData
@@ -245,6 +246,14 @@ CONFIG.declare(
         description="Feasibility tolerance for identifying infeasible constraints and bounds",
     ),
 )
+CONFIG.declare(
+    "optimization_variables",
+    ConfigValue(
+        default=None,
+        description="Variables unfixed during optimization phase. Used to "
+        "interpret degrees of freedom and Dulmage Mendelsohn partition.",
+    ),
+)
 
 
 @document_kwargs_from_configdict(CONFIG)
@@ -306,6 +315,8 @@ class DiagnosticsToolbox:
             )
         self._model = model
         self.config = CONFIG(kwargs)
+        if self.config.optimization_variables is None:
+            self.config.optimization_variables = []
 
     @property
     def model(self):
@@ -1246,11 +1257,12 @@ class DiagnosticsToolbox:
         warnings = []
         next_steps = []
         dof = degrees_of_freedom(self._model)
-        if dof != 0:
+        n_opt = len(self.config.optimization_variables)
+        if dof != len(self.config.optimization_variables):
             dstring = "Degrees"
             if abs(dof) == 1:
                 dstring = "Degree"
-            warnings.append(f"WARNING: {dof} {dstring} of Freedom")
+            warnings.append(f"WARNING: {dof} {dstring} of Freedom (Expected {n_opt})")
         if len(uc) > 0:
             cstring = "Components"
             if len(uc) == 1:
@@ -1259,18 +1271,31 @@ class DiagnosticsToolbox:
             next_steps.append(
                 self.display_components_with_inconsistent_units.__name__ + "()"
             )
-        if any(len(x) > 0 for x in [uc_var, uc_con, oc_var, oc_con]):
+
+        # uc_var and uc_con contain lists of lists corresponding to each
+        # underconstrained block. In order to get the total number, we need
+        # to sum over all blocks.
+        n_uc_var = len(sum(uc_var, []))
+        n_uc_con = len(sum(uc_con, []))
+        uc_dof = n_uc_var - n_uc_con
+
+        # Display underconstrained set if there are any unexpected degrees of
+        # freedom and the underconstrained set is nonempty
+        display_uc = uc_dof != n_opt and any(len(x) > 0 for x in [uc_var, uc_con])
+        display_oc = any(len(x) > 0 for x in [oc_var, oc_con])
+
+        if display_uc or display_oc:
             warnings.append(
                 f"WARNING: Structural singularity found\n"
-                f"{TAB*2}Under-Constrained Set: {len(sum(uc_var, []))} "
-                f"variables, {len(sum(uc_con, []))} constraints\n"
+                f"{TAB*2}Under-Constrained Set: {n_uc_var} "
+                f"variables, {n_uc_con} constraints\n"
                 f"{TAB*2}Over-Constrained Set: {len(sum(oc_var, []))} "
                 f"variables, {len(sum(oc_con, []))} constraints"
             )
 
-        if any(len(x) > 0 for x in [uc_var, uc_con]):
+        if display_uc:
             next_steps.append(self.display_underconstrained_set.__name__ + "()")
-        if any(len(x) > 0 for x in [oc_var, oc_con]):
+        if display_oc:
             next_steps.append(self.display_overconstrained_set.__name__ + "()")
 
         if not ignore_evaluation_errors:
