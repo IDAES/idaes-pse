@@ -1272,7 +1272,7 @@ class DiagnosticsToolbox:
             footer="=",
         )
 
-    def _get_inactive_opt_vars(self):
+    def _get_inactive_optimization_variables(self):
         """
         Returns a list of user-designated optimization variables that
         do not appear in any active equality constraints.
@@ -1290,7 +1290,7 @@ class DiagnosticsToolbox:
                 inactive_opt_vars.append(var)
         return inactive_opt_vars
 
-    def _get_unused_opt_vars(self):
+    def _get_unused_optimization_variables(self):
         """
         Returns a list of user-designated optimization variables that
         do not appear in any active constraints or objectives.
@@ -1307,7 +1307,7 @@ class DiagnosticsToolbox:
                 unused_opt_vars.append(var)
         return unused_opt_vars
 
-    def display_unused_optimization_variables(self):
+    def display_unused_optimization_variables(self, stream):
         """
         Displays user-designated optimization variables that do not appear
         in any active constraints or objectives.
@@ -1362,9 +1362,10 @@ class DiagnosticsToolbox:
         # Therefore adjust the expected degrees of freedom by these "inactive"
         # variables. If such a variable is totally unused, we can flag it
         # elsewhere.
-        inactive_opt = self._get_inactive_opt_vars()
+        inactive_opt = self._get_inactive_optimization_variables()
         expected_dof = len(self.config.optimization_variables) - len(inactive_opt)
-        if dof != len(self.config.optimization_variables):
+
+        if dof != expected_dof:
             dstring = "Degrees"
             if abs(dof) == 1:
                 dstring = "Degree"
@@ -1391,13 +1392,13 @@ class DiagnosticsToolbox:
             )
             next_steps.append(self.display_fixed_optimization_variables.__name__ + "()")
 
-        n_unused_opt_vars = len(self._get_unused_opt_vars())
+        n_unused_opt_vars = len(self._get_unused_optimization_variables())
         if n_unused_opt_vars > 0:
-            if n_fixed_opt_vars == 1:
+            if n_unused_opt_vars == 1:
                 vword = "variable"
             else:
                 vword = "variables"
-            warnings.append(f"WARNING: {n_fixed_opt_vars} optimization {vword} unused")
+            warnings.append(f"WARNING: {n_unused_opt_vars} optimization {vword} unused")
             next_steps.append(
                 self.display_unused_optimization_variables.__name__ + "()"
             )

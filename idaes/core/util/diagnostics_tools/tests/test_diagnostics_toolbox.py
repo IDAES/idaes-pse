@@ -187,6 +187,22 @@ The following optimization variable(s) are fixed:
         assert stream.getvalue() == expected
 
     @pytest.mark.component
+    def test_display_unused_optimization_variables(self, model):
+        dt = DiagnosticsToolbox(
+            model=model.b, optimization_variables=[model.b.v7, model.b.v8]
+        )
+        stream = StringIO()
+        dt.display_unused_optimization_variables(stream)
+        expected = """====================================================================================
+The following optimization variable(s) appear in no active constraint or objective:
+
+    b.v8
+
+====================================================================================
+"""
+        assert stream.getvalue() == expected
+
+    @pytest.mark.component
     def test_display_variables_fixed_to_zero(self, model):
         dt = DiagnosticsToolbox(model=model.b)
 
@@ -997,15 +1013,17 @@ The following constraints have no free variables:
         # Create structural singularities
         m.b.v2.unfix()
 
-        dt = DiagnosticsToolbox(model=m.b, optimization_variables=[m.b.v2])
+        dt = DiagnosticsToolbox(model=m.b, optimization_variables=[m.b.v2, m.b.v8])
 
         warnings, next_steps = dt._collect_structural_warnings()
 
-        assert len(warnings) == 1
+        assert len(warnings) == 2
         assert "WARNING: 1 Component with inconsistent units" in warnings
+        assert "WARNING: 1 optimization variable unused" in warnings
 
-        assert len(next_steps) == 1
+        assert len(next_steps) == 2
         assert "display_components_with_inconsistent_units()" in next_steps
+        assert "display_unused_optimization_variables()" in next_steps
 
     @pytest.mark.component
     def test_collect_structural_warnings_overconstrained(self, model):
@@ -1033,9 +1051,12 @@ The following constraints have no free variables:
         assert "display_overconstrained_set()" in next_steps
 
     @pytest.mark.component
-    def test_collect_structural_warnings_overconstrained_opt_var(self, model):
+    def test_collect_structural_warnings_overconstrained_opt_vars(self, model):
         # Clone model so we can add some singularities
         m = model.clone()
+        # Add a second unused var so we can test that the warning
+        # for unused optimization variables is appropriately pluralized
+        m.b.v9 = Var()
 
         # Fix units
         m.b.del_component(m.b.c1)
@@ -1044,20 +1065,25 @@ The following constraints have no free variables:
         # Create structural singularities
         m.b.v4.fix(2)
 
-        dt = DiagnosticsToolbox(model=m.b, optimization_variables=[m.b.v2])
+        dt = DiagnosticsToolbox(
+            model=m.b, optimization_variables=[m.b.v2, m.b.v8, m.b.v9]
+        )
 
         warnings, next_steps = dt._collect_structural_warnings()
 
-        assert len(warnings) == 3
+        assert len(warnings) == 4
         assert "WARNING: -1 Degree of Freedom (Expected 1)" in warnings
         assert "WARNING: 1 optimization variable unexpectedly fixed" in warnings
+        assert "WARNING: 2 optimization variables unused" in warnings
+
         assert """WARNING: Structural singularity found
         Under-Constrained Set: 0 variables, 0 constraints
         Over-Constrained Set: 1 variables, 2 constraints""" in warnings
 
-        assert len(next_steps) == 2
+        assert len(next_steps) == 3
         assert "display_overconstrained_set()" in next_steps
         assert "display_fixed_optimization_variables()" in next_steps
+        assert "display_unused_optimization_variables()" in next_steps
 
     @pytest.mark.component
     def test_collect_structural_warnings_square_opt_var(self, model):
@@ -1070,6 +1096,31 @@ The following constraints have no free variables:
         warnings, next_steps = dt._collect_structural_warnings()
 
         assert len(warnings) == 3
+        assert "WARNING: 0 Degrees of Freedom (Expected 3)" in warnings
+        assert "WARNING: 2 optimization variables unexpectedly fixed" in warnings
+        assert "WARNING: 1 Component with inconsistent units" in warnings
+
+        assert len(next_steps) == 2
+        assert "display_components_with_inconsistent_units()" in next_steps
+        assert "display_fixed_optimization_variables()" in next_steps
+
+    @pytest.mark.component
+    def test_collect_structural_warnings_square_opt_var_ineq_obj(self, model):
+        m = model.clone()
+        m.b.v9 = Var()
+        m.b.i1 = Constraint(expr=m.b.v8 >= 0)
+        m.b.obj1 = Objective(expr=m.b.v9**2)
+
+        dt = DiagnosticsToolbox(
+            model=m.b, optimization_variables=[m.b.v2, m.b.v3, m.b.v5, m.b.v8, m.b.v9]
+        )
+
+        warnings, next_steps = dt._collect_structural_warnings()
+
+        assert len(warnings) == 3
+        # m.b.v8 and m.b.v9 should not show up in the DOF, which considers
+        # only equality constraints, but should also not be considered unused
+        # because they show up in an inequality constraint and an objective.
         assert "WARNING: 0 Degrees of Freedom (Expected 3)" in warnings
         assert "WARNING: 2 optimization variables unexpectedly fixed" in warnings
         assert "WARNING: 1 Component with inconsistent units" in warnings
