@@ -28,6 +28,8 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf
 
 from idaes.core import (
     declare_process_block_class,
+    InletPort,
+    OutletPort,
     UnitModelBlockData,
     useDefault,
 )
@@ -183,7 +185,9 @@ from 1 to num_outlets).}""",
             doc="Material properties of mixed (inlet) stream",
             **tmp_dict,
         )
-        self.add_port(name="inlet", block=self.mixed_state, doc="Inlet Port")
+        self.add_port(
+            name="inlet", block=self.mixed_state, doc="Inlet Port", port_class=InletPort
+        )
 
     def create_outlet_list(self):
         """
@@ -255,7 +259,9 @@ from 1 to num_outlets).}""",
         """
         self.outlet_ports = {}
         for p in self.outlet_list:
-            self.add_port(name=p, block=self.outlet_blocks[p], doc="Outlet")
+            self.add_port(
+                name=p, block=self.outlet_blocks[p], doc="Outlet", port_class=OutletPort
+            )
             self.outlet_ports[p] = getattr(self, p)
 
     def initialize_build(self, outlvl=idaeslog.NOTSET, optarg=None, solver=None):

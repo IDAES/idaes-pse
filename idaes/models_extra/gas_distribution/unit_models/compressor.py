@@ -30,7 +30,9 @@ from pyomo.core.base.units_container import units as pyunits
 
 from idaes.core import (
     declare_process_block_class,
+    InletPort,
     MaterialBalanceType,
+    OutletPort,
     UnitModelBlockData,
 )
 from idaes.core.util.config import is_physical_parameter_block
@@ -79,11 +81,13 @@ class IsothermalCompressorData(UnitModelBlockData):
             name="inlet_port",
             block=self.inlet_state,
             doc="The inlet to the compressor",
+            port_class=InletPort,
         )
         self.add_port(
             name="outlet_port",
             block=self.outlet_state,
             doc="The outlet from the compressor",
+            port_class=OutletPort,
         )
 
         self.add_state_material_balances(

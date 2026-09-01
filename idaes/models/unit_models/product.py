@@ -19,7 +19,12 @@ from pyomo.environ import Reference
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
-from idaes.core import declare_process_block_class, UnitModelBlockData, useDefault
+from idaes.core import (
+    declare_process_block_class,
+    InletPort,
+    UnitModelBlockData,
+    useDefault,
+)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.logger as idaeslog
@@ -134,7 +139,9 @@ see property package for documentation.}""",
             setattr(self, s, r)
 
         # Add outlet port
-        self.add_port(name="inlet", block=self.properties, doc="Inlet Port")
+        self.add_port(
+            name="inlet", block=self.properties, doc="Inlet Port", port_class=InletPort
+        )
 
     def initialize_build(
         blk, state_args=None, outlvl=idaeslog.NOTSET, solver=None, optarg=None
