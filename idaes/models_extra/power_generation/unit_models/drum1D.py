@@ -55,9 +55,12 @@ Created: October 27 2020
 # TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
+import copy
+
 # Import Pyomo libraries
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
+from pyomo.common.deprecation import deprecation_warning
 from pyomo.environ import (
     value,
     Var,
@@ -90,7 +93,11 @@ from idaes.core.util.config import is_physical_parameter_block
 # from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 import idaes.core.util.scaling as iscale
+from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.solvers import get_solver
+
+from idaes.models.properties.general_helmholtz import HelmholtzParameterBlockData
+from idaes.models.properties.general_helmholtz.helmholtz_functions import PhaseType
 
 from idaes.models_extra.power_generation.unit_models.helm.phase_separator import (
     HelmPhaseSeparator,
@@ -103,6 +110,8 @@ from idaes.core.util.constants import Constants as const
 
 __author__ = "Boiler Subsystem Team (J. Ma, M. Zamarripa)"
 __version__ = "2.0.0"
+
+_log = idaeslog.getLogger(__name__)
 
 
 @declare_process_block_class("Drum1D")
@@ -235,18 +244,18 @@ discretizing length domain (default=3)""",
     CONFIG.declare(
         "drum_inner_diameter",
         ConfigValue(
-            default=1.0,
-            description="inside diameter of drum",
-            doc="define inside diameter of drum",
+            default=None,
+            description="DEPRECATED. Fix drum_diameter directly.",
+            doc="DEPRECATED. Fix drum_diameter directly.",
         ),
     )
 
     CONFIG.declare(
         "drum_thickness",
         ConfigValue(
-            default=0.1,
-            description="drum wall thickness",
-            doc="define drum wall thickness",
+            default=None,
+            description="DEPRECATED. Fix drum_thickness directly.",
+            doc="DEPRECATED. Fix drum_thickness directly.",
         ),
     )
 
@@ -258,12 +267,24 @@ discretizing length domain (default=3)""",
         # Call UnitModel.build to setup dynamics
         super().build()
 
+        if (
+            not isinstance(self.config.property_package, HelmholtzParameterBlockData)
+            or self.config.property_package.config.phase_presentation != PhaseType.MIX
+        ):
+            raise ConfigurationError(
+                "The Drum1D model requires a Helmholtz property package with a "
+                "Mixed phase presentation."
+            )
+
+        pp_args = copy.copy(self.config.property_package_args)
+        pp_args["has_phase_equilibrium"] = False
+
         # Build Control Volume
         self.control_volume = ControlVolume0DBlock(
             dynamic=self.config.dynamic,
             has_holdup=self.config.has_holdup,
             property_package=self.config.property_package,
-            property_package_args=self.config.property_package_args,
+            property_package_args=pp_args,
         )
 
         self.control_volume.add_geometry()
@@ -284,12 +305,15 @@ discretizing length domain (default=3)""",
         )
 
         self.flash = HelmPhaseSeparator(
-            dynamic=False, property_package=self.config.property_package
+            dynamic=False,
+            property_package=self.config.property_package,
+            property_package_args=pp_args,
         )
 
         self.mixer = HelmMixer(
             dynamic=False,
             property_package=self.config.property_package,
+            property_package_args=pp_args,
             momentum_mixing_type=MomentumMixingType.equality,
             inlet_list=["FeedWater", "SaturatedWater"],
         )
@@ -363,15 +387,37 @@ discretizing length domain (default=3)""",
         """
         Define the Geometry of the Unit
         """
+        if self.config.drum_inner_diameter is None:
+            drum_d_init = 1.0
+        else:
+            deprecation_warning(
+                msg="Providing the drum diameter as a config argument is deprecated. "
+                "It has been converted to a Var, so it can be fixed to a value directly.",
+                logger=_log,
+                version="2.13.0",
+                remove_in="2.14.0",
+            )
+            drum_d_init = self.config.drum_inner_diameter
+
+        if self.config.drum_thickness is None:
+            drum_t_init = 0.1
+        else:
+            deprecation_warning(
+                msg="Providing the drum thickness as a config argument is deprecated. "
+                "It has been converted to a Var, so it can be fixed to a value directly.",
+                logger=_log,
+                version="2.13.0",
+                remove_in="2.14.0",
+            )
+            drum_t_init = self.config.drum_thickness
+
         # Inside diameter of drum
-        self.drum_diameter = Param(
-            initialize=self.config.drum_inner_diameter, doc="Inside Diameter of Drum"
-        )
+        self.drum_diameter = Var(initialize=drum_d_init, doc="Inside Diameter of Drum")
+        self.drum_diameter.fix()
 
         # Thickness of drum wall
-        self.drum_thickness = Param(
-            initialize=self.config.drum_thickness, doc="Wall Thickness of Drum"
-        )
+        self.drum_thickness = Var(initialize=drum_t_init, doc="Wall Thickness of Drum")
+        self.drum_thickness.fix()
 
         # Thickness of insulation layer
         self.insulation_thickness = Var(
@@ -402,7 +448,7 @@ discretizing length domain (default=3)""",
             return b.drum_ri + b.drum_thickness
 
         # Outside diameter expression
-        @self.Expression(doc="Outside Radius of Drum")
+        @self.Expression(doc="Outside diameter of drum")
         def drum_do(b):
             return b.drum_diameter + 2 * b.drum_thickness
 
@@ -410,6 +456,13 @@ discretizing length domain (default=3)""",
         @self.Expression(doc="Inner Surface Area")
         def drum_area(b):
             return const.pi * b.drum_diameter * b.drum_length
+
+        # Define the continuous domain for the drum wall model
+        self.dimensionless_radial_domain = ContinuousSet(bounds=(0, 1))
+
+        @self.Expression(self.dimensionless_radial_domain)
+        def radial_coordinate(b, r):
+            return b.drum_ri + r * b.drum_thickness
 
     def _make_performance(self):
         """
@@ -496,12 +549,12 @@ discretizing length domain (default=3)""",
             doc="Nu Number of Free Convection of Air",
         )
 
-        # Define the continuous domains for model
-        self.radial_domain = ContinuousSet(bounds=(self.drum_ri, self.drum_ro))
-
         # Temperature across wall thickness
         self.drum_wall_temperature = Var(
-            self.flowsheet().time, self.radial_domain, bounds=(280, 800), initialize=550
+            self.flowsheet().time,
+            self.dimensionless_radial_domain,
+            bounds=(280, 800),
+            initialize=550,
         )
 
         # Declare derivatives in the model
@@ -509,16 +562,36 @@ discretizing length domain (default=3)""",
             self.dTdt = DerivativeVar(
                 self.drum_wall_temperature, wrt=self.flowsheet().time
             )
-        self.dTdr = DerivativeVar(self.drum_wall_temperature, wrt=self.radial_domain)
-        self.d2Tdr2 = DerivativeVar(
-            self.drum_wall_temperature, wrt=(self.radial_domain, self.radial_domain)
+        else:
+
+            @self.Expression(self.flowsheet().time, self.dimensionless_radial_domain)
+            def dTdt(b, t, r):
+                return 0
+
+        self.dTdr_reduced = DerivativeVar(
+            self.drum_wall_temperature,
+            wrt=self.dimensionless_radial_domain,
+            initialize=0,
         )
+        self.d2Tdr2_reduced = DerivativeVar(
+            self.drum_wall_temperature,
+            wrt=(self.dimensionless_radial_domain, self.dimensionless_radial_domain),
+            initialize=0,
+        )
+
+        @self.Expression(self.flowsheet().time, self.dimensionless_radial_domain)
+        def dTdr(b, t, r):
+            return b.dTdr_reduced[t, r] / b.drum_thickness
+
+        @self.Expression(self.flowsheet().time, self.dimensionless_radial_domain)
+        def d2Tdr2(b, t, r):
+            return b.d2Tdr2_reduced[t, r] / b.drum_thickness**2
 
         discretizer = TransformationFactory("dae.finite_difference")
         discretizer.apply_to(
             self,
             nfe=self.config.finite_elements,
-            wrt=self.radial_domain,
+            wrt=self.dimensionless_radial_domain,
             scheme="CENTRAL",
         )
 
@@ -621,24 +694,20 @@ discretizing length domain (default=3)""",
         # Constraint for heat conduction equation
         @self.Constraint(
             self.flowsheet().time,
-            self.radial_domain,
+            self.dimensionless_radial_domain,
             doc="1-D Heat Conduction Equation Through Radius",
         )
         def heat_conduction_eqn(b, t, r):
-            if r == b.radial_domain.first() or r == b.radial_domain.last():
+            if (
+                r == b.dimensionless_radial_domain.first()
+                or r == b.dimensionless_radial_domain.last()
+            ):
                 return Constraint.Skip
-            if self.config.dynamic is True:
-                return (
-                    b.dTdt[t, r]
-                    == b.diff_therm_metal * b.d2Tdr2[t, r]
-                    + b.diff_therm_metal * (1 / r) * b.dTdr[t, r]
-                )
-            else:
-                return (
-                    0
-                    == b.diff_therm_metal * b.d2Tdr2[t, r]
-                    + b.diff_therm_metal * (1 / r) * b.dTdr[t, r]
-                )
+            return (
+                b.dTdt[t, r]
+                == b.diff_therm_metal * b.d2Tdr2[t, r]
+                + b.diff_therm_metal * (1 / b.radial_coordinate[r]) * b.dTdr[t, r]
+            )
 
         @self.Constraint(self.flowsheet().time, doc="Inner Wall Boundary")
         def inner_wall_bc_eqn(b, t):
@@ -646,9 +715,10 @@ discretizing length domain (default=3)""",
                 b.heat_transfer_in[t]
                 * (
                     b.control_volume.properties_out[t].temperature
-                    - b.drum_wall_temperature[t, b.radial_domain.first()]
+                    - b.drum_wall_temperature[t, b.dimensionless_radial_domain.first()]
                 )
-                == -b.dTdr[t, b.radial_domain.first()] * b.therm_cond_metal
+                == -b.dTdr[t, b.dimensionless_radial_domain.first()]
+                * b.therm_cond_metal
             )
 
         @self.Constraint(self.flowsheet().time, doc="Outer Wall Boundary")
@@ -656,10 +726,10 @@ discretizing length domain (default=3)""",
             return (
                 b.heat_transfer_out[t]
                 * (
-                    b.drum_wall_temperature[t, b.radial_domain.last()]
+                    b.drum_wall_temperature[t, b.dimensionless_radial_domain.last()]
                     - b.temperature_ambient[t]
                 )
-                == -b.dTdr[t, b.radial_domain.last()] * b.therm_cond_metal
+                == -b.dTdr[t, b.dimensionless_radial_domain.last()] * b.therm_cond_metal
             )
 
         # Inner wall BC for dTdt
@@ -667,52 +737,51 @@ discretizing length domain (default=3)""",
             self.flowsheet().time, doc="Extra Inner Wall Temperature Derivative"
         )
         def extra_at_inner_wall_eqn(b, t):
-            if self.config.dynamic is True:
-                term = b.dTdt[t, b.radial_domain.first()]
-            else:
-                term = 0
-            return term == 4 * b.diff_therm_metal * (
-                b.radial_domain.first() + b.radial_domain.at(2)
-            ) / (b.radial_domain.at(2) - b.radial_domain.first()) ** 2 / (
-                3 * b.radial_domain.first() + b.radial_domain.at(2)
-            ) * (
-                b.drum_wall_temperature[t, b.radial_domain.at(2)]
-                - b.drum_wall_temperature[t, b.radial_domain.first()]
+            # Dimensionless coordinates
+            r1 = b.dimensionless_radial_domain.first()
+            r2 = b.dimensionless_radial_domain.at(2)
+            # Dimensionful equivalents
+            R1 = b.radial_coordinate[r1]
+            R2 = b.radial_coordinate[r2]
+
+            return b.dTdt[t, r1] == 4 * b.diff_therm_metal * (R1 + R2) / (
+                R2 - R1
+            ) ** 2 / (3 * R1 + R2) * (
+                b.drum_wall_temperature[t, r2] - b.drum_wall_temperature[t, r1]
             ) + 8 * b.diff_therm_metal / b.therm_cond_metal * b.heat_transfer_in[
                 t
-            ] * b.radial_domain.first() / (
-                b.radial_domain.at(2) - b.radial_domain.first()
+            ] * R1 / (
+                R2 - R1
             ) / (
-                3 * b.radial_domain.first() + b.radial_domain.at(2)
+                3 * R1 + R2
             ) * (
                 b.control_volume.properties_out[t].temperature
-                - b.drum_wall_temperature[t, b.radial_domain.first()]
+                - b.drum_wall_temperature[t, r1]
             )
 
         @self.Constraint(
             self.flowsheet().time, doc="Extra Outer Wall Temperature Derivative"
         )
         def extra_at_outer_wall_eqn(b, t):
-            if self.config.dynamic is True:
-                term = b.dTdt[t, b.radial_domain.last()]
-            else:
-                term = 0
-            return term == 4 * b.diff_therm_metal * (
-                b.radial_domain.last() + b.radial_domain.at(-2)
-            ) / (b.radial_domain.last() - b.radial_domain.at(-2)) ** 2 / (
-                3 * b.radial_domain.last() + b.radial_domain.at(-2)
-            ) * (
-                b.drum_wall_temperature[t, b.radial_domain.at(-2)]
-                - b.drum_wall_temperature[t, b.radial_domain.last()]
+            # Dimensionless coordinates
+            rf = b.dimensionless_radial_domain.last()
+            rfm1 = b.dimensionless_radial_domain.at(-2)
+            # Dimensionful equivalents
+            Rf = b.radial_coordinate[rf]
+            Rfm1 = b.radial_coordinate[rfm1]
+
+            return b.dTdt[t, rf] == 4 * b.diff_therm_metal * (Rf + Rfm1) / (
+                Rf - Rfm1
+            ) ** 2 / (3 * Rf + Rfm1) * (
+                b.drum_wall_temperature[t, rfm1] - b.drum_wall_temperature[t, rf]
             ) + 8 * b.diff_therm_metal / b.therm_cond_metal * b.heat_transfer_out[
                 t
-            ] * b.radial_domain.last() / (
-                b.radial_domain.last() - b.radial_domain.at(-2)
+            ] * Rf / (
+                Rf - Rfm1
             ) / (
-                3 * b.radial_domain.last() + b.radial_domain.at(-2)
+                3 * Rf + Rfm1
             ) * (
-                b.temperature_ambient[t]
-                - b.drum_wall_temperature[t, b.radial_domain.last()]
+                b.temperature_ambient[t] - b.drum_wall_temperature[t, rf]
             )
 
         # Reduced pressure expression
@@ -738,7 +807,9 @@ discretizing length domain (default=3)""",
                     0.1
                     + (
                         b.control_volume.properties_out[t].temperature
-                        - b.drum_wall_temperature[t, b.radial_domain.first()]
+                        - b.drum_wall_temperature[
+                            t, b.dimensionless_radial_domain.first()
+                        ]
                     )
                     ** 2
                 )
@@ -775,7 +846,7 @@ discretizing length domain (default=3)""",
             return (
                 b.temperature_ambient[t]
                 + (
-                    b.drum_wall_temperature[t, b.radial_domain.last()]
+                    b.drum_wall_temperature[t, b.dimensionless_radial_domain.last()]
                     - b.temperature_ambient[t]
                 )
                 * b.heat_transfer_out[t]
@@ -811,7 +882,7 @@ discretizing length domain (default=3)""",
         @self.Constraint(self.flowsheet().time, doc="Heat Loss of Water")
         def heat_loss_eqn(b, t):
             return b.heat_duty[t] == b.drum_area * b.heat_transfer_in[t] * (
-                b.drum_wall_temperature[t, b.radial_domain.first()]
+                b.drum_wall_temperature[t, b.dimensionless_radial_domain.first()]
                 - b.control_volume.properties_out[t].temperature
             )
 
@@ -819,7 +890,7 @@ discretizing length domain (default=3)""",
         # EN 13445 Standard
         # Integer indexing for radius domain
         self.rindex = Param(
-            self.radial_domain,
+            self.dimensionless_radial_domain,
             initialize=1,
             mutable=True,
             doc="Integer Indexing for Radius Domain",
@@ -828,48 +899,60 @@ discretizing length domain (default=3)""",
         # calculate integral point for mean temperature in the wall
         @self.Expression(self.flowsheet().time, doc="Mean Temperature across the Wall")
         def mean_temperature(b, t):
+            def r(j):
+                """Dimensionless radius"""
+                return b.dimensionless_radial_domain.at(j)
+
+            def R(j):
+                """Dimensionful radius"""
+                return b.radial_coordinate[r(j)]
+
             return (
                 2
-                * (b.radial_domain.at(2) - b.radial_domain.at(1))
+                * (R(2) - R(1))
                 / (b.drum_ro**2 - b.drum_ri**2)
                 * (
                     sum(
                         0.5
                         * (
-                            b.radial_domain.at(i - 1)
-                            * b.drum_wall_temperature[t, b.radial_domain.at(i - 1)]
-                            + b.radial_domain.at(i)
-                            * b.drum_wall_temperature[t, b.radial_domain.at(i)]
+                            R(i - 1) * b.drum_wall_temperature[t, r(i - 1)]
+                            + R(i) * b.drum_wall_temperature[t, r(i)]
                         )
-                        for i in range(2, len(b.radial_domain) + 1)
+                        for i in range(2, len(b.dimensionless_radial_domain) + 1)
                     )
                 )
             )
 
-        for index_r, value_r in enumerate(self.radial_domain, 1):
+        for index_r, value_r in enumerate(self.dimensionless_radial_domain, 1):
             self.rindex[value_r] = index_r
 
         @self.Expression(
             self.flowsheet().time,
-            self.radial_domain,
+            self.dimensionless_radial_domain,
             doc="Discrete Point Mean Temperature",
         )
         def discrete_mean_temperature(b, t, r):
-            if b.rindex[r].value == 1:
-                return b.drum_wall_temperature[t, b.radial_domain.first()]
+            def r_idx(j):
+                """Dimensionless radius"""
+                return b.dimensionless_radial_domain.at(j)
+
+            def R(j):
+                """Dimensionful radius"""
+                return b.radial_coordinate[r_idx(j)]
+
+            if r == b.dimensionless_radial_domain.first():
+                return b.drum_wall_temperature[t, r]
             else:
                 return (
                     2
-                    * (b.radial_domain.at(2) - b.radial_domain.at(1))
-                    / (b.radial_domain.at(b.rindex[r].value) ** 2 - b.drum_ri**2)
+                    * (R(2) - R(1))
+                    / (b.radial_coordinate[r] ** 2 - b.drum_ri**2)
                     * (
                         sum(
                             0.5
                             * (
-                                b.radial_domain.at(j - 1)
-                                * b.drum_wall_temperature[t, b.radial_domain.at(j - 1)]
-                                + b.radial_domain.at(j)
-                                * b.drum_wall_temperature[t, b.radial_domain.at(j)]
+                                R(j - 1) * b.drum_wall_temperature[t, r_idx(j - 1)]
+                                + R(j) * b.drum_wall_temperature[t, r_idx(j)]
                             )
                             for j in range(2, b.rindex[r].value + 1)
                         )
@@ -878,11 +961,14 @@ discretizing length domain (default=3)""",
 
         @self.Expression(
             self.flowsheet().time,
-            self.radial_domain,
+            self.dimensionless_radial_domain,
             doc="Thermal Stress at Radial Direction for Drum",
         )
         def therm_sigma_r(b, t, r):
-            if r == b.radial_domain.first() or r == b.radial_domain.last():
+            if (
+                r == b.dimensionless_radial_domain.first()
+                or r == b.dimensionless_radial_domain.last()
+            ):
                 return 0
             else:
                 return (
@@ -891,32 +977,33 @@ discretizing length domain (default=3)""",
                     * b.coefficient_therm_expansion
                     / (1 - b.Poisson_ratio)
                     * (
-                        (1 - b.drum_ri**2 / r**2)
+                        (1 - b.drum_ri**2 / b.radial_coordinate[r] ** 2)
                         * (b.mean_temperature[t] - b.discrete_mean_temperature[t, r])
                     )
                 )
 
         @self.Expression(
             self.flowsheet().time,
-            self.radial_domain,
+            self.dimensionless_radial_domain,
             doc="Thermal Stress at Circumferential Direction" "for Drum",
         )
         def therm_sigma_theta(b, t, r):
+            R = b.radial_coordinate[r]
             return (
                 0.5
                 * b.Young_modulus
                 * b.coefficient_therm_expansion
                 / (1 - b.Poisson_ratio)
                 * (
-                    (1 + b.drum_ri**2 / r**2) * b.mean_temperature[t]
-                    + (1 - b.drum_ri**2 / r**2) * b.discrete_mean_temperature[t, r]
+                    (1 + b.drum_ri**2 / R**2) * b.mean_temperature[t]
+                    + (1 - b.drum_ri**2 / R**2) * b.discrete_mean_temperature[t, r]
                     - 2 * b.drum_wall_temperature[t, r]
                 )
             )
 
         @self.Expression(
             self.flowsheet().time,
-            self.radial_domain,
+            self.dimensionless_radial_domain,
             doc="Thermal Stress at Axial Direction for Drum",
         )
         def therm_sigma_z(b, t, r):
@@ -929,13 +1016,13 @@ discretizing length domain (default=3)""",
 
         @self.Expression(
             self.flowsheet().time,
-            self.radial_domain,
+            self.dimensionless_radial_domain,
             doc="Mechanical Stress at Radial Direction for Drum",
         )
         def mech_sigma_r(b, t, r):
-            if r == b.radial_domain.first():
+            if r == b.dimensionless_radial_domain.first():
                 return 1e-6 * (-b.control_volume.properties_out[t].pressure)
-            elif r == b.radial_domain.last():
+            elif r == b.dimensionless_radial_domain.last():
                 return 1e-6 * (-b.pressure_amb)
             else:
                 return 0.1 * (
@@ -956,10 +1043,11 @@ discretizing length domain (default=3)""",
 
         @self.Expression(
             self.flowsheet().time,
-            self.radial_domain,
+            self.dimensionless_radial_domain,
             doc="Mechanical Stress at Circumferential Direction" "for Drum",
         )
         def mech_sigma_theta(b, t, r):
+            R = b.radial_coordinate[r]
             return 0.1 * (
                 1e-5
                 * (
@@ -972,7 +1060,7 @@ discretizing length domain (default=3)""",
                     * (b.pressure_amb - b.control_volume.properties_out[t].pressure)
                     * b.drum_ri**2
                     * b.drum_ro**2
-                    / (r**2 * (b.drum_ro**2 - b.drum_ri**2))
+                    / (R**2 * (b.drum_ro**2 - b.drum_ri**2))
                 )
             )
 
@@ -991,20 +1079,20 @@ discretizing length domain (default=3)""",
 
         @self.Expression(
             self.flowsheet().time,
-            self.radial_domain,
+            self.dimensionless_radial_domain,
             doc="Principal Structural Stress" "at Radial Direction for Drum",
         )
         def sigma_r(b, t, r):
-            if r == b.radial_domain.first():
+            if r == b.dimensionless_radial_domain.first():
                 return 1e-6 * (-b.control_volume.properties_out[t].pressure)
-            elif r == b.radial_domain.last():
+            elif r == b.dimensionless_radial_domain.last():
                 return 1e-6 * (-b.pressure_amb)
             else:
                 return b.mech_sigma_r[t, r] + b.therm_sigma_r[t, r]
 
         @self.Expression(
             self.flowsheet().time,
-            self.radial_domain,
+            self.dimensionless_radial_domain,
             doc="Principal Structural Stress" "at Circumferential Direction for Drum",
         )
         def sigma_theta(b, t, r):
@@ -1012,7 +1100,7 @@ discretizing length domain (default=3)""",
 
         @self.Expression(
             self.flowsheet().time,
-            self.radial_domain,
+            self.dimensionless_radial_domain,
             doc="Principal Structural Stress" "at Axial Direction for Drum",
         )
         def sigma_z(b, t, r):
@@ -1020,7 +1108,7 @@ discretizing length domain (default=3)""",
 
         @self.Expression(
             self.flowsheet().time,
-            self.radial_domain,
+            self.dimensionless_radial_domain,
             doc="Equivalent von Mises Stress for Drum",
         )
         def sigma_von_Mises(b, t, r):
@@ -1037,7 +1125,7 @@ discretizing length domain (default=3)""",
 
         @self.Expression(
             self.flowsheet().time,
-            self.radial_domain,
+            self.dimensionless_radial_domain,
             doc="Variation Principal Stress"
             "between Radial-Circumferential Directions for Drum",
         )
@@ -1046,7 +1134,7 @@ discretizing length domain (default=3)""",
 
         @self.Expression(
             self.flowsheet().time,
-            self.radial_domain,
+            self.dimensionless_radial_domain,
             doc="Variation Principal Stress"
             "between Circumferential-Axial Directions for Drum",
         )
@@ -1055,12 +1143,15 @@ discretizing length domain (default=3)""",
 
         @self.Expression(
             self.flowsheet().time,
-            self.radial_domain,
+            self.dimensionless_radial_domain,
             doc="Variation Principal Stress" "between Axial-Radial Directions for Drum",
         )
         def delta_sigma_z_r(b, t, r):
             return abs(b.sigma_z[t, r] - b.sigma_r[t, r])
 
+        # TODO put stress geometry in _set_geometry and convert expressions
+        # calculated outside of expression rules into named Expressions which
+        # can be called locally in those rules.
         # Calculate stress based on EN12952 standard
         # -----------------------------------------------------------------
         # mechanical stress of circumferential direction
@@ -1120,7 +1211,7 @@ discretizing length domain (default=3)""",
                 * 1e-5
                 * b.control_volume.properties_out[t].pressure
                 * r_ms_drum
-                / self.drum_thickness
+                / b.drum_thickness
             )
 
         # thermal stress at circumferential direction
@@ -1131,7 +1222,7 @@ discretizing length domain (default=3)""",
         def sigma_t(b, t):
             delta_T = (
                 b.mean_temperature[t]
-                - b.drum_wall_temperature[t, b.radial_domain.first()]
+                - b.drum_wall_temperature[t, b.dimensionless_radial_domain.first()]
             )
             return (
                 b.coefficient_therm_expansion
@@ -1351,17 +1442,21 @@ discretizing length domain (default=3)""",
         flags_steam = fix_state_vars(blk.flash.mixed_state, state_args_water_steam)
 
         # set initial values for T
-        r_mid = value((blk.radial_domain.first() + blk.radial_domain.last()) / 2)
+        r1 = blk.dimensionless_radial_domain.first()
+        rf = blk.dimensionless_radial_domain.last()
+        R1 = blk.radial_coordinate[r1]
+        Rf = blk.radial_coordinate[rf]
+        r_mid = value((R1 + Rf) / 2)
         # assume outside wall temperature is 1 K lower than fluid temperature
         T_out = value(blk.control_volume.properties_in[0].temperature - 1)
         T_mid = value((T_out + blk.control_volume.properties_in[0].temperature) / 2)
         slope = value(
-            (T_out - blk.control_volume.properties_in[0].temperature)
-            / (blk.radial_domain.last() - blk.radial_domain.first())
-            / 3
+            (T_out - blk.control_volume.properties_in[0].temperature) / (Rf - R1) / 3
         )
-        for x in blk.radial_domain:
-            blk.drum_wall_temperature[:, x].fix(T_mid + slope * (x - r_mid))
+        for x in blk.dimensionless_radial_domain:
+            blk.drum_wall_temperature[:, x].fix(
+                T_mid + slope * (blk.radial_coordinate[x] - r_mid)
+            )
         blk.drum_wall_temperature[:, :].unfix()
 
         # Fix outlet enthalpy and pressure
