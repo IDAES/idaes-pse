@@ -18,7 +18,6 @@ Authors: Andrew Lee
 
 import pytest
 from numpy import arange
-from importlib.metadata import version
 
 from pyomo.environ import (
     Block,
@@ -72,17 +71,11 @@ class TestWrapper:
 
     @pytest.mark.unit
     def test_load_component_invalid(self):
-        if float(version("CoolProp")[0]) < 8:
-            with pytest.raises(
-                RuntimeError,
-                match="Failed to find component foo in CoolProp " "JSON database.",
-            ):
-                CoolPropWrapper._get_component_data("foo")
-        else:
-            with pytest.raises(
-                ValueError, match="not found in string_to_index_map in JSONFluidLibrary"
-            ):
-                CoolPropWrapper._get_component_data("foo")
+        with pytest.raises(
+            RuntimeError,
+            match="Failed to find component foo in CoolProp " "JSON database.",
+        ):
+            CoolPropWrapper._get_component_data("foo")
 
     @pytest.mark.unit
     def test_get_component(self):
@@ -122,17 +115,11 @@ class TestWrapper:
 
     @pytest.mark.unit
     def test_get_component_invalid(self):
-        if float(version("CoolProp")[0]) < 8:
-            with pytest.raises(
-                RuntimeError,
-                match="Failed to find component foo in CoolProp " "JSON database.",
-            ):
-                CoolPropWrapper._get_component_data("foo")
-        else:
-            with pytest.raises(
-                ValueError, match="not found in string_to_index_map in JSONFluidLibrary"
-            ):
-                CoolPropWrapper._get_component_data("foo")
+        with pytest.raises(
+            RuntimeError,
+            match="Failed to find component foo in CoolProp " "JSON database.",
+        ):
+            CoolPropWrapper._get_component_data("foo")
 
     @pytest.mark.unit
     def test_flush_cached_components(self):
