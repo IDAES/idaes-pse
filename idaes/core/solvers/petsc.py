@@ -525,7 +525,7 @@ def petsc_dae_by_time_element(
             msg="Keyword argument snes_options has been DEPRECATED in favor of initial_solver_options.",
             logger=_log,
             version="2.2.0",
-            remove_in="3.0.0",
+            remove_in="2.14.0",
         )
         initial_solver_options = snes_options
 
