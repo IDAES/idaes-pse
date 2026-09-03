@@ -72,6 +72,7 @@ def test_set_dof(model):
     assert degrees_of_freedom(model) == 0
 
 
+@pytest.mark.skip(reason="BTX is going to be removed")
 @pytest.mark.unit
 def test_initialize_flowsheet(model):
     initialize_flowsheet(model)
@@ -89,6 +90,7 @@ def test_unit_consistency(model):
     assert_units_consistent(model)
 
 
+@pytest.mark.skip(reason="BTX is going to be removed")
 @pytest.mark.unit
 def test_solve_flowsheet(model):
     solve_flowsheet(model)

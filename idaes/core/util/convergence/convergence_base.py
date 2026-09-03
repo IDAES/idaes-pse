@@ -395,6 +395,7 @@ def _parse_ipopt_output(ipopt_file):
             elif line.startswith(
                 "Total CPU secs in IPOPT (w/o function evaluations)   ="
             ):
+                # Ipopt <= 3.13 reports timing split across two lines
                 tokens = line.split()
                 time += float(tokens[9])
             elif line.startswith(
@@ -402,6 +403,10 @@ def _parse_ipopt_output(ipopt_file):
             ):
                 tokens = line.split()
                 time += float(tokens[8])
+            elif line.startswith("Total seconds in IPOPT"):
+                # Ipopt >= 3.14 reports a single combined wall-clock time
+                tokens = line.split()
+                time += float(tokens[-1])
 
     return iters, iters_in_restoration, iters_w_regularization, time
 

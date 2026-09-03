@@ -12,6 +12,7 @@
 #################################################################################
 
 import os
+import tempfile
 import pytest
 import idaes
 import logging
@@ -49,12 +50,81 @@ class TestIdaesConfigure(object):
         pt = os.environ["PATH"]
         assert pf != pt
 
+    @pytest.mark.unit
+    def test_setup_environment_old_layout(self):
+        old_path = os.environ.get("PATH", "")
+        old_ld = os.environ.get("LD_LIBRARY_PATH", "")
+        old_dyld = os.environ.get("DYLD_LIBRARY_PATH", "")
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            bin_dir = os.path.join(tmpdir, "bin")
+            os.mkdir(bin_dir)
+
+            idaes.config.setup_environment(bin_dir, use_idaes_solvers=True)
+
+            assert bin_dir in os.environ["PATH"]
+            if os.name != "nt":
+                assert bin_dir in os.environ["LD_LIBRARY_PATH"]
+                assert bin_dir in os.environ["DYLD_LIBRARY_PATH"]
+
+        os.environ["PATH"] = old_path
+        if os.name != "nt":
+            os.environ["LD_LIBRARY_PATH"] = old_ld
+            os.environ["DYLD_LIBRARY_PATH"] = old_dyld
+
+    @pytest.mark.unit
+    @pytest.mark.skipif(os.name == "nt", reason="non-Windows only")
+    def test_setup_environment_new_layout_unix(self):
+        old_path = os.environ.get("PATH", "")
+        old_ld = os.environ.get("LD_LIBRARY_PATH", "")
+        old_dyld = os.environ.get("DYLD_LIBRARY_PATH", "")
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            bin_dir = os.path.join(tmpdir, "bin")
+            lib_dir = os.path.join(tmpdir, "lib")
+            os.mkdir(bin_dir)
+            os.mkdir(lib_dir)
+
+            idaes.config.setup_environment(bin_dir, use_idaes_solvers=True)
+
+            assert bin_dir in os.environ["PATH"]
+            assert lib_dir in os.environ["LD_LIBRARY_PATH"]
+            assert lib_dir in os.environ["DYLD_LIBRARY_PATH"]
+
+        os.environ["PATH"] = old_path
+        os.environ["LD_LIBRARY_PATH"] = old_ld
+        os.environ["DYLD_LIBRARY_PATH"] = old_dyld
+
+    @pytest.mark.unit
+    @pytest.mark.skipif(os.name != "nt", reason="Windows only")
+    def test_setup_environment_new_layout_windows(self):
+        old_path = os.environ.get("PATH", "")
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            bin_dir = os.path.join(tmpdir, "bin")
+            lib_dir = os.path.join(tmpdir, "lib")
+            os.mkdir(bin_dir)
+            os.mkdir(lib_dir)
+
+            idaes.config.setup_environment(bin_dir, use_idaes_solvers=True)
+
+            path_parts = os.environ["PATH"].split(os.pathsep)
+            assert bin_dir in path_parts
+            assert lib_dir in path_parts
+
+        os.environ["PATH"] = old_path
+
 
 @pytest.mark.unit
 def test_canonical_arch():
     assert idaes.config.canonical_arch("Intel64") == "x86_64"
     assert idaes.config.canonical_arch("AMD64") == "x86_64"
     assert idaes.config.canonical_arch("ARM64") == "aarch64"
+    # If we provide a release, it should kick in some extra logic
+    assert (
+        idaes.config.canonical_arch("ARM64", release="4.0.1", platform="darwin")
+        == "arm64"
+    )
 
 
 @pytest.mark.unit
