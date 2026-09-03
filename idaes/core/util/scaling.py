@@ -230,6 +230,10 @@ def set_scaling_factor(c, v, data_objects=True, overwrite=True):
         # doesn't exist.  This handles the case where you get a constant 0 and
         # need its scale factor to scale the mass balance.
         return 1
+
+    # Cast scaling factor to float to catch garbage input
+    v = float(v)
+
     try:
         suf = c.parent_block().scaling_factor
 
