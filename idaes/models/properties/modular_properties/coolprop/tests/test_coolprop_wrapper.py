@@ -72,9 +72,9 @@ class TestWrapper:
     @pytest.mark.unit
     def test_load_component_invalid(self):
         with pytest.raises(
-                ValueError, match="not found in string_to_index_map in JSONFluidLibrary"
-            ):
-                CoolPropWrapper._get_component_data("foo")
+            ValueError, match="not found in string_to_index_map in JSONFluidLibrary"
+        ):
+            CoolPropWrapper._get_component_data("foo")
 
     @pytest.mark.unit
     def test_get_component(self):
@@ -115,9 +115,9 @@ class TestWrapper:
     @pytest.mark.unit
     def test_get_component_invalid(self):
         with pytest.raises(
-                ValueError, match="not found in string_to_index_map in JSONFluidLibrary"
-            ):
-                CoolPropWrapper._get_component_data("foo")
+            ValueError, match="not found in string_to_index_map in JSONFluidLibrary"
+        ):
+            CoolPropWrapper._get_component_data("foo")
 
     @pytest.mark.unit
     def test_flush_cached_components(self):
