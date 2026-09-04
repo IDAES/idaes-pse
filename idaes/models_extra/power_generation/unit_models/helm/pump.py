@@ -18,12 +18,16 @@
 
 import pyomo.environ as pyo
 from pyomo.common.config import In
+
 from idaes.core import declare_process_block_class
-from idaes.models_extra.power_generation.unit_models.balance import BalanceBlockData
-from idaes.core.util import from_json, to_json, StoreSpec
+from idaes.core.scaling import CustomScalerBase
 from idaes.core.solvers import get_solver
-import idaes.models.properties.helmholtz.helmholtz as hltz
+from idaes.core.util import from_json, to_json, StoreSpec
 import idaes.core.util.scaling as iscale
+
+import idaes.models.properties.helmholtz.helmholtz as hltz
+from idaes.models_extra.power_generation.unit_models.balance import BalanceBlockData
+
 
 import idaes.logger as idaeslog
 
@@ -48,6 +52,81 @@ def _assert_properties(pb):
         raise
 
 
+class HelmPumpScaler(CustomScalerBase):
+    """
+    Scaler object for the HelmPump
+    """
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: pyo.ComponentMap = None
+    ):
+        """
+        Routine to apply scaling factors to variables in model.
+
+        Args:
+            model: model to be scaled
+            overwrite: whether to overwrite existing scaling factors
+            submodel_scalers: dict of Scalers to use for sub-models, keyed by submodel local name
+
+        Returns:
+            None
+        """
+        self.call_submodel_scaler_method(
+            model.control_volume,
+            method="variable_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+
+        for t in model.flowsheet().time:
+            self.set_component_scaling_factor(
+                model.efficiency_pump[t], 1, overwrite=overwrite
+            )
+            self.set_component_scaling_factor(
+                model.ratioP[t], 1 / 3, overwrite=overwrite
+            )
+
+            sf_work = self.get_scaling_factor(
+                model.control_volume.work[t], default=1e-3, warning=True
+            )
+            self.set_component_scaling_factor(
+                model.work_fluid[t], sf_work, overwrite=overwrite
+            )
+            self.set_component_scaling_factor(
+                model.shaft_work[t], sf_work, overwrite=overwrite
+            )
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: pyo.ComponentMap = None
+    ):
+        """
+        Routine to apply scaling factors to constraints in model.
+
+        Args:
+            model: model to be scaled
+            overwrite: whether to overwrite existing scaling factors
+            submodel_scalers: dict of Scalers to use for sub-models, keyed by submodel local name
+
+        Returns:
+            None
+        """
+        self.call_submodel_scaler_method(
+            model.control_volume,
+            method="constraint_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+        for t in model.flowsheet().time:
+            self.scale_constraint_by_component(
+                model.eq_work[t], model.control_volume.work[t], overwrite=overwrite
+            )
+            self.scale_constraint_by_component(
+                model.eq_pressure_ratio[t],
+                model.control_volume.properties_out[t].pressure,
+                overwrite=overwrite,
+            )
+
+
 @declare_process_block_class("HelmPump")
 class HelmPumpData(BalanceBlockData):
     """
@@ -67,6 +146,8 @@ class HelmPumpData(BalanceBlockData):
     3) Pressure:
         0 = P_in[t] + deltaP[t] - P_out[t]
     """
+
+    default_scaler = HelmPumpScaler
 
     CONFIG = BalanceBlockData.CONFIG()
     # For dynamics assume pseudo-steady-state
@@ -107,7 +188,7 @@ class HelmPumpData(BalanceBlockData):
 
         pratio = self.ratioP = pyo.Var(
             self.flowsheet().time,
-            initialize=0.7,
+            initialize=0.7,  # Why isn't this greater than one?
             doc="Ratio of outlet to inlet pressure",
         )
 
