@@ -46,11 +46,13 @@ from idaes.core.util.misc import compact_expression_to_string
 from idaes.core.util.model_statistics import (
     variables_in_activated_constraints_set,
     variables_not_in_activated_constraints_set,
+    variables_in_activated_equalities_set,
     variables_with_none_value_in_activated_equalities_set,
     greybox_block_set,
     degrees_of_freedom,
     large_residuals_set,
     variables_near_bounds_set,
+    unused_variables_set,
 )
 from idaes.core.scaling.util import (
     get_jacobian,
@@ -245,6 +247,14 @@ CONFIG.declare(
         description="Feasibility tolerance for identifying infeasible constraints and bounds",
     ),
 )
+CONFIG.declare(
+    "optimization_variables",
+    ConfigValue(
+        default=None,
+        description="Variables unfixed during optimization phase. Used to "
+        "interpret degrees of freedom and Dulmage Mendelsohn partition.",
+    ),
+)
 
 
 @document_kwargs_from_configdict(CONFIG)
@@ -306,6 +316,8 @@ class DiagnosticsToolbox:
             )
         self._model = model
         self.config = CONFIG(kwargs)
+        if self.config.optimization_variables is None:
+            self.config.optimization_variables = []
 
     @property
     def model(self):
@@ -358,8 +370,8 @@ class DiagnosticsToolbox:
 
         write_report_section(
             stream=stream,
-            lines_list=variables_not_in_activated_constraints_set(self._model),
-            title="The following variable(s) do not appear in any activated constraints within the model:",
+            lines_list=unused_variables_set(self._model),
+            title="The following variable(s) do not appear in any activated constraints or objectives within the model:",
             header="=",
             footer="=",
         )
@@ -1221,6 +1233,104 @@ class DiagnosticsToolbox:
             footer="=",
         )
 
+    def _get_fixed_opt_vars(self):
+        """
+        Returns a list of user-designated optimization variables that
+        are fixed.
+
+        Args:
+            None
+        Returns:
+            fixed_opt_vars - list of fixed optimization variables
+        """
+        fixed_opt_vars = []
+        for var in self.config.optimization_variables:
+            if var.fixed:
+                fixed_opt_vars.append(var)
+        return fixed_opt_vars
+
+    def display_fixed_optimization_variables(self, stream=None):
+        """
+        Displays user-designated optimization variables that are fixed.
+
+        Args:
+            stream: an I/O object to write the output to (default = stdout)
+
+        Returns:
+            None
+        """
+        if stream is None:
+            stream = sys.stdout
+
+        fixed_opt_vars = self._get_fixed_opt_vars()
+
+        write_report_section(
+            stream=stream,
+            lines_list=fixed_opt_vars,
+            title="The following optimization variable(s) are fixed:",
+            header="=",
+            footer="=",
+        )
+
+    def _get_inactive_optimization_variables(self):
+        """
+        Returns a list of user-designated optimization variables that
+        do not appear in any active equality constraints.
+
+        Args:
+            None
+        Returns:
+            inactive_opt_vars - list of "inactive" optimization variables
+                (they may still appear in inequalities and Objectives)
+        """
+        inactive_opt_vars = []
+        vars_in_eqs = variables_in_activated_equalities_set(self._model)
+        for var in self.config.optimization_variables:
+            if var not in vars_in_eqs:
+                inactive_opt_vars.append(var)
+        return inactive_opt_vars
+
+    def _get_unused_optimization_variables(self):
+        """
+        Returns a list of user-designated optimization variables that
+        do not appear in any active constraints or objectives.
+
+        Args:
+            None
+        Returns:
+            unused_opt_vars - list of unused optimization variables
+        """
+        unused_opt_vars = []
+        unused_vars = unused_variables_set(self._model)
+        for var in self.config.optimization_variables:
+            if var in unused_vars:
+                unused_opt_vars.append(var)
+        return unused_opt_vars
+
+    def display_unused_optimization_variables(self, stream):
+        """
+        Displays user-designated optimization variables that do not appear
+        in any active constraints or objectives.
+
+        Args:
+            stream: an I/O object to write the output to (default = stdout)
+
+        Returns:
+            None
+        """
+        if stream is None:
+            stream = sys.stdout
+
+        unused_optimization_variables = self._get_unused_optimization_variables()
+
+        write_report_section(
+            stream=stream,
+            lines_list=unused_optimization_variables,
+            title="The following optimization variable(s) appear in no active constraint or objective:",
+            header="=",
+            footer="=",
+        )
+
     def _collect_structural_warnings(
         self, ignore_evaluation_errors=False, ignore_unit_consistency=False
     ):
@@ -1246,11 +1356,22 @@ class DiagnosticsToolbox:
         warnings = []
         next_steps = []
         dof = degrees_of_freedom(self._model)
-        if dof != 0:
+        # degrees_of_freedom takes into account only variables in equality
+        # constraints. However, the user could have an optimization variable
+        # that exclusively appears in inequality constraints or Objectives.
+        # Therefore adjust the expected degrees of freedom by these "inactive"
+        # variables. If such a variable is totally unused, we can flag it
+        # elsewhere.
+        inactive_opt = self._get_inactive_optimization_variables()
+        expected_dof = len(self.config.optimization_variables) - len(inactive_opt)
+
+        if dof != expected_dof:
             dstring = "Degrees"
             if abs(dof) == 1:
                 dstring = "Degree"
-            warnings.append(f"WARNING: {dof} {dstring} of Freedom")
+            warnings.append(
+                f"WARNING: {dof} {dstring} of Freedom (Expected {expected_dof})"
+            )
         if len(uc) > 0:
             cstring = "Components"
             if len(uc) == 1:
@@ -1259,18 +1380,55 @@ class DiagnosticsToolbox:
             next_steps.append(
                 self.display_components_with_inconsistent_units.__name__ + "()"
             )
-        if any(len(x) > 0 for x in [uc_var, uc_con, oc_var, oc_con]):
+
+        n_fixed_opt_vars = len(self._get_fixed_opt_vars())
+        if n_fixed_opt_vars > 0:
+            if n_fixed_opt_vars == 1:
+                vword = "variable"
+            else:
+                vword = "variables"
+            warnings.append(
+                f"WARNING: {n_fixed_opt_vars} optimization {vword} unexpectedly fixed"
+            )
+            next_steps.append(self.display_fixed_optimization_variables.__name__ + "()")
+
+        n_unused_opt_vars = len(self._get_unused_optimization_variables())
+        if n_unused_opt_vars > 0:
+            if n_unused_opt_vars == 1:
+                vword = "variable"
+            else:
+                vword = "variables"
+            warnings.append(f"WARNING: {n_unused_opt_vars} optimization {vword} unused")
+            next_steps.append(
+                self.display_unused_optimization_variables.__name__ + "()"
+            )
+
+        # uc_var and uc_con contain lists of lists corresponding to each
+        # underconstrained block. In order to get the total number, we need
+        # to sum over all blocks.
+        n_uc_var = len(sum(uc_var, []))
+        n_uc_con = len(sum(uc_con, []))
+        uc_dof = n_uc_var - n_uc_con
+
+        # Display underconstrained set if there are any unexpected degrees of
+        # freedom and the underconstrained set is nonempty
+        display_uc = uc_dof != expected_dof and any(
+            len(x) > 0 for x in [uc_var, uc_con]
+        )
+        display_oc = any(len(x) > 0 for x in [oc_var, oc_con])
+
+        if display_uc or display_oc:
             warnings.append(
                 f"WARNING: Structural singularity found\n"
-                f"{TAB*2}Under-Constrained Set: {len(sum(uc_var, []))} "
-                f"variables, {len(sum(uc_con, []))} constraints\n"
+                f"{TAB*2}Under-Constrained Set: {n_uc_var} "
+                f"variables, {n_uc_con} constraints\n"
                 f"{TAB*2}Over-Constrained Set: {len(sum(oc_var, []))} "
                 f"variables, {len(sum(oc_con, []))} constraints"
             )
 
-        if any(len(x) > 0 for x in [uc_var, uc_con]):
+        if display_uc:
             next_steps.append(self.display_underconstrained_set.__name__ + "()")
-        if any(len(x) > 0 for x in [oc_var, oc_con]):
+        if display_oc:
             next_steps.append(self.display_overconstrained_set.__name__ + "()")
 
         if not ignore_evaluation_errors:
