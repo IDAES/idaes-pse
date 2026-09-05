@@ -2706,7 +2706,11 @@ class _GenericStateBlock(StateBlock):
                     # Initialize critical point properties
                     _initialize_critical_props(k)
                     # Add critical point constraints to cons_list
-                    cons_list += k.list_critical_property_constraint_names()
+                    ref_phase = k._get_critical_ref_phase()
+                    p_config = k.params.get_phase(ref_phase).config
+                    cons_list += (
+                        p_config.equation_of_state.list_critical_property_constraint_names()
+                    )
 
             # Bubble temperature initialization
             if hasattr(k, "_mole_frac_tbub"):
