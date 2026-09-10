@@ -539,3 +539,12 @@ class TestCheckParallelJacobian:
 
         for i in pcol:
             assert tuple(sorted([i[0].name, i[1].name])) in expected
+
+    @pytest.mark.unit
+    def test_empty_column(self):
+        m = ConcreteModel()
+        m.x = Var(initialize=0)
+        m.y = Var(initialize=0)
+        m.c = Constraint(expr=m.x + m.x * m.y == 1)
+
+        assert check_parallel_jacobian(m, direction="column") == []

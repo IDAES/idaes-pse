@@ -66,7 +66,7 @@ If you already have an ``upstream`` remote, configure it to fetch tags and fetch
     git config remote.upstream.tagOpt --tags
     git fetch upstream
 
-This is a one-time configuration. Future ``git fetch upstream`` commands will fetch new version tags automatically, so no additional step is needed after each IDAES release.
+This configuration only needs to be done once. Afterward, whenever you run git fetch upstream to synchronize with the upstream repository, Git will also fetch any new version tags.
 
 To check to see if you added the remote correctly use the following command::
 

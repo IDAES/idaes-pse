@@ -24,6 +24,7 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Programming Language :: Python :: Implementation :: CPython",
   "Topic :: Scientific/Engineering :: Mathematics",
   "Topic :: Scientific/Engineering :: Chemistry",
@@ -57,14 +58,15 @@ dependencies = [
 [project.optional-dependencies]
 ui = ["idaes-ui", "idaes-connectivity"]
 coolprop = [
-  "coolprop>=7.0,<8", # idaes.generic_models.properties.general.coolprop
+  "coolprop>=8.0", # idaes.generic_models.properties.general.coolprop
 ]
 grid = [
   "gridx-prescient>=2.2.3", # idaes.tests.prescient
 ]
 omlt = [
   "omlt==1.1",  # fix the version for now as package evolves
-  "tensorflow",
+  # TODO: Remove the marker when TensorFlow publishes Python 3.14 distributions.
+  "tensorflow; python_version < '3.14'",
   "onnx",
 ]
 testing = ["pytest", "addheader", "pyyaml"]
