@@ -37,47 +37,26 @@ jobs:
           pip install build packaging wheel
           python -m build
 
-      - name: Check versions in distribution metadata
+      - name: Check distribution versions
         env:
           EXPECTED_TAG: ${{ github.ref_name }}
         run: |
           python - <<'PY'
           import os
-          import tarfile
-          import zipfile
-          from email.parser import BytesParser
           from pathlib import Path
 
+          from packaging.utils import parse_sdist_filename, parse_wheel_filename
           from packaging.version import Version
 
-          expected = str(Version(os.environ["EXPECTED_TAG"]))
-          artifacts = {
-              "wheel": next(Path("dist").glob("*.whl")),
-              "sdist": next(Path("dist").glob("*.tar.gz")),
+          expected = Version(os.environ["EXPECTED_TAG"])
+          wheel = next(Path("dist").glob("*.whl"))
+          sdist = next(Path("dist").glob("*.tar.gz"))
+          versions = {
+              "wheel": parse_wheel_filename(wheel.name)[1],
+              "sdist": parse_sdist_filename(sdist.name)[1],
           }
 
-          with zipfile.ZipFile(artifacts["wheel"]) as archive:
-              metadata_path = next(
-                  name for name in archive.namelist()
-                  if name.endswith(".dist-info/METADATA")
-              )
-              wheel_metadata = BytesParser().parsebytes(archive.read(metadata_path))
-
-          with tarfile.open(artifacts["sdist"]) as archive:
-              pkg_info = next(
-                  member for member in archive.getmembers()
-                  if member.name.count("/") == 1
-                  and member.name.endswith("/PKG-INFO")
-              )
-              sdist_metadata = BytesParser().parse(
-                  archive.extractfile(pkg_info), headersonly=True
-              )
-
-          for artifact_type, metadata in (
-              ("wheel", wheel_metadata),
-              ("sdist", sdist_metadata),
-          ):
-              actual = metadata["Version"]
+          for artifact_type, actual in versions.items():
               print(f"{artifact_type}: expected={expected}, actual={actual}")
               assert actual == expected
           PY
