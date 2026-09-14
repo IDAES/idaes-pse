@@ -31,12 +31,9 @@ To install, run the following command:
      pip install idaes-examples 
      
 This also installs the 'idaesx' command that can be used to browse the Jupyter
-notebooks. The simplest way to do this is with the embedded desktop UI:
-
-    idaesx gui
-    
-For more details, see the IDAES documentation at https://idaes-pse.readthedocs.io/
-and the idaes-examples page on PyPI at https://pypi.org/project/idaes-examples/
+notebooks.  For more details, see the IDAES documentation at
+https://idaes-pse.readthedocs.io/ and the idaes-examples page on PyPI at
+https://pypi.org/project/idaes-examples/
 """
 
 
