@@ -29,6 +29,8 @@ from idaes.core import (
     register_idaes_currency_units,
 )
 
+from idaes.core.base.costing_base import load_location_factors
+
 # TODO : Tests for cases with multiple costing packages
 pyunits.load_definitions_from_strings(["USD_test = [test_currency]"])
 
@@ -83,6 +85,37 @@ def test_register_idaes_currency_units():
         assert pytest.approx(conv / 500, rel=1e-10) == pyunits.convert_value(
             1, pyunits.USD_CE500, getattr(pyunits, c)
         )
+
+
+@pytest.mark.unit
+def test_all_valid_locations_have_factors():
+    location_factor_dictionary = load_location_factors()
+    for country in location_factor_dictionary:
+        for city in location_factor_dictionary[country]:
+            for val in ["min", "max", "average"]:
+                assert isinstance(location_factor_dictionary[country][city][val], float)
+
+
+@pytest.mark.unit
+def test_invalid_country_raises_keyerror():
+    location_factor_dictionary = load_location_factors()
+    assert "United States" in location_factor_dictionary  # check valid country
+    assert "notacountry" not in location_factor_dictionary  # check invalid country
+    with pytest.raises(KeyError):
+        location_factor_dictionary["notacountry"]
+
+
+@pytest.mark.unit
+def test_invalid_city_raises_keyerror():
+    location_factor_dictionary = load_location_factors()
+    assert (
+        "Washington DC / Northeast" in location_factor_dictionary["United States"]
+    )  # check valid city
+    assert (
+        "notacity" not in location_factor_dictionary["United States"]
+    )  # check invalid city
+    with pytest.raises(KeyError):
+        location_factor_dictionary["United States"]["notacity"]
 
 
 class TestFlowsheetCostingBlock:

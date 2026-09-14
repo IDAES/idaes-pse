@@ -15,6 +15,13 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Fetch canonical version tags
+      shell: bash
+      run: |
+        # Forks do not necessarily contain the tags setuptools-scm uses to
+        # calculate the package version. Always use the canonical tags.
+        git fetch --force --prune --prune-tags --tags \
+          https://github.com/IDAES/idaes-pse.git
       # IMPORTANT this requires the Conda env setup to be run before this action
     - name: Update pip and other packaging tools using Conda
       # -l: login shell, needed when using Conda run:

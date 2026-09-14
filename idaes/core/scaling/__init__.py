@@ -10,6 +10,7 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
+from .arc_constraint_scaler import ArcConstraintScaler
 from .autoscaling import AutoScaler
 from .custom_scaler_base import (
     CustomScalerBase,

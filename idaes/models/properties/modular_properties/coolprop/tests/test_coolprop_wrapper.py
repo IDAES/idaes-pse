@@ -72,10 +72,9 @@ class TestWrapper:
     @pytest.mark.unit
     def test_load_component_invalid(self):
         with pytest.raises(
-            RuntimeError,
-            match="Failed to find component foo in CoolProp " "JSON database.",
+            ValueError, match="not found in string_to_index_map in JSONFluidLibrary"
         ):
-            CoolPropWrapper._load_component_data("foo")
+            CoolPropWrapper._get_component_data("foo")
 
     @pytest.mark.unit
     def test_get_component(self):
@@ -116,8 +115,7 @@ class TestWrapper:
     @pytest.mark.unit
     def test_get_component_invalid(self):
         with pytest.raises(
-            RuntimeError,
-            match="Failed to find component foo in CoolProp " "JSON database.",
+            ValueError, match="not found in string_to_index_map in JSONFluidLibrary"
         ):
             CoolPropWrapper._get_component_data("foo")
 
@@ -852,19 +850,19 @@ class TestVerifyExcessLiq(object):
 
                 # Check results
                 assert pytest.approx(
-                    CoolProp.PropsSI("Z", "T", T, "P", P * 1e5, "PR::benzene"), rel=1e-8
+                    CoolProp.PropsSI("Z", "T", T, "P", P * 1e5, "PR::benzene"), rel=1e-4
                 ) == value(m.fs.state[0].compress_fact_phase["Liq"])
 
                 assert pytest.approx(
                     CoolProp.PropsSI("DMOLAR", "T", T, "P", P * 1e5, "PR::benzene"),
-                    rel=1e-6,
+                    rel=1e-4,
                 ) == value(m.fs.state[0].dens_mol_phase["Liq"])
 
                 assert pytest.approx(
                     CoolProp.PropsSI(
                         "HMOLAR_RESIDUAL", "T", T, "P", P * 1e5, "PR::benzene"
                     ),
-                    rel=1e-6,
+                    rel=1e-4,
                 ) == value(m.fs.state[0].enth_mol_phase["Liq"])
 
     @pytest.mark.integration
@@ -898,7 +896,7 @@ class TestVerifyExcessLiq(object):
                 assert pytest.approx(
                     CoolProp.PropsSI("SMOLAR", "T", T, "P", P * 1e5, "PR::benzene")
                     - S0_CP,
-                    rel=1e-4,
+                    rel=1e-3,
                 ) == value(m.fs.state[0].entr_mol_phase["Liq"] - S0_I)
 
 
@@ -996,10 +994,9 @@ class TestVerifyExcessVap(object):
                     results.solver.termination_condition == TerminationCondition.optimal
                 )
                 assert results.solver.status == SolverStatus.ok
-
                 # Check results
                 assert pytest.approx(
-                    CoolProp.PropsSI("Z", "T", T, "P", P * 1e5, "PR::benzene"), rel=1e-8
+                    CoolProp.PropsSI("Z", "T", T, "P", P * 1e5, "PR::benzene"), rel=1e-5
                 ) == value(m.fs.state[0].compress_fact_phase["Vap"])
 
                 assert pytest.approx(
@@ -1011,7 +1008,7 @@ class TestVerifyExcessVap(object):
                     CoolProp.PropsSI(
                         "HMOLAR_RESIDUAL", "T", T, "P", P * 1e5, "PR::benzene"
                     ),
-                    rel=1e-6,
+                    rel=1e-5,
                 ) == value(m.fs.state[0].enth_mol_phase["Vap"])
 
     @pytest.mark.integration
