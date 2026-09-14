@@ -18,7 +18,12 @@ Generic template for a translator block.
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 
 # Import IDAES cores
-from idaes.core import declare_process_block_class, UnitModelBlockData
+from idaes.core import (
+    declare_process_block_class,
+    InletPort,
+    OutletPort,
+    UnitModelBlockData,
+)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.exceptions import ConfigurationError
@@ -185,8 +190,18 @@ see property package for documentation.}""",
         )
 
         # Add outlet port
-        self.add_port(name="inlet", block=self.properties_in, doc="Inlet Port")
-        self.add_port(name="outlet", block=self.properties_out, doc="Outlet Port")
+        self.add_port(
+            name="inlet",
+            block=self.properties_in,
+            doc="Inlet Port",
+            port_class=InletPort,
+        )
+        self.add_port(
+            name="outlet",
+            block=self.properties_out,
+            doc="Outlet Port",
+            port_class=OutletPort,
+        )
 
     def initialize_build(
         blk,
