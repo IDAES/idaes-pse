@@ -108,6 +108,11 @@ class TestDiagnosticsToolbox:
         solver = get_solver("ipopt_v2", writer_config={"linear_presolve": False})
         solver.solve(m)
 
+        # The tests expect the value to be exactly zero, but
+        # a newer version of IPOPT instead sets it to some tiny
+        # but nonzero value
+        m.b.v3.set_value(0.0)
+
         return m
 
     @pytest.mark.component

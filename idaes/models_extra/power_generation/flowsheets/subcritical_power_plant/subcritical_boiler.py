@@ -196,7 +196,7 @@ def initialize(
     if optarg is None:
         optarg = {
             "tol": 1e-6,
-            "max_iter": 40,
+            "max_iter": 100,
         }
 
     solver = get_solver()
