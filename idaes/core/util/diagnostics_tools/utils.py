@@ -97,6 +97,10 @@ def check_parallel_jacobian(
 
     vectors_by_nz = {}
     for vecidx, vec in enumerate(vectors):
+        if vec.nnz == 0:
+            # A zero vector has no direction to compare for parallelism.
+            # Extreme Jacobian checks report the associated component.
+            continue
         maxval = max(np.abs(vec.data))
         # Construct tuple of sorted col/row indices that participate
         # in this vector (with non-negligible coefficient).

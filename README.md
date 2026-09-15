@@ -86,10 +86,15 @@ for Python 3. The following sub-versions are supported:
 * Python 3.11
 * Python 3.12
 * Python 3.13
+* Python 3.14
 
 
 > [!IMPORTANT]
 > Note that Python 3.8 is no longer officially supported.
+>
+> TensorFlow does not currently provide distributions for Python 3.14. The
+> `omlt` optional dependency supports ONNX surrogates on Python 3.14, but Keras
+> surrogates require Python 3.13 or earlier until TensorFlow adds support.
 
 ## Contacts and more information
 
