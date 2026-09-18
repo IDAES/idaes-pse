@@ -28,8 +28,14 @@ from platform import machine
 import click
 
 import idaes
-from idaes.config import base_platforms, binary_distro_map, binary_arch_map
-from idaes.config import canonical_arch, canonical_distro
+from idaes.config import (
+    base_platforms,
+    binary_distro_map,
+    binary_arch_map,
+    canonical_arch,
+    canonical_distro,
+    release_major,
+)
 import idaes.commands.util.download_bin
 from idaes.commands import cb
 
@@ -47,44 +53,113 @@ def print_footer(echo=click.echo, width=65):
     echo("=" * width)
 
 
+def _get_extensions_root(bin_directory=None):
+    """
+    Return the root directory where IDAES extensions are installed.
+
+    Old layout:
+        ~/.idaes/bin/...
+    New layout:
+        ~/.idaes/{bin,lib,include,share,...}
+    """
+    if bin_directory is not None:
+        return bin_directory
+
+    # New layout
+    data_dir = idaes.data_directory
+    if any(
+        os.path.exists(os.path.join(data_dir, p))
+        for p in (
+            "lib",
+            "VERSION_SOLVERS.md",
+            "VERSION_FUNCTIONS.md",
+            "LICENSE.md",
+            "LICENSE_FUNCTIONS.md",
+        )
+    ):
+        return data_dir
+
+    # Fallback to old layout
+    return idaes.bin_directory
+
+
+def _find_extensions_file(filename, bin_directory=None):
+    """
+    Find a metadata file in either the new or old extensions layout.
+    """
+    root = _get_extensions_root(bin_directory=bin_directory)
+
+    candidates = [
+        os.path.join(root, filename),
+        os.path.join(root, "bin", filename),
+        os.path.join(idaes.bin_directory, filename),
+    ]
+
+    for path in candidates:
+        if os.path.isfile(path):
+            return path
+    return None
+
+
 def print_extensions_version(library_only=False, bin_directory=None):
     print_header("Build Versions")
-    if bin_directory is None:
-        bin_directory = idaes.bin_directory
+
     if not library_only:
-        v = os.path.join(bin_directory, "version_solvers.txt")
-        try:
-            with open(v, "r") as f:
+        solver_file = _find_extensions_file(
+            "VERSION_SOLVERS.md", bin_directory
+        ) or _find_extensions_file("version_solvers.txt", bin_directory)
+        if solver_file is not None:
+            with open(solver_file, "r") as f:
                 v = f.readline().strip()
-        except FileNotFoundError:
+        else:
             v = "no version file found"
-        click.echo("Solvers:  v{}".format(v))
-    v = os.path.join(bin_directory, "version_lib.txt")
-    try:
-        with open(v, "r") as f:
+        click.echo(f"Solvers:  {v}")
+
+    library_file = _find_extensions_file(
+        "VERSION_FUNCTIONS.md", bin_directory
+    ) or _find_extensions_file("version_lib.txt", bin_directory)
+    if library_file is not None:
+        with open(library_file, "r") as f:
             v = f.readline().strip()
-    except FileNotFoundError:
+    else:
         v = "no version file found"
-    click.echo("Library:  v{}".format(v))
+    click.echo(f"Library:  {v}")
+
     print_footer()
     return 0
 
 
 def print_license():
     print_header("License Information")
-    fpath = os.path.join(idaes.bin_directory, "license.txt")
-    try:
+
+    license_files = [
+        _find_extensions_file("LICENSE.md"),
+        _find_extensions_file("LICENSE_FUNCTIONS.md"),
+        _find_extensions_file("license.txt"),
+        _find_extensions_file("license_lib.txt"),
+    ]
+
+    printed = False
+    seen = set()
+    for fpath in license_files:
+        if fpath is None or fpath in seen:
+            continue
+        seen.add(fpath)
         with open(fpath, "r") as f:
-            for line in f.readlines():
-                click.echo(line.strip())
-    except FileNotFoundError:
+            for line in f:
+                click.echo(line.rstrip())
+        click.echo("")
+        printed = True
+
+    if not printed:
         click.echo("no license file found")
     click.echo("")
+
     print_footer()
     return 0
 
 
-def print_build_info():
+def print_build_info(release):
     fd, _ = idaes.commands.util.download_bin._get_file_downloader(False, None)
 
     print_header("Build Information")
@@ -111,7 +186,7 @@ def print_build_info():
     _, platform = idaes.commands.util.download_bin._get_arch_and_platform(fd, "auto")
     arch = machine()
     to_platform = canonical_distro(platform)
-    to_mach = canonical_arch(arch)
+    to_mach = canonical_arch(arch, release=release, platform=to_platform)
     to_build = f"{to_platform}-{to_mach}"
     has_build = to_build in base_platforms
 
@@ -179,7 +254,9 @@ def get_extensions(
     """Main sub-command."""
     cmd_name = "idaes get-extensions"
     if info:
-        print_build_info()
+        if release is None:
+            release = idaes.config.default_binary_release
+        print_build_info(release)
         return
     if url is None and release is None:
         # the default release is only used if neither a release or url is given
@@ -217,8 +294,16 @@ def get_extensions(
             for k, i in d.items():
                 click.echo(f"{k:14}: {i}")
         else:
-            # If `to` is None, we default to idaes.bin_directory.
-            print_extensions_version(library_only=library_only, bin_directory=to)
+            # With the newest release of the IDAES extensions, the files
+            # are one level up, similar to a standard install prefix
+            # structure. So we will manually set the path to save
+            # some time.
+            if release_major(release) >= 4:
+                print_extensions_version(
+                    library_only=library_only, bin_directory=idaes.data_directory
+                )
+            else:
+                print_extensions_version(library_only=library_only, bin_directory=to)
     else:
         click.echo("\n* You must provide a download URL for IDAES binary files.")
 
@@ -235,6 +320,7 @@ def hash_extensions(release, path):
     hfile = f"sha256sum_{release}.txt"
     if path is not None:
         hfile = os.path.join(path, hfile)
+    major = release_major(release)
 
     def _write_hash(fp, pack, plat):
         f = f"idaes-{pack}-{plat}.tar.gz"
@@ -249,13 +335,20 @@ def hash_extensions(release, path):
 
     with open(hfile, "w") as f:
         for plat in idaes.config.base_platforms:
-            for pack in ["solvers", "lib"]:
+            if major >= 4:
+                packs = ["solvers", "functions"]
+            else:
+                packs = ["solvers", "lib"]
+
+            for pack in packs:
                 _write_hash(f, pack, plat)
-        for plat in idaes.config.base_platforms:
-            for pack, sp in idaes.config.extra_binaries.items():
-                if plat not in sp:
-                    continue
-                _write_hash(f, pack, plat)
+
+        if major < 4:
+            for plat in idaes.config.base_platforms:
+                for pack, sp in idaes.config.extra_binaries.items():
+                    if plat not in sp:
+                        continue
+                    _write_hash(f, pack, plat)
 
 
 @cb.command(name="bin-platform", help="Show the compatible binary build.")
@@ -266,7 +359,11 @@ def bin_platform(distro):
         _, platform = idaes.commands.util.download_bin._get_arch_and_platform(
             fd, distro
         )
-        click.echo(idaes.commands.util.download_bin._get_release_platform(platform))
+        click.echo(
+            idaes.commands.util.download_bin._get_release_platform(
+                platform, idaes.config.default_binary_release
+            )
+        )
     except idaes.commands.util.download_bin.UnsupportedPlatformError:
         click.echo(
             f"No supported binaries found for {platform}. "

@@ -495,27 +495,35 @@ def _enable_scip_solver_for_testing(
         )
         return None
 
-    new_path_entry = ampl_module_scip.bin_dir
-    # TODO prepending new_path_entry to PATH means that the "testing" SCIP will "shadow"
-    # existing executable directories already on PATH
-    # this behavior would match the (implied) semantics of this function, i.e.
-    # "enable SCIP solver used for testing (at the expense of other non-testing SCIP executables)"
-    os.environ["PATH"] = os.pathsep.join([new_path_entry, os.environ["PATH"]])
+    new_path_entry = str(ampl_module_scip.bin_dir)
+
+    # Prepend the ampl_module_scip directory to PATH (so the "testing" SCIP
+    # executable is found) *and* to the dynamic linker search paths (so that
+    # SCIP loads its own bundled shared libraries). The newer IDAES (4.x+)
+    # extensions add their lib directory to LD_LIBRARY_PATH/DYLD_LIBRARY_PATH
+    # via config.setup_environment(); without prepending SCIP's own directory
+    # here, those libraries can shadow SCIP's dependencies on Linux, causing
+    # "scip --version" to fail and Pyomo to report that it cannot locate the
+    # solver.
+    env_vars = ("PATH", "LD_LIBRARY_PATH", "DYLD_LIBRARY_PATH")
+    original_values = {var: os.environ.get(var) for var in env_vars}
+
+    for var, existing in original_values.items():
+        if existing:
+            os.environ[var] = os.pathsep.join([new_path_entry, existing])
+        else:
+            os.environ[var] = new_path_entry
     Executable.rehash()
 
-    def remove_from_path():
-        path_as_list = os.environ["PATH"].split(os.pathsep)
+    def revert_changes():
+        for var, original in original_values.items():
+            if original is None:
+                os.environ.pop(var, None)
+            else:
+                os.environ[var] = original
+        Executable.rehash()
 
-        try:
-            path_as_list.remove(new_path_entry)
-        except ValueError:
-            # not in PATH
-            pass
-        else:
-            os.environ["PATH"] = os.pathsep.join(path_as_list)
-            Executable.rehash()
-
-    return remove_from_path
+    return revert_changes
 
 
 def assert_solution_equivalent(blk, expected_results):
