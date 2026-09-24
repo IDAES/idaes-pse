@@ -25,6 +25,7 @@ from pyomo.common.config import ConfigValue, In
 from idaes.core import declare_process_block_class
 from idaes.models_extra.power_generation.unit_models.balance import BalanceBlockData
 from idaes.core.util import from_json, to_json, StoreSpec
+from idaes.core.scaling import CustomScalerBase
 from idaes.core.solvers import get_solver
 import idaes.models.properties.helmholtz.helmholtz as hltz
 import idaes.logger as idaeslog
@@ -72,7 +73,7 @@ def _quick_open_callback(blk):
 
 
 def _equal_percentage_callback(blk):
-    blk.alpha = pyo.Var(initialize=1, doc="Valve function parameter")
+    blk.alpha = pyo.Var(initialize=100, doc="Valve function parameter")
     blk.alpha.fix()
 
     @blk.Expression(blk.flowsheet().time)
@@ -82,7 +83,7 @@ def _equal_percentage_callback(blk):
 
 def _liquid_pressure_flow_rule(b, t):
     """
-    For liquid F = Cv*sqrt(Pi**2 - Po**2)*f(x)
+    For liquid F = Cv*sqrt(Pi - Po)*f(x)
     """
     Po = b.control_volume.properties_out[t].pressure
     Pi = b.control_volume.properties_in[t].pressure
@@ -100,6 +101,67 @@ def _vapor_pressure_flow_rule(b, t):
     F = b.control_volume.properties_in[t].flow_mol
     fun = b.valve_function[t]
     return F**2 == b.Cv**2 * (Pi**2 - Po**2) * fun**2
+
+
+class HelmValveScaler(CustomScalerBase):
+    """
+    Base scaler for the HelmValve
+    """
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: pyo.ComponentMap = None
+    ):
+        """
+        Routine to apply scaling factors to variables in model.
+
+        Args:
+            model: model to be scaled
+            overwrite: whether to overwrite existing scaling factors
+            submodel_scalers: dict of Scalers to use for sub-models, keyed by submodel local name
+
+        Returns:
+            None
+        """
+        self.call_submodel_scaler_method(
+            model.control_volume,
+            method="variable_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+
+        for t in model.flowsheet().time:
+            # Register that this variable is naturally well-scaled
+            self.set_component_scaling_factor(
+                model.valve_opening[t], 1, overwrite=overwrite
+            )
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: pyo.ComponentMap = None
+    ):
+        """
+        Routine to apply scaling factors to constraints in model.
+
+        Args:
+            model: model to be scaled
+            overwrite: whether to overwrite existing scaling factors
+            submodel_scalers: dict of Scalers to use for sub-models, keyed by submodel local name
+
+        Returns:
+            None
+        """
+        self.call_submodel_scaler_method(
+            model.control_volume,
+            method="constraint_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+        for t in model.flowsheet().time:
+            sf_F = self.get_scaling_factor(
+                model.control_volume.properties_in[t].flow_mol, default=1, warning=True
+            )
+            self.set_component_scaling_factor(
+                model.pressure_flow_equation[t], sf_F**2, overwrite=overwrite
+            )
 
 
 @declare_process_block_class("HelmValve")
@@ -121,6 +183,8 @@ class HelmValveData(BalanceBlockData):
     3) Pressure:
         0 = P_in[t] + deltaP[t] - P_out[t]
     """
+
+    default_scaler = HelmValveScaler
 
     CONFIG = BalanceBlockData.CONFIG()
     # For dynamics assume pseudo-steady-state
@@ -191,10 +255,20 @@ ValveFunctionType.custom}""",
             initialize=1,
             doc="Fraction open for valve from 0 to 1",
         )
+        umeta = (
+            self.control_volume.config.property_package.get_metadata().get_derived_units
+        )
+
+        if self.config.phase == "Liq":
+            Cv_units = umeta("amount") / umeta("time") / umeta("pressure") ** 0.5
+        else:
+            # Vapor
+            Cv_units = umeta("amount") / umeta("time") / umeta("pressure")
+
         self.Cv = pyo.Var(
             initialize=0.1,
             doc="Valve flow coefficient, for vapor " "[mol/s/Pa] for liquid [mol/s/Pa]",
-            units=pyo.units.mol / pyo.units.s / pyo.units.Pa,
+            units=Cv_units,
         )
         # self.Cv.fix()
 
@@ -203,7 +277,7 @@ ValveFunctionType.custom}""",
         vfcb = self.config.valve_function_callback
         vfselect = self.config.valve_function
         if vfselect is not ValveFunctionType.custom and vfcb is not None:
-            _log.warning(
+            raise ConfigurationError(
                 "A valve function callback was provided but the valve "
                 "function type is not custom."
             )
@@ -257,8 +331,17 @@ ValveFunctionType.custom}""",
         # This will only restore the values of variables that were originally fixed
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)
+
+        # Store values for pressure so they can be restored after estimating
+        # the outlet state
+        P = {t: self.outlet.pressure[t].value for t in self.flowsheet().time}
+        # Propagate state variables to outlet block
+        self.control_volume.estimate_outlet_state(always_estimate=True)
+
         # Check for alternate pressure specs
         for t in self.flowsheet().time:
+            # Restore stored value for pressure
+            self.outlet.pressure[t].set_value(P[t])
             if self.outlet.pressure[t].fixed:
                 self.deltaP[t].fix(
                     pyo.value(self.outlet.pressure[t] - self.inlet.pressure[t])
