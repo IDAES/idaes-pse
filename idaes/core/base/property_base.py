@@ -490,6 +490,7 @@ class StateBlock(ProcessBlock):
         doc=None,
         slice_index=None,
         index=None,
+        port_class=Port,
     ):
         """
         Constructs a Port based on this StateBlock attached to the target block.
@@ -499,6 +500,7 @@ class StateBlock(ProcessBlock):
             slice_index - Slice index (e.g. (slice(None), 0.0) that will be
                 used to index self when constructing port references. Default = None.
             index - time index to use when calling define_port_members. Default = None.
+            port_class - subclass of Port to use to build port. Default = Port.
 
         Returns:
             Port object and list of tuples with form (Reference, member name)
@@ -509,7 +511,7 @@ class StateBlock(ProcessBlock):
             index = self.index_set().first()
 
         # Create empty Port
-        p = Port(doc=doc)
+        p = port_class(doc=doc)
 
         # Get dict of Port members and names
         # Need to get a representative member of StateBlockDatas

@@ -83,7 +83,13 @@ from pyomo.environ import (
 )
 
 # Import IDAES cores
-from idaes.core import declare_process_block_class, UnitModelBlockData, useDefault
+from idaes.core import (
+    declare_process_block_class,
+    InletPort,
+    OutletPort,
+    UnitModelBlockData,
+    useDefault,
+)
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 
@@ -243,9 +249,9 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
             self.flowsheet().time, **self.config.property_package_args
         )
 
-        self.add_port("primary_air_inlet", self.primary_air)
-        self.add_port("secondary_air_inlet", self.secondary_air)
-        self.add_port("flue_gas_outlet", self.flue_gas)
+        self.add_port("primary_air_inlet", self.primary_air, port_class=InletPort)
+        self.add_port("secondary_air_inlet", self.secondary_air, port_class=InletPort)
+        self.add_port("flue_gas_outlet", self.flue_gas, port_class=OutletPort)
         # Construct performance equations
         self._make_params()
         self._make_vars()
