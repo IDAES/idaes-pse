@@ -4,6 +4,7 @@ pytest plugin for testing IDAES "through" IDAES/examples within the IDAES/idaes-
 
 from contextlib import contextmanager
 import fnmatch
+from importlib.util import find_spec
 import os
 from pathlib import Path
 import sys
@@ -31,7 +32,7 @@ def _matches_pattern(item: pytest.Item, pattern: str) -> bool:
 
 
 def pytest_configure(config: pytest.Config):
-    config.stash[matchmarker] = {
+    markers = {
         "*/held/*": pytest.mark.xfail(run=False, reason="notebook has 'held' status"),
         "*/archive/*": pytest.mark.skip(reason="notebook is archived"),
         "*/surrogates/sco2/alamo/*": pytest.mark.xfail(
@@ -39,6 +40,25 @@ def pytest_configure(config: pytest.Config):
             reason="notebooks require ALAMO to run",
         ),
     }
+
+    # TODO: Remove these exclusions and the Python version marker in
+    # pyproject.toml when a stable TensorFlow release provides Python 3.14
+    # distributions.
+    if find_spec("tensorflow") is None:
+        requires_tensorflow = pytest.mark.xfail(
+            run=False,
+            reason="notebook requires TensorFlow to run",
+        )
+        for pattern in (
+            "*/surrogates/best_practices_optimization_test.ipynb",
+            "*/surrogates/omlt/keras_flowsheet_optimization_test.ipynb",
+            "*/surrogates/sco2/omlt/flowsheet_optimization_test.ipynb",
+            "*/surrogates/sco2/omlt/keras_training_test.ipynb",
+            "*/surrogates/sco2/omlt/surrogate_embedding_test.ipynb",
+        ):
+            markers[pattern] = requires_tensorflow
+
+    config.stash[matchmarker] = markers
     config.stash[marked] = []
 
 
