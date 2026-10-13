@@ -34,7 +34,6 @@ from idaes.models_extra.power_generation.flowsheets.supercritical_power_plant im
     boiler_subflowsheet_build as boiler,
 )
 
-
 pytestmark = [
     pytest.mark.skipif(
         not helmholtz_available(), reason="General Helmholtz not available"

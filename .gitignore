@@ -132,3 +132,7 @@ docs/apidoc/
 # Mac OSX
 .DS_Store
 
+idaes/models_extra/power_generation/flowsheets/subcritical_power_plant/SS_FH
+idaes/models_extra/power_generation/flowsheets/subcritical_power_plant/FSH_notes
+idaes/models_extra/power_generation/flowsheets/supercritical_power_plant/supercritical_update_notes.txt
+idaes/models_extra/power_generation/flowsheets/supercritical_power_plant/SS
