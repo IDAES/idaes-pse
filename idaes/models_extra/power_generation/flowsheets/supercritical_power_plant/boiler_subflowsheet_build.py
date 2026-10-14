@@ -233,8 +233,6 @@ def build_boiler(fs):
     # Build connections (streams)
     # Steam Route (side 1 = tube side = steam/water side)
     # Boiler feed water to Economizer (to be imported in full plant model)
-    #    fs.bfw2econ = Arc (source=fs.FWH8.outlet,
-    #                       destination=fs.ECON.cold_side_inlet)
     _log.info("Creating Boiler Arcs")
     fs.econ2ww = Arc(source=fs.ECON.cold_side_outlet, destination=fs.Water_wall.inlet)
     fs.ww2prsh = Arc(source=fs.Water_wall.outlet, destination=fs.PrSH.cold_side_inlet)
@@ -243,8 +241,6 @@ def build_boiler(fs):
     fs.FSHtoATMP1 = Arc(source=fs.FSH.cold_side_outlet, destination=fs.ATMP1.Steam)
     # The attemperator outlet is out of scope for the boiler subflowsheet
     # it will be connected to the HP turbine inlet in the full plant model
-    #    fs.fsh2hpturbine = Arc(source=fs.ATMP1.outlet,
-    #                           destination=fs.HPTinlet)
 
     # Flue gas route
     # water wall connected with boiler block (to fix the heat duty)
@@ -271,7 +267,7 @@ def scale_unit(unit, label):
     unit : ProcessBlockData
         Initialized IDAES unit model to scale.
     label : str
-        Descriptive unit name used in the scaling summary output.
+        Descriptive unit name used in the debug-level scaling summary.
 
     Returns
     -------
@@ -318,11 +314,17 @@ def scale_unit(unit, label):
     scaler_name = (
         type(default_scaler).__name__ if default_scaler is not None else "None"
     )
-    print(
-        f"{label}: default={scaler_name}, required flow factors={required_flow_factors}, "
-        f"gaps before AutoScaler=({len(variables_after_default)} vars, "
-        f"{len(constraints_after_default)} cons), remaining="
-        f"({len(remaining_variables)} vars, {len(remaining_constraints)} cons)"
+    _log.debug(
+        "%s scaling summary: default scaler=%s; required flow factors=%d; "
+        "gaps after default scaling=(%d variables, %d constraints); "
+        "remaining after AutoScaler=(%d variables, %d constraints)",
+        label,
+        scaler_name,
+        required_flow_factors,
+        len(variables_after_default),
+        len(constraints_after_default),
+        len(remaining_variables),
+        len(remaining_constraints),
     )
 
     return default_scaler, gap_scaler
