@@ -20,7 +20,7 @@ import pytest
 
 from pyomo.environ import check_optimal_termination, ConcreteModel, value
 
-from idaes.core import FlowsheetBlock
+from idaes.core import FlowsheetBlock, UnitModelBlock, UnitModelCostingBlock
 from idaes.models_extra.temperature_swing_adsorption import (
     FixedBedTSA0D,
     FixedBedTSA0DInitializer,
@@ -143,6 +143,9 @@ class TestElectricBoilerCosting:
         ]
         for unit in unit_list:
             assert hasattr(model.fs, unit)
+            blk = getattr(model.fs, unit)
+            assert isinstance(blk, UnitModelBlock)
+            assert isinstance(blk.costing, UnitModelCostingBlock)
 
         assert hasattr(model.fs, "costing")
         cost_attr_list = ["total_TPC", "total_fixed_OM_cost", "total_variable_OM_cost"]
@@ -226,6 +229,9 @@ class TestElectricBoilerCosting:
         ]
         for unit in unit_list:
             assert hasattr(model.fs, unit)
+            blk = getattr(model.fs, unit)
+            assert isinstance(blk, UnitModelBlock)
+            assert isinstance(blk.costing, UnitModelCostingBlock)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -341,6 +347,9 @@ class TestRetrofitNgccCosting:
         ]
         for unit in unit_list:
             assert hasattr(model.fs, unit)
+            blk = getattr(model.fs, unit)
+            assert isinstance(blk, UnitModelBlock)
+            assert isinstance(blk.costing, UnitModelCostingBlock)
 
         assert hasattr(model.fs, "costing")
         cost_attr_list = ["total_TPC", "total_fixed_OM_cost", "total_variable_OM_cost"]
