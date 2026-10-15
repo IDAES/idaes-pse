@@ -61,26 +61,6 @@ def get_dac_costing_data(case):
     return costing_params
 
 
-def _nonneg(expr, unit):
-    """
-    Return a smooth nonnegative version of expr with the given units.
-    """
-    return smooth_max(0, units.convert(expr, to_units=unit) / unit) * unit
-
-
-def _warn_if_negative(expr, name):
-    try:
-        v = value(expr)
-    except Exception:
-        return
-    if v < 0:
-        _log.warning(
-            "%s is negative (%.6g). Clamping to zero for costing stability.",
-            name,
-            v,
-        )
-
-
 def get_dac_costing(unit, costing_case):
     # capital costs
     costing_params = get_dac_costing_data(costing_case)
@@ -100,7 +80,6 @@ def get_dac_costing(unit, costing_case):
         * units.convert(unit.flow_mol_in_total, to_units=units.kmol / units.hr)
         - 2.2798
     )
-    _warn_if_negative(_pcal_dimless, "product_compressor_auxiliary_load surrogate")
     product_compressor_auxiliary_load = smooth_max(0, _pcal_dimless) * units.kW  # [kW]
     # compressor aftercooler heat exchanger duty - from surrogates
     _cahd_dimless = (
@@ -110,16 +89,14 @@ def get_dac_costing(unit, costing_case):
         * units.convert(unit.flow_mol_in_total, to_units=units.kmol / units.hr)
         - 7e-8
     )
-    _warn_if_negative(_cahd_dimless, "compressor_aftercooler_heat_duty surrogate")
     compressor_aftercooler_heat_duty = (
         smooth_max(0, _cahd_dimless) * units.MBtu / units.hr
     )  # [MMBtu/hr]
 
-    auxiliary_load_2_beds = _nonneg(
+    auxiliary_load_2_beds = (
         2
         * units.convert(unit.compressor.unit.work_mechanical[0], to_units=units.kW)
-        / unit.number_beds,
-        units.kW,
+        / unit.number_beds
     )  # [kW]
 
     # CO2 product mass flow rate - from model
@@ -169,22 +146,20 @@ def get_dac_costing(unit, costing_case):
             / units.min
         )  # [gpm]
         # boiler auxiliary load - from surrogates
-        boiler_auxiliary_load = _nonneg(
+        boiler_auxiliary_load = (
             0.000335999
             * units.convert(unit.flow_mass_steam, to_units=units.lb / units.hr)
             * units.hr
             / units.lb
             * 1e3
-            * units.kW,
-            units.kW,
+            * units.kW
         )  # convert MW to kW
         # total auxiliary load
         # calculate with fans work + compressor for CO2 pure + boiler aux load
-        total_auxiliary_load = _nonneg(
+        total_auxiliary_load = (
             product_compressor_auxiliary_load
             + boiler_auxiliary_load
-            + units.convert(unit.compressor.unit.work_mechanical[0], to_units=units.kW),
-            units.kW,
+            + units.convert(unit.compressor.unit.work_mechanical[0], to_units=units.kW)
         )
 
         fs.raw_water_system = UnitModelBlock()
@@ -309,10 +284,8 @@ def get_dac_costing(unit, costing_case):
 
     elif costing_case == "retrofit_ngcc":
         # calculate with fans work + compressor for CO2 pure
-        total_auxiliary_load = _nonneg(
-            product_compressor_auxiliary_load
-            + units.convert(unit.compressor.unit.work_mechanical[0], to_units=units.kW),
-            units.kW,
+        total_auxiliary_load = product_compressor_auxiliary_load + units.convert(
+            unit.compressor.unit.work_mechanical[0], to_units=units.kW
         )
 
         # gas flow to dac accounts
