@@ -51,79 +51,92 @@ from idaes.core.util.exceptions import ConfigurationError
 solver = get_solver()
 
 
-@pytest.mark.unit
+@pytest.fixture(scope="class")
+def base_model():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    m.fs.compressor_props = FlueGasParameterBlock(components=["N2", "CO2"])
+    m.fs.steam_props = iapws95.Iapws95ParameterBlock()
+
+    m.fs.unit = FixedBedTSA0D(
+        adsorbent=Adsorbent.zeolite_13x,
+        number_of_beds=600,
+        transformation_method="dae.collocation",
+        transformation_scheme=TransformationScheme.lagrangeRadau,
+        finite_elements=20,
+        collocation_points=6,
+        compressor=True,
+        compressor_properties=m.fs.compressor_props,
+        steam_calculation=SteamCalculationType.rigorous,
+        steam_properties=m.fs.steam_props,
+    )
+
+    m.fs.unit.inlet.flow_mol_comp[0, "H2O"].fix(0)
+    m.fs.unit.inlet.flow_mol_comp[0, "CO2"].fix(40)
+    m.fs.unit.inlet.flow_mol_comp[0, "N2"].fix(99960)
+    m.fs.unit.inlet.flow_mol_comp[0, "O2"].fix(0)
+    m.fs.unit.inlet.temperature.fix(303.15)
+    m.fs.unit.inlet.pressure.fix(100000)
+
+    m.fs.unit.temperature_desorption.fix(470)
+    m.fs.unit.temperature_adsorption.fix(310)
+    m.fs.unit.temperature_heating.fix(500)
+    m.fs.unit.temperature_cooling.fix(300)
+    m.fs.unit.bed_diameter.fix(4)
+    m.fs.unit.bed_height.fix(8)
+    m.fs.unit.compressor.unit.efficiency_isentropic.fix(0.8)
+
+    iscale.calculate_scaling_factors(m)
+
+    initializer = FixedBedTSA0DInitializer()
+    initializer.initialize(m.fs.unit)
+
+    return m
+
+
 class TestCostingCaseConfigs:
+    @pytest.mark.unit
     def test_get_dac_costing_data_invalid_case(self):
         with pytest.raises(ConfigurationError, match="costing case not defined"):
             get_dac_costing_data("not_a_valid_case")
 
+    @pytest.mark.unit
     def test_get_dac_costing_data_electric_boiler(self):
         data = get_dac_costing_data("electric_boiler")
 
         assert isinstance(data, dict)
         assert len(data) > 0
 
+    @pytest.mark.unit
     def test_get_dac_costing_data_retrofit_ngcc(self):
         data = get_dac_costing_data("retrofit_ngcc")
 
         assert isinstance(data, dict)
         assert len(data) > 0
 
+    @pytest.mark.integration
+    def test_get_dac_costing_invalid_case(self, base_model):
+        with pytest.raises(ConfigurationError, match="costing case not defined"):
+            get_dac_costing(base_model.fs.unit, "not_a_valid_case")
+
 
 @pytest.mark.integration
 class TestElectricBoilerCosting:
     @pytest.fixture(scope="class")
-    def model(self):
-        m = ConcreteModel()
-        m.fs = FlowsheetBlock(dynamic=False)
+    def model(self, base_model):
+        get_dac_costing(base_model.fs.unit, "electric_boiler")
 
-        m.fs.compressor_props = FlueGasParameterBlock(components=["N2", "CO2"])
-        m.fs.steam_props = iapws95.Iapws95ParameterBlock()
-
-        m.fs.unit = FixedBedTSA0D(
-            adsorbent=Adsorbent.zeolite_13x,
-            number_of_beds=600,
-            transformation_method="dae.collocation",
-            transformation_scheme=TransformationScheme.lagrangeRadau,
-            finite_elements=20,
-            collocation_points=6,
-            compressor=True,
-            compressor_properties=m.fs.compressor_props,
-            steam_calculation=SteamCalculationType.rigorous,
-            steam_properties=m.fs.steam_props,
-        )
-
-        m.fs.unit.inlet.flow_mol_comp[0, "H2O"].fix(0)
-        m.fs.unit.inlet.flow_mol_comp[0, "CO2"].fix(40)
-        m.fs.unit.inlet.flow_mol_comp[0, "N2"].fix(99960)
-        m.fs.unit.inlet.flow_mol_comp[0, "O2"].fix(0)
-        m.fs.unit.inlet.temperature.fix(303.15)
-        m.fs.unit.inlet.pressure.fix(100000)
-
-        m.fs.unit.temperature_desorption.fix(470)
-        m.fs.unit.temperature_adsorption.fix(310)
-        m.fs.unit.temperature_heating.fix(500)
-        m.fs.unit.temperature_cooling.fix(300)
-        m.fs.unit.bed_diameter.fix(4)
-        m.fs.unit.bed_height.fix(8)
-        m.fs.unit.compressor.unit.efficiency_isentropic.fix(0.8)
-
-        iscale.calculate_scaling_factors(m)
-
-        initializer = FixedBedTSA0DInitializer()
-        initializer.initialize(m.fs.unit)
-
-        get_dac_costing(m.fs.unit, "electric_boiler")
-
-        return m
+        return base_model
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_build(self, model):
         assert hasattr(model.fs, "costing")
-        assert hasattr(model.fs.costing, "total_TPC")
-        assert hasattr(model.fs.costing, "total_fixed_OM_cost")
-        assert hasattr(model.fs.costing, "total_variable_OM_cost")
+
+        cost_attr_list = ["total_TPC", "total_fixed_OM_cost", "total_variable_OM_cost"]
+        for cost_attr in cost_attr_list:
+            assert hasattr(model.fs.costing, cost_attr)
 
         assert number_variables(model) == 3008
         assert number_total_constraints(model) == 2977
@@ -283,57 +296,19 @@ class TestElectricBoilerCosting:
 @pytest.mark.integration
 class TestRetrofitNgccCosting:
     @pytest.fixture(scope="class")
-    def model(self):
-        m = ConcreteModel()
-        m.fs = FlowsheetBlock(dynamic=False)
+    def model(self, base_model):
+        get_dac_costing(base_model.fs.unit, "retrofit_ngcc")
 
-        m.fs.compressor_props = FlueGasParameterBlock(components=["N2", "CO2"])
-        m.fs.steam_props = iapws95.Iapws95ParameterBlock()
-
-        m.fs.unit = FixedBedTSA0D(
-            adsorbent=Adsorbent.zeolite_13x,
-            number_of_beds=600,
-            transformation_method="dae.collocation",
-            transformation_scheme=TransformationScheme.lagrangeRadau,
-            finite_elements=20,
-            collocation_points=6,
-            compressor=True,
-            compressor_properties=m.fs.compressor_props,
-            steam_calculation=SteamCalculationType.rigorous,
-            steam_properties=m.fs.steam_props,
-        )
-
-        m.fs.unit.inlet.flow_mol_comp[0, "H2O"].fix(0)
-        m.fs.unit.inlet.flow_mol_comp[0, "CO2"].fix(40)
-        m.fs.unit.inlet.flow_mol_comp[0, "N2"].fix(99960)
-        m.fs.unit.inlet.flow_mol_comp[0, "O2"].fix(0)
-        m.fs.unit.inlet.temperature.fix(303.15)
-        m.fs.unit.inlet.pressure.fix(100000)
-
-        m.fs.unit.temperature_desorption.fix(470)
-        m.fs.unit.temperature_adsorption.fix(310)
-        m.fs.unit.temperature_heating.fix(500)
-        m.fs.unit.temperature_cooling.fix(300)
-        m.fs.unit.bed_diameter.fix(4)
-        m.fs.unit.bed_height.fix(8)
-        m.fs.unit.compressor.unit.efficiency_isentropic.fix(0.8)
-
-        iscale.calculate_scaling_factors(m)
-
-        initializer = FixedBedTSA0DInitializer()
-        initializer.initialize(m.fs.unit)
-
-        get_dac_costing(m.fs.unit, "retrofit_ngcc")
-
-        return m
+        return base_model
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_build(self, model):
         assert hasattr(model.fs, "costing")
-        assert hasattr(model.fs.costing, "total_TPC")
-        assert hasattr(model.fs.costing, "total_fixed_OM_cost")
-        assert hasattr(model.fs.costing, "total_variable_OM_cost")
+
+        cost_attr_list = ["total_TPC", "total_fixed_OM_cost", "total_variable_OM_cost"]
+        for cost_attr in cost_attr_list:
+            assert hasattr(model.fs.costing, cost_attr)
 
         assert number_variables(model) == 2962
         assert number_total_constraints(model) == 2931
