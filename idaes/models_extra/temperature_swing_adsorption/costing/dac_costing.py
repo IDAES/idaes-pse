@@ -119,21 +119,18 @@ def get_dac_costing(unit, costing_case):
 
     if costing_case == "electric_boiler":
         # raw water withdrawal flow rate - from surrogates
-        # TODO: check which expression is correct (CDR has this as the correlation for ngcc)
         raw_water_withdrawal = (
             (1.0496e-03 * CO2_product_mass_flow * units.hr / units.lb + 5.3359e01)
             * units.gal
             / units.min
         )  # [gpm]
         # process water discharge flow rate - from surrogates
-        # TODO: check which expression is correct (CDR has this as the correlation for ngcc)
         process_water_discharge = (
             (5.4007e-04 * CO2_product_mass_flow * units.hr / units.lb + 1.2000e01)
             * units.gal
             / units.min
         )  # [gpm]
         # cooling tower heat duty - from surrogates
-        # TODO: check which expression is correct (CDR has this as the correlation for ngcc)
         cooling_tower_duty = (
             (3.0797e-04 * CO2_product_mass_flow * units.hr / units.lb + 2.5000e01)
             * units.MBtu
@@ -624,10 +621,6 @@ def get_dac_costing(unit, costing_case):
         "aux_power": 0.06 * units.USD_2018 / units.kWh,
         "waste_sorbent": 0.86 * units.USD_2018 / units.ft**3,
         "IP_steam": 0.00733 * units.USD_2018 / units.kg,
-        # "boiler_feed_water": 2.45
-        # / 1000
-        # * units.USD_2018
-        # / units.kg,  # Turton et al., 2012
     }
 
     @fs.costing.Expression()
