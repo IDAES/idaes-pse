@@ -132,8 +132,19 @@ class TestElectricBoilerCosting:
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_build(self, model):
-        assert hasattr(model.fs, "costing")
+        unit_list = [
+            "raw_water_system",
+            "steam_system",
+            "cooling_tower",
+            "water_discharge_system",
+            "cooling_water_system",
+            "electric_systems",
+            "electric_boiler",
+        ]
+        for unit in unit_list:
+            assert hasattr(model.fs, unit)
 
+        assert hasattr(model.fs, "costing")
         cost_attr_list = ["total_TPC", "total_fixed_OM_cost", "total_variable_OM_cost"]
         for cost_attr in cost_attr_list:
             assert hasattr(model.fs.costing, cost_attr)
@@ -144,7 +155,7 @@ class TestElectricBoilerCosting:
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    def test_EB_cost_accounts(self, model):
+    def test_cost_accounts(self, model):
         assert model.fs.raw_water_system.costing.config.costing_method_arguments[
             "cost_accounts"
         ] == ["3.2", "3.4", "9.5", "14.6"]
@@ -196,6 +207,25 @@ class TestElectricBoilerCosting:
         assert model.fs.electric_boiler.costing.config.costing_method_arguments[
             "cost_accounts"
         ] == ["15.9"]
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_shared_DAC_build(self, model):
+        unit_list = [
+            "sorbent_makeup",
+            "vessels",
+            "product_compression",
+            "compressor_aftercooler",
+            "duct_dampers",
+            "feed_fans",
+            "desorption_gas_handling",
+            "steam_distribution",
+            "controls_equipment",
+            "CO2_storage_vessel",
+            "CO2_dryer",
+        ]
+        for unit in unit_list:
+            assert hasattr(model.fs, unit)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -304,8 +334,15 @@ class TestRetrofitNgccCosting:
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_build(self, model):
-        assert hasattr(model.fs, "costing")
+        unit_list = [
+            "gas_flow_to_dac",
+            "steam_flow_system",
+            "electric_systems",
+        ]
+        for unit in unit_list:
+            assert hasattr(model.fs, unit)
 
+        assert hasattr(model.fs, "costing")
         cost_attr_list = ["total_TPC", "total_fixed_OM_cost", "total_variable_OM_cost"]
         for cost_attr in cost_attr_list:
             assert hasattr(model.fs.costing, cost_attr)
