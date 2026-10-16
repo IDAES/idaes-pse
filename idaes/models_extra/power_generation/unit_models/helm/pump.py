@@ -188,7 +188,7 @@ class HelmPumpData(BalanceBlockData):
 
         pratio = self.ratioP = pyo.Var(
             self.flowsheet().time,
-            initialize=0.7,  # Why isn't this greater than one?
+            initialize=1.3,
             doc="Ratio of outlet to inlet pressure",
         )
 
