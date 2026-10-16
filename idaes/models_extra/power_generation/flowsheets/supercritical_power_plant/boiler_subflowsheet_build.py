@@ -669,7 +669,9 @@ def print_results(m):
 
     print("\n\n ------------- Economizer   ---------")
     print("liquid temp in = ", value(m.fs.ECON.cold_side.properties_in[0].temperature))
-    print("liquid temp out = ", value(m.fs.ECON.cold_side.properties_out[0].temperature))
+    print(
+        "liquid temp out = ", value(m.fs.ECON.cold_side.properties_out[0].temperature)
+    )
     print("gas temp in = ", value(m.fs.ECON.hot_side.properties_in[0].temperature))
     print("gas temp out = ", value(m.fs.ECON.hot_side.properties_out[0].temperature))
 
