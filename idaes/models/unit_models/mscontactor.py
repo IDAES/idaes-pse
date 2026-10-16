@@ -1196,19 +1196,19 @@ class MSContactorData(UnitModelBlockData):
         rpack = self.config.heterogeneous_reactions
         rpack_args = self.config.heterogeneous_reactions_args
 
-        try:
-            self.heterogeneous_reactions = rpack.build_reaction_block(
-                self.flowsheet().time,
-                self.elements,
-                doc="Heterogeneous reaction block for contactor.",
-                **rpack_args,
-            )
-        except AttributeError:
+        if not hasattr(rpack, "build_reaction_block"):
             raise ConfigurationError(
                 "Heterogeneous reaction package has not implemented a "
                 "build_reaction_block method. Please ensure that your "
                 "reaction block conforms to the required standards."
             )
+
+        self.heterogeneous_reactions = rpack.build_reaction_block(
+            self.flowsheet().time,
+            self.elements,
+            doc="Heterogeneous reaction block for contactor.",
+            **rpack_args,
+        )
 
         if not hasattr(self.config.heterogeneous_reactions, "reaction_idx"):
             raise PropertyNotSupportedError(
