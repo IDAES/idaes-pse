@@ -37,10 +37,11 @@ Main Assumptions:
 
     Boiler heat exchanger network:
         Water Flow:
-            Fresh water -> FWH's -> Economizer -> Water Wall -> Primary SH -> Platen SH -> Finishing Superheate -> HP Turbine -> Reheater -> IP Turbine
+            Fresh water -> FWH's -> Economizer -> Water Wall -> Primary SH -> Platen SH
+              -> Finishing Superheate -> HP Turbine -> Reheater -> IP Turbine
         Flue Gas Flow:
-            Fire Ball -> Platen SH -> Finishing SH -> Reheater  -> o -> Economizer -> Air Preheater
-                                                   -> Primary SH --^
+            Fire Ball -> Platen SH -> Finishing SH -> Reheater  -> o -> Economizer
+            -> Air Preheater                        -> Primary SH --^
         Steam Flow:
             Boiler -> HP Turbine -> Reheater -> IP Turbine
             HP, IP, and LP steam extractions to Feed Water Heaters
@@ -60,12 +61,15 @@ Main Assumptions:
         - IAPWS: Water/steam side
         - IDEAL GAS: Flue Gas side
 
+
+Author: Miguel Zamarripa
+Last edited: 2024-06-12 by Francis Hanna
 """
 
-# TODO: Missing docstrings
 # pylint: disable=missing-function-docstring
 
 __author__ = "Miguel Zamarripa"
+
 
 # Import Python libraries
 import logging
@@ -78,60 +82,88 @@ from pyomo.network import Arc
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
 
+# Import supporting IDAES flowsheets
+# Steam cycle flowsheet
+from idaes.models_extra.power_generation.flowsheets.supercritical_steam_cycle import (
+    supercritical_steam_cycle as steam_cycle,
+)
+
+# Boiler heat exchanger network flowsheet
+from idaes.models_extra.power_generation.flowsheets.supercritical_power_plant import (
+    boiler_subflowsheet_build as blr,
+)
+
+# setup logger
 _log = idaeslog.getModelLogger(__name__, logging.INFO)
 
 
-def import_steam_cycle():
-    # build concrete model
-    # import steam cycle model and initialize flowsheet (only if needed)
-    # pylint: disable-next=import-outside-toplevel
-    import idaes.models_extra.power_generation.flowsheets.supercritical_steam_cycle.supercritical_steam_cycle as steam_cycle
-
-    m, solver = steam_cycle.main()
-    return m, solver
-
-
 def main():
-    # import steam cycle and build concrete model
-    m, solver = import_steam_cycle()
-    print(degrees_of_freedom(m))
-    # at this point we have a flowsheet with "steam cycle" that solves
-    # correctly, with 0 degrees of freedom.
+    """
+    This function builds the supercritical power plant model, including the steam cycle
+    and boiler heat exchanger network.
 
-    # next step is to import and build the boiler heat exchanger network
-    # importing the boiler heat exchanger network
-    # from (boiler_subflowsheet_build.py)
-    # this step appends all the boiler unit models into our model ("m")
-    # model "m" has been created a few lines above
-    # pylint: disable-next=import-outside-toplevel
-    import idaes.models_extra.power_generation.flowsheets.supercritical_power_plant.boiler_subflowsheet_build as blr
+    Logic
+    -----
+    1.  Build the steam cycle flowsheet using the setup_steam_cycle function.
+        See: idaes/models_extra/power_generation/flowsheets/supercritical_steam_cycle.py
+        for more details
 
-    # import the models (ECON, WW, PrSH, PlSH, FSH, Splitter, Mixer, Reheater)
-    # see boiler_subflowhseet_build.py for a better description
+    2.  Build the boiler heat exchanger network flowsheet using the build_boiler function.
+        See the ``boiler_subflowsheet_build.py`` module for more details.
+        This step involves appending the boiler unit models into the steam cycle model,
+        resulting in a single model object containing both flowsheets.
+
+
+    Notes
+    -----
+    1.  The initialized model may be saved to ``SCPC_full.json`` using
+        ``MS.to_json()`` and restored in a later run using ``MS.from_json()``.
+
+    2.  If the connected model produces an infeasible solution, the high-pressure
+        turbine connection can be tested by deactivating the enthalpy and pressure
+        equalities on ``m.fs.Att2HP_expanded`` and fixing the corresponding inlet
+        conditions on ``m.fs.turb.inlet_split.inlet``. The fixed values should be
+        checked against the outlet conditions from ``m.fs.ATMP1``.
+
+    3.  To maintain the high-pressure turbine inlet temperature at approximately
+        866 K, fix the attemperator outlet molar enthalpy and unfix the platen
+        superheater heat duty. Using enthalpy to control temperature is valid here
+        only when the corresponding pressure is also fixed.
+    """
+    # Build the steam cycle flowsheet
+    _log.info("Building steam cycle flowsheet")
+    m, solver = steam_cycle.main()
+    # Assert that the degrees of freedom = 0, i.e. square problem
+    _log.info(f"Degrees of freedom: {degrees_of_freedom(m)}")
+
+    # Build the boiler heat exchanger network flowsheet
+    _log.info("Building boiler heat exchanger network flowsheet")
     blr.build_boiler(m.fs)
-    # initialize boiler network models (one by one)
+    # initialize boiler network models
+    _log.info("Initializing boiler heat exchanger network flowsheet")
     blr.initialize(m)
-    # at this point we have both flowsheets (steam cycle + boiler network)
-    # in the same model/concrete object ("m"), however they are disconnected.
-    # Here we want to solve them at the same time
-    # this is a square problem (i.e. degrees of freedom = 0)
-    print("solving square problem disconnected")
-    results = solver.solve(m, tee=True)
 
-    # at this point we want to connect the units in both flowsheets
-    # Economizer inlet = Feed water heater 8 outlet (water)
-    # HP inlet = Attemperator outlet (steam)
-    # Reheater inlet (steam) = HP split 7 outlet (last stage of HP turbine)
-    # IP inlet = Reheater outlet steam7
+    # Model content: two disconnected square flowsheets
+    # solve the disconnected flowsheets
+    _log.info("Solving square problem disconnected")
+    # this function is imported from the boiler_subflowsheet_build.py module
+    # the scale_solve function is a wrapper for the solver.solve function,
+    # which scales the model and solves it. Scaler logic - uses autosclaer to
+    # scale the entire flowsheet without overwriting any predefined scaling factors
+    results = blr.scale_solve(m)
+
+    # Connect the two flowsheets - the main connection points include:
+    # 1. Economizer inlet = Feed water heater 8 outlet (water)
+    # 2. HP inlet = Attemperator outlet (steam)
+    # 3. Reheater inlet (steam) = HP split 7 outlet (last stage of HP turbine)
+    # 4. IP inlet = Reheater outlet steam7
+
+    # Step 1 - unfix the inlet conditions of the boiler heat exchanger network flowsheet
+    _log.info("Unfixing boiler subflowsheet inlet conditions")
     blr.unfix_inlets(m)
-    print("unfix inlet conditions, degreeso of freedom = " + str(degrees_of_freedom(m)))
-    # user can save the initialization to a json file (uncomment next line)
-    #    MS.to_json(m, fname = 'SCPC_full.json')
-    #   later user can use the json file to initialize the model
-    #   if this is the case comment out previous MS.to_json and uncomment next line
-    #    MS.from_json(m, fname = 'SCPC_full.json')
-
-    # deactivate constraints linking the FWH8 to HP turbine
+    _log.info(f"Degrees of freedom: {degrees_of_freedom(m)}")
+    # Step 2 - deactivate constraints linking the FWH8 to HP turbine
+    _log.info("Deactivating boiler heat exchanger network constraints")
     m.fs.boiler_pressure_drop.deactivate()
     m.fs.close_flow.deactivate()
     m.fs.turb.constraint_reheat_flow.deactivate()
@@ -142,24 +174,35 @@ def main():
     # user can fix the boiler feed water pump pressure (uncommenting next line)
     #    m.fs.bfp.outlet.pressure[:].fix(26922222.222))
 
+    # Step 3 - connect the two flowsheets using Arcs
+    # FWH8 outlet to ECON inlet
+    _log.info(
+        "Creating new arcs to connect the steam cycle and boiler heat exchanger "
+        "network flowsheets"
+    )
+    _log.info("Creating arc from FWH8 to ECON")
     m.fs.FHWtoECON = Arc(
         source=m.fs.fwh8.desuperheat.cold_side_outlet,
         destination=m.fs.ECON.cold_side_inlet,
     )
-
+    # HP inlet to Attemperator outlet
+    _log.info("Creating arc from Attemperator to HP")
     m.fs.Att2HP = Arc(source=m.fs.ATMP1.outlet, destination=m.fs.turb.inlet_split.inlet)
-
+    # Reheater inlet to HP split 7 outlet
+    _log.info("Creating arc from HP split 7 to Reheater")
     m.fs.HPout2RH = Arc(
         source=m.fs.turb.hp_split[7].outlet_1, destination=m.fs.RH.cold_side_inlet
     )
-
+    # IP inlet to Reheater outlet
+    _log.info("Creating arc from Reheater to IP")
     m.fs.RHtoIP = Arc(
         source=m.fs.RH.cold_side_outlet, destination=m.fs.turb.ip_stages[1].inlet
     )
-
+    # expand the newly created arcs
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
 
-    # unfix boiler connections
+    # Step 4: unfix boiler connections
+    _log.info("Unfixing boiler connections")
     m.fs.ECON.cold_side_inlet.flow_mol.unfix()
     m.fs.ECON.cold_side_inlet.enth_mol[0].unfix()
     m.fs.ECON.cold_side_inlet.pressure[0].unfix()
@@ -168,26 +211,20 @@ def main():
     m.fs.RH.cold_side_inlet.pressure[0].unfix()
     m.fs.hotwell.makeup.flow_mol[:].setlb(-1.0)
 
-    # if user has trouble with infeasible solutions, an easy test
-    # is to deactivate the link to HP turbine
-    # (m.fs.Att2HP_expanded "enth_mol and pressure" equalities)
-    # and fix inlet pressure and enth_mol to turbine
-    # (m.fs.turb.inlet_split.inlet)
-    # (then double check the values from m.fs.ATMP1.outlet)
-    #  m.fs.Att2HP_expanded.enth_mol_equality.deactivate()
-    #  m.fs.Att2HP_expanded.pressure_equality.deactivate()
     m.fs.turb.inlet_split.inlet.pressure.fix(2.423e7)
     #    m.fs.turb.inlet_split.inlet.enth_mol.fix(62710.01)
 
-    # finally, since we want to maintain High Pressure (HP) inlet temperature
-    # constant (~866 K), we need to fix Attemperator enthalpy outlet
-    # and unfix heat duty to Platen superheater, note that fixing enthalpy
-    # to control temperature is only valid because pressure is also fixed
+    # Adjust attemperator and platen superheater to maintain HP inlet temperature
+    # Refer to Note (3)
     m.fs.ATMP1.outlet.enth_mol[0].fix(62710.01)
     m.fs.PlSH.heat_duty[:].unfix()  # fix(5.5e7)
-    #    m.fs.ATMP1.SprayWater.flow_mol[0].unfix()
-    print("connecting flowsheets, degrees of freedom = " + str(degrees_of_freedom(m)))
-    print("solving full plant model")
+    # m.fs.ATMP1.SprayWater.flow_mol[0].unfix()
+
+    _log.info(
+        "connecting flowsheets, degrees of freedom = " + str(degrees_of_freedom(m))
+    )
+    _log.info("solving full plant model")
+    # setup solver options
     solver.options = {
         "tol": 1e-6,
         "linear_solver": "ma27",
@@ -197,7 +234,9 @@ def main():
     strip_bounds = pyo.TransformationFactory("contrib.strip_var_bounds")
     strip_bounds.apply_to(m, reversible=True)
     # this is the final solve with both flowsheets connected
-    results = solver.solve(m, tee=True)
+    _log.info("Solving the model with both flowsheets connected")
+    results = blr.scale_solve(m)
+
     return m, results
 
 
