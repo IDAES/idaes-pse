@@ -124,6 +124,7 @@ class TestCostingCaseConfigs:
 @pytest.mark.integration
 class TestElectricBoilerCosting:
     @pytest.fixture(scope="class")
+    @classmethod
     def model(self, base_model):
         get_dac_costing(base_model.fs.unit, "electric_boiler")
 
@@ -332,6 +333,7 @@ class TestElectricBoilerCosting:
 @pytest.mark.integration
 class TestRetrofitNgccCosting:
     @pytest.fixture(scope="class")
+    @classmethod
     def model(self, base_model):
         get_dac_costing(base_model.fs.unit, "retrofit_ngcc")
 
