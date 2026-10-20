@@ -1335,7 +1335,11 @@ def unused_variables_set(block):
         A ComponentSet including all Var components which do not appear within
         any Constraints in block
     """
-    return variables_set(block) - variables_in_activated_constraints_set(block)
+    return (
+        variables_set(block)
+        - variables_in_activated_constraints_set(block)
+        - variables_in_activated_objectives_set(block)
+    )
 
 
 def number_unused_variables(block):
@@ -1509,6 +1513,24 @@ def number_activated_objectives(block):
         Number of activated Objective components which appear in block
     """
     return sum(1 for _ in activated_objectives_generator(block))
+
+
+def variables_in_activated_objectives_set(block):
+    """
+    Method to return the set of variables that appear in activated Objective
+    components in a model.
+
+    Args:
+        block : model to be studied
+
+    Returns:
+        Set of variables in activated Objective components in block
+    """
+    var_set = ComponentSet()
+    for o in activated_objectives_generator(block):
+        for v in identify_variables(o.expr):
+            var_set.add(v)
+    return var_set
 
 
 def deactivated_objectives_generator(block):
