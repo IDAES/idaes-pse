@@ -18,6 +18,7 @@ import pytest
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib
 
 from pyomo.common.fileutils import this_file_dir
 from pyomo.common.tempfiles import TempfileManager
@@ -30,6 +31,9 @@ from idaes.core.surrogate.plotting.sm_plotter import (
     surrogate_parity,
     surrogate_residual,
 )
+
+# use non-interactive plotting backend for tests
+matplotlib.use("Agg")
 
 
 @pytest.fixture

@@ -10,229 +10,170 @@
 # All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
 # for full copyright and license information.
 #################################################################################
-'''
-# Structured flowsheet runner API
+"""
+Mock structured flowsheet. This is used in place of the 'real' structured flowsheet
+when the `idaes_fi` package is not installed.
 
-The *struct*ured *f*low*s*heet runner is an API in the
-{py:mod}`structfs` subpackage, and in
-particular that package's {py:mod}`runner <structfs.runner>` and
-{py:mod}`fsrunner <structfs.fsrunner>` modules.
+Usage::
 
-## Overview
+    from idaes.core.util.structfs import load_flowsheet_runner, Steps
 
-The core idea of the
-{py:class}`FlowsheetRunner <structfs.fsrunner.FlowsheetRunner>` class is
-that flowsheets should follow a standard set of "steps". By standardizing the
-naming and ordering of these steps, it becomes easier to build tools that run
-and inspect flowsheets. The Python mechanics of this are to put each step in a
-function and wrap that function with decorator. The decorator uses a string to
-indicate which standard step the function implements.
+    FlowsheetRunner = load_flowsheet_runner()
 
-Once these functions are defined, the API can be used to execute and inspect a
-wrapped flowsheet.
+Regardless of whether the `FlowsheetRunner` is real or mocked, you can
+use `run_steps()` to run the flowsheet programmatically::
 
-The framework can perform arbitrary actions before and after each run,
-and before and after a given set of steps. This is implemented with 
-the {py:class}`Actions <structfs.runner.Actions>` class 
-and methods `add_action`, `get_action`, and `remove_action` on the base
-{py:class}`Runner <structfs.runner.Runner>` class.
-More details are given below in the Actions section.
+    FS = FlowsheetRunner()
 
-## Step 1: Define flowsheet
+    @FS.step(Steps.build)
+    def build(ctx):
+        # ... create model 'm' ...
+        ctx.model = m
 
-It is assumed here that you have Python code to build, configure, and run an
-IDAES flowsheet. You will first arrange this code to follow the standard "steps"
-of a flowsheet workflow, which are listed in the
-{py:class}`BaseFlowsheetRunner <structfs.fsrunner.BaseFlowsheetRunner>`
-class' `STEPS` attribute. Not all the steps need to be defined: the API will
-skip over steps with no definition when executing a range of steps. To make the
-code more structured you can also define internal sub-steps, as described later.
+    @FS.step(Steps.initialize)
+    def initialize(ctx):
+        m = ctx.model
+        # ..etc..
 
-The set of defined steps is:
+    # ..etc..
 
-* build - create the flowsheet
-* set_operating_conditions - set initial variable values
-* set_scaling - set scaling
-* initialize - initialize the flowsheet
-* set_solver - choose the solver
-* solve_initial - perform an initial (square problem) solve
-* add_costing - add costing information (if any)
-* check_model_structure - check the model for structural issues
-* initialize_costing - initialize costing variables
-* solve_optimization - setup and solve the optimization problem
-* check_model_numerics - check the model for numerical issues
+    def main():
+        FS.run_steps()
 
-### Example: Flash flowsheet
+The rules for order of running are the same as in the library:
 
-This is illustrated below with a before/after of an extremely simple flowsheet
-with a single Flash unit model.
+1. If no arguments are passed to the constructor, the names and order of steps
+   will be the sequence in `Steps.index`.
+2. If a sequence of strings is passed to the constructor, use this sequence as
+   the names and order of steps to run.
+3. If an explicit empty argument, e.g. `()` or `[]`, is passed to the
+   constructor, run the steps in the order in which they are encountered.
 
-#### Before
+For cases (1) and (2), any step name that is not in the sequence will result in a
+KeyError being raised by the decorator function (`FS.step`).
+````
+"""
 
-For now, let's assume this flowsheet uses only four of the standard steps:
-"build", "set_operating_conditions", "initialize", and "solve_optimization".
-Let's also assume you have four functions defined that correspond to these
-steps. Below is a sample flowsheet (for a single Flash unit) that we will use as
-an example:
+from typing import Type
+from collections.abc import Sequence
+from unittest.mock import Mock
 
-```{code} python
-:name: before
+__author__ = "Dan Gunter (LBNL)"
 
-from pyomo.environ import ConcreteModel, SolverFactory, SolverStatus
-from idaes.core import FlowsheetBlock
-from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
-    BTXParameterBlock,
-)
-from idaes.models.unit_models import Flash
 
-def build_model():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = BTXParameterBlock(
-        valid_phase=("Liq", "Vap"), activity_coeff_model="Ideal", state_vars="FTPz"
+def load_flowsheet_runner(force_mock: bool = False) -> Type:
+    """Load real or mock FlowsheetRunner.
+
+    Args:
+        force_mock: If True, return the mocked, do-nothing-different, wrapper
+                    class even if the `idaes_fi` package is available.
+
+    Returns:
+        If the `idaes_fi` (flowsheet inspector) package is available, return the
+        FlowsheetRunner class from that package. Otherwise, return a mock
+        FlowsheetRunner class that will accept the same API but not do anything
+        except call the wrapped functions when `run_steps()` is invoked (i.e., it will
+        not provide information for the Flowsheet Inspector UI).
+    """
+    if force_mock:
+        clazz = _MockFlowsheetRunner
+    else:
+        try:
+            from idaes_fi.structfs import FlowsheetRunner  # noqa: F401
+
+            clazz = FlowsheetRunner
+        except ImportError:
+            clazz = _MockFlowsheetRunner
+    return clazz
+
+
+# ----- end of public interface -----#
+
+
+class _MockFlowsheetRunner:
+
+    mock = True
+
+    def __init__(self, *args, **kwargs):
+        self._step_names = kwargs.get("steps", None)
+        if self._step_names is None:
+            # use pre-defined steps by default
+            self._step_names = Steps.index
+        elif not self._step_names:
+            # normalize empty to tuple, meaning dynamic
+            self._step_names = ()
+        self.ctx = Mock()
+        self._steps = {}
+
+    def __getattr__(self, name):
+        return Mock()
+
+    def step(self, name: str, *args, **kwargs):
+        def decorator(func):
+            if self._step_names != () and name not in self._step_names:
+                steppenlist = ", ".join(self._step_names)
+                raise KeyError(f"Unknown step: '{name}' not in: {steppenlist}")
+            self._steps[name] = func
+
+            def wrapper(ctx=self.ctx):
+                func(ctx)
+
+            return wrapper
+
+        return decorator
+
+    def label(self, *args, **kwargs):
+        def decorator(func):
+            def wrapper(ctx=self.ctx):
+                func(ctx)
+
+            return wrapper
+
+        return decorator
+
+    def run_steps(self, *args, **kwargs):
+        if self._step_names is None:
+            for name in Steps.index:
+                (func := self._steps.get(name, None)) and func(self.ctx)
+        elif self._step_names:
+            for name in self._step_names:
+                (func := self._steps.get(name, None)) and func(self.ctx)
+        else:  # dynamic case
+            for func in self._steps.values():
+                func(self.ctx)
+
+
+class Steps:
+    """Names of steps so that editor autocomplete, etc., will help
+    to avoid typos.
+    """
+
+    build = "build"
+    set_solver = "set_solver"
+    initialize = "initialize"
+    set_operating_conditions = "set_operating_conditions"
+    set_scaling = "set_scaling"
+    solve_initial = "solve_initial"
+    set_autoscaling = "set_autoscaling"
+    add_costing = "add_costing"
+    initialize_costing = "initialize_costing"
+    setup_optimization = "setup_optimization"
+    solve_optimization = "solve_optimization"
+
+    index = (
+        build,
+        set_solver,
+        initialize,
+        set_operating_conditions,
+        set_scaling,
+        solve_initial,
+        set_autoscaling,
+        add_costing,
+        initialize_costing,
+        setup_optimization,
+        solve_optimization,
     )
-    m.fs.flash = Flash(property_package=m.fs.properties)
-    return m
 
-
-def set_operating_conditions(m):
-    m.fs.flash.inlet.flow_mol.fix(1)
-    m.fs.flash.inlet.temperature.fix(368)
-    m.fs.flash.inlet.pressure.fix(101325)
-    m.fs.flash.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
-    m.fs.flash.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
-    m.fs.flash.heat_duty.fix(0)
-    m.fs.flash.deltaP.fix(0)
-
-
-def init_model(m):
-    m.fs.flash.initialize()
-
-
-def solve(m):
-    solver = SolverFactory("ipopt")
-    return solver.solve(m, tee=True)
-
-```
-
-#### After
-
-In order to make this into a
-{py:class}`FlowsheetRunner <structfs.fsrunner.FlowsheetRunner>`-wrapped
-flowsheet, we need to do make a few changes. The modified file is shown below,
-with changed lines highlighted and descriptions below.
-
-```{code}
-:name: after
-:linenos:
-:emphasize-lines: 7,9, 11, 25, 37, 43, 48, 12, 26, 38, 44, 49, 23, 28, 40, 44, 45, 46
-
-from pyomo.environ import ConcreteModel, SolverFactory
-from idaes.core import FlowsheetBlock
-import idaes.logger as idaeslog
-from idaes.models.properties.activity_coeff_models.BTX_activity_coeff_VLE \
-import ( BTXParameterBlock, )
-from idaes.models.unit_models import Flash
-
-from idaes.core.util.structfs.fsrunner import FlowsheetRunner
-
-FS = FlowsheetRunner()
-
-@FS.step("build") 
-def build_model(ctx):
-    """Build the model."""
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(dynamic=False)
-    m.fs.properties = BTXParameterBlock(
-        valid_phase=("Liq", "Vap"),
-        activity_coeff_model="Ideal",
-        state_vars="FTPz"
-    )
-    m.fs.flash = Flash(property_package=m.fs.properties) 
-    # assert degrees_of_freedom(m) == 7
-    ctx.model = m
-
-@FS.step("set_operating_conditions")
-def set_operating_conditions(ctx):
-    """Set operating conditions."""
-    m = ctx.model
-    m.fs.flash.inlet.flow_mol.fix(1)
-    m.fs.flash.inlet.temperature.fix(368)
-    m.fs.flash.inlet.pressure.fix(101325)
-    m.fs.flash.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
-    m.fs.flash.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
-    m.fs.flash.heat_duty.fix(0)
-    m.fs.flash.deltaP.fix(0)
-
-@FS.step("initialize") 
-def init_model(ctx): 
-    """ "Initialize the model."""
-    m = ctx.model
-    m.fs.flash.initialize()
-
-@FS.step("set_solver") 
-def set_solver(ctx):
-    """Set the solver."""
-    ctx.solver = SolverFactory("ipopt")
-
-@FS.step("solve_optimization")
-def solve_opt(ctx):
-    ctx["results"] = ctx.solver.solve(ctx.model, tee=ctx["tee"])
-```
-
-Details on the changes:
-
-* **7**: Import the FlowsheetRunner class.
-* **9**: Create a global {py:class}`FlowsheetRunner <structfs.fsrunner.FlowsheetRunner>` object, here called `FS`.
-* **11, 25, 37, 43, 48**: Add a `@FS.step()` decorator in front of each function
-  with the name of the associated step.
-* **12, 26, 38, 44, 49**: Make each function take a single argument which is a {py:class}`fsrunner.Context <structfs.fsrunner.Context>` instance used to
-  pass state information between functions (here, that argument is named `ctx`).
-* **23**: Assign the model created in the "build" step to `ctx.model`, a
-  standard attribute of the context object.
-* **28, 40**: Replace the direct passing of the model object (in this case,
-  called `m`) with a context object that has a `.model` attribute.
-* **44-46**: Add a function for the `set_solver` step, to select the solver
-  (here, IPOPT).
-* **46**: In the "solve_optimization" step, assign the solver result to
-  `ctx["results"]`.
-
-## Step 2: Execute and inspect
-
-Once the flowsheet has been 'wrapped' in the flowsheet runner interface, it can
-be run and manipulated via the wrapper object. The basic steps to do this are:
-import the flowsheet-runner object, build and execute the flowsheet, and inspect
-the flowsheet.
-
-For example to run all the steps and get the status of the solve, you
-could do this:
-
-```{code}
-FS.run_steps()
-assert FS.results.solver.status == SolverStatus.ok
-```
-
-Some more examples of using the FlowsheetRunner are shown in the
-example notebooks found under the `docs/examples/structfs` directory
-([docs link](/examples/structfs/index)).
-
-## Actions  
-
-```{autodoc2-docstring} structfs.runner.Action
-```
-
-## Annotation
-
-You can also 'annotate' variables for special 
-treatment in display, etc. with the
-`annotate_var` function in the 
-{py:class}`FlowsheetRunner <structfs.fsrunner.FlowsheetRunner>` class.
-
-```{autodoc2-object} structfs.fsrunner.FlowsheetRunner.annotate_var
-```
-
-```{autodoc2-docstring} structfs.fsrunner.FlowsheetRunner.annotate_var
-:parser: myst
-```
-
-'''
+    @classmethod
+    def __len__(cls):
+        return len(cls.index)
