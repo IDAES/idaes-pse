@@ -17,7 +17,7 @@ Author: Andrew Lee
 """
 
 import pytest
-from pyomo.environ import ConcreteModel, Constraint, Expression, Set, units, Var
+from pyomo.environ import ConcreteModel, Constraint, Expression, Set, units, value, Var
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 from pyomo.common.config import ConfigBlock
 from idaes.core import (
@@ -1945,6 +1945,32 @@ def test_add_total_element_balances_lineraly_dependent(caplog):
         # H and Li are not lineraly dependent and should have constraints
         assert e in [(0, "H"), (0, "Li")]
         # He is lineraly dependent on H and should be skipped
+
+    assert_units_consistent(m)
+
+
+@pytest.mark.unit
+def test_add_total_element_balances_phase_component_set():
+    m = ConcreteModel()
+    m.fs = Flowsheet(dynamic=False)
+    m.fs.pp = PhysicalParameterTestBlock()
+
+    # c2 does not exist in p2
+    m.fs.pp.p2.config.component_list = ["c1"]
+
+    m.fs.cv = ControlVolume0DBlock(property_package=m.fs.pp)
+
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+
+    m.fs.cv.add_total_element_balances()
+
+    # All material flow terms are 1 mol/s, so each elemental flow term is the
+    # sum of the element counts of the components present in that phase
+    comp = m.fs.pp.element_comp
+    for e in m.fs.pp.element_list:
+        for flow in [m.fs.cv.elemental_flow_in, m.fs.cv.elemental_flow_out]:
+            assert value(flow[0, "p1", e]) == comp["c1"][e] + comp["c2"][e]
+            assert value(flow[0, "p2", e]) == comp["c1"][e]
 
     assert_units_consistent(m)
 
