@@ -561,6 +561,9 @@ Actual L2 Norm           || 6.625E+08 | Failed 29  || 2.511E+03 | Solved 6
     assert stream.getvalue() == expected
 
 
+@pytest.mark.skip(
+    reason="Need to update this test after the new version of idaes-ext is released."
+)
 @pytest.mark.integration
 def test_case_study_profiling():
     sp = ScalingProfiler(
