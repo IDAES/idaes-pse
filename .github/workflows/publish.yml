@@ -23,6 +23,9 @@ jobs:
     steps:
       - name: Checkout code to be packaged
         uses: actions/checkout@v6
+        with:
+          # setuptools-scm needs the complete tag history to determine the version.
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -31,8 +34,32 @@ jobs:
 
       - name: Generate dist files
         run: |
-          pip install build wheel
+          pip install build packaging wheel
           python -m build
+
+      - name: Check distribution versions
+        env:
+          EXPECTED_TAG: ${{ github.ref_name }}
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          from packaging.utils import parse_sdist_filename, parse_wheel_filename
+          from packaging.version import Version
+
+          expected = Version(os.environ["EXPECTED_TAG"])
+          wheel = next(Path("dist").glob("*.whl"))
+          sdist = next(Path("dist").glob("*.tar.gz"))
+          versions = {
+              "wheel": parse_wheel_filename(wheel.name)[1],
+              "sdist": parse_sdist_filename(sdist.name)[1],
+          }
+
+          for artifact_type, actual in versions.items():
+              print(f"{artifact_type}: expected={expected}, actual={actual}")
+              assert actual == expected
+          PY
 
       - name: Check that the dist directory's size is below PyPI's maximum
         run: |
