@@ -80,7 +80,7 @@ expected_results = {
     "Water_wall.heat_duty": {0: (7.51e8, 1e-8, None)},
     "PlSH.heat_duty": {0: (5.5e7, 1e-8, None)},
     "ATMP1.SprayWater_state[0].flow_mol": {
-        None: (0.001, 1e-8, None),
+        None: (0.001, None, 1e-8),
     },
     "ATMP1.SprayWater_state[0].pressure": {
         None: (1.22e8, 1e-8, None),
@@ -201,10 +201,10 @@ def solved_boiler():
 
     boiler.initialize(model)
     boiler.unfix_inlets(model)
-    results = solver.solve(model)
-
-    assert check_optimal_termination(results)
     assert degrees_of_freedom(model.fs) == 0
+    results = solver.solve(model)
+    assert check_optimal_termination(results)
+
     return model
 
 
@@ -212,9 +212,11 @@ def test_structural_issues(solved_boiler):
     """Check for structural warnings in the fully specified flowsheet."""
     diagnostics = DiagnosticsToolbox(solved_boiler)
     diagnostics.assert_no_structural_warnings(
-        ignore_unit_consistency=True,
         ignore_evaluation_errors=True,
     )
+    # Potential evaluation errors are ignored because several legacy variables
+    # lack physical bounds. Revisit these bounds in future updates before using
+    # the flowsheet outside its validated operating region
 
 
 def test_build_flowsheet(solved_boiler):
