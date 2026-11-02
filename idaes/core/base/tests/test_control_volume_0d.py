@@ -1964,6 +1964,8 @@ def test_add_total_element_balances_phase_component_set():
 
     m.fs.cv.add_total_element_balances()
 
+    assert ("p2", "c2") not in m.fs.cv.properties_in.phase_component_set
+
     # All material flow terms are 1 mol/s, so each elemental flow term is the
     # sum of the element counts of the components present in that phase
     comp = m.fs.pp.element_comp
