@@ -381,6 +381,6 @@ def extensions_license():
     print_license()
 
 
-@cb.command(name="extensions-version", help="show license info for binary extensions")
+@cb.command(name="extensions-version", help="show version info for binary extensions")
 def extensions_version():
     print_extensions_version()

@@ -35,20 +35,25 @@ options
 
     Show the help message and exit.
 
-.. option:: --license
-
-    Display the license info for the currently installed extensions, doesn't
-    install anything.
-
-.. option:: --release <release number e.g. 2.4.4>
+.. option:: --release <release number e.g. 4.0.0>
 
     Specify an official binary release version number to download.  If this is
-    not specified the default release will be used.
+    not specified the default release will be used. Releases 4.x and newer use
+    a different set of files and install layout than 3.x; see
+    :ref:`Binary Packages <tutorials/getting_started/binaries:Binary Packages>`.
 
 .. option:: --url <url>
 
     URL from which to download the solvers/libraries.  If this is not
-    provided the URL of the default release will be used.
+    provided the URL of the default release will be used. This cannot be
+    combined with ``--release``, so the files at the URL must use the same
+    layout (4.x or 3.x) as the default release.
+
+.. option:: --distro <distro>
+
+    OS or Linux distribution to download binaries for, e.g. ``ubuntu2404``
+    (default: detect automatically). See
+    :ref:`Supported Systems <tutorials/getting_started/binaries:Supported Systems>`.
 
 .. option:: --insecure
 
@@ -64,43 +69,45 @@ options
 
 .. option:: --library-only
 
-    Only install shared physical property function libraries, and any specified
-    extras not solvers.
+    Only install shared physical property function libraries (and, in 3.x, any
+    specified extras), not solvers.
 
 .. option:: --no-download
 
-    Don't download anything, but report what would be done
-
-.. option:: --show-current-version
-
-    Just show the version information if any for the currently installed solvers
-    and libraries.
-
-.. option:: --show-platforms
-
-    Just show the platform options
-
-.. option:: --show-extras
-
-    Just show list of binary extras
+    Don't download anything, but report what would be done, including the
+    release and platform that would be used.
 
 .. option:: --info
 
-    Show information about available binary builds. Lists all platforms
+    Show information about available binary builds for the release (the
+    default release, or the one given with ``--release``). Lists all platforms
     and architectures and shows which (if any) matches the current system.
     If given, all other options are ignored.
 
 .. option:: --extra <extra>
 
     Add an extra binary package to the things to install. You can specify the
-    extra option multiple times for multiple extras.
+    extra option multiple times for multiple extras. Extras only exist in 3.x
+    (``petsc``); in 4.x, PETSc is included in the main package and this option
+    is ignored.
+
+.. option:: --extras-only
+
+    Only install the extras given with ``--extra`` (3.x only).
 
 .. option:: --to <path>
 
     Put extensions in a alternate location.  This can be used to just download
     and extract the binaries. It lets you download the files without putting
-    them in IDAES's bin directory.
+    them in IDAES's data directory.
 
 .. option:: --verbose
 
     Show details
+
+Related commands
+^^^^^^^^^^^^^^^^
+
+- ``idaes extensions-version``: show the version of the installed extensions.
+- ``idaes extensions-license``: show the license of the installed extensions.
+- ``idaes bin-platform``: show the binary build that matches the current system.

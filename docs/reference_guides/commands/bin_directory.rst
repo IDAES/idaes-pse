@@ -1,10 +1,10 @@
 idaes bin-directory: Show IDAES executable file directory
 =========================================================
 
-This page lists the options for the idaes "bin-directory" bin-directory.
+This page lists the options for the idaes "bin-directory" subcommand.
 This is invoked like::
 
-    idaes [general options] bin-directory [bin-directory options]
+    idaes [general options] bin-directory [subcommand options]
 
 
 .. program:: idaes
@@ -12,8 +12,8 @@ This is invoked like::
 general options
 ---------------
 The following general options from the `idaes` base command
-affect the bin-directory bin-directory. They should be placed *before* the
-"bin-directory" bin-directory, on the command-line.
+affect the bin-directory subcommand. They should be placed *before* the
+"bin-directory" subcommand, on the command-line.
 
 * -v/--verbose
 * -q/--quiet

@@ -80,9 +80,17 @@ assuming that the installation was done using one of the methods described earli
 
         idaes --version
 
-3. Run the ``idaes get-extensions`` command to install compiled binaries compatible with the newly upgraded IDAES version. The ``--extra petsc`` argument installs the optional PETSc solver. These binaries include solvers and function libraries.  See :ref:`Binary Packages <tutorials/getting_started/binaries:Binary Packages>` for more details.::
+3. Run the ``idaes get-extensions`` command to install compiled binaries compatible with the newly upgraded IDAES version. These binaries include solvers and function libraries.  See :ref:`Binary Packages <tutorials/getting_started/binaries:Binary Packages>` for more details.
 
-    idaes get-extensions --extra petsc
+    Newer versions of idaes-pse install IDAES extensions 4.x, which include the PETSc solver::
+
+        idaes get-extensions
+
+    Older versions of idaes-pse install IDAES extensions 3.x, where the ``--extra petsc`` argument installs the optional PETSc solver::
+
+        idaes get-extensions --extra petsc
+
+    If you are upgrading from extensions 3.x to 4.x, remove the old 3.x files first; see :ref:`Install Location <tutorials/getting_started/binaries:Install Location>`.
 
 4. Install the IDAES example Jupyter notebooks.
 

@@ -25,7 +25,6 @@ each of which is described on a separate page below.
     data_directory
     env_info
     get_extensions
-    lib_directory
 
 shared configuration
 ^^^^^^^^^^^^^^^^^^^^
