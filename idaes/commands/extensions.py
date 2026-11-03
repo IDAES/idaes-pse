@@ -191,18 +191,15 @@ def print_build_info(release):
         to_build = idaes.commands.util.download_bin._get_release_platform(
             platform, release
         )
+        build_line = f"      Use build: {to_build}"
     except idaes.commands.util.download_bin.UnsupportedPlatformError as e:
-        to_build = None
-        unsupported_msg = str(e)
+        build_line = f"   !! {e}"
 
     alias = "" if to_platform == platform else f" -> {to_platform}"
     print(f"       Platform: {platform}{alias}")
     alias = "" if to_mach == arch else f" -> {to_mach}"
     print(f"   Architecture: {arch}{alias}")
-    if to_build is not None:
-        print(f"      Use build: {to_build}")
-    else:
-        print(f"   !! {unsupported_msg}")
+    print(build_line)
 
     print_footer()
 
