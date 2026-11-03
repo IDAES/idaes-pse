@@ -14,7 +14,7 @@ inputs:
     default: ampl-module-scip
   version:
     description: >-
-      IDAES extensions release to install (e.g. 4.0.0rc2). If unset, the default
+      IDAES extensions release to install (e.g. 4.0.0rc3). If unset, the default
       release is installed. For releases 4.x and newer, the '--extra petsc'
       option is omitted, since PETSc is bundled in the base package.
     required: false

@@ -123,16 +123,16 @@ jobs:
         uses: ./.github/actions/setup-idaes
         with:
           install-target: -r requirements-dev.txt
-          version: '4.0.0rc2'
+          version: '4.0.0rc3'
       - name: Add pytest CLI options for coverage
         if: matrix.cov-report
         run: |
-          echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov --cov-report=xml" >> "$GITHUB_ENV"
+          echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov=idaes --cov-report=xml" >> "$GITHUB_ENV"
       - name: Install pandoc
         run: conda install -c conda-forge pandoc
       - name: Run pytest (not integration)
         run: |
-          python -m pytest --cov=idaes --pyargs idaes -m "not integration"
+          pytest --pyargs idaes -m "not integration"
       - name: Upload coverage report as GHA workflow artifact
         if: matrix.cov-report
         uses: actions/upload-artifact@v7
