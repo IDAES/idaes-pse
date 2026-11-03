@@ -137,6 +137,9 @@ jobs:
             runner-image: ubuntu-24.04
           - os: win64
             runner-image: windows-2022
+          - os: linux-2604
+            runner-image: ubuntu-26.04
+            python-version: "3.13"
     steps:
       - uses: actions/checkout@v6
         with:

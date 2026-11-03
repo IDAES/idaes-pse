@@ -77,12 +77,12 @@ runs:
         idaes get-extensions "${get_ext_args[@]}" --verbose
         echo '::endgroup::'
 
-        # extra dependencies must be installed on Ubuntu 24.04
+        # extra dependencies must be installed on Ubuntu 24.04 and 26.04
         if [ -f "/etc/os-release" ]; then
           . /etc/os-release
-          if [ "$ID" = "ubuntu" ] && [ "$VERSION_ID" = "24.04" ]; then
+          if [ "$ID" = "ubuntu" ] && { [ "$VERSION_ID" = "24.04" ] || [ "$VERSION_ID" = "26.04" ]; }; then
           echo '::group::Output of "apt install" for required OS packages'
-          sudo apt install libgfortran5 libgomp1 liblapack3 libblas3
+          sudo apt install -y libgfortran5 libgomp1 liblapack3 libblas3
           echo '::endgroup::'
           fi
         fi
