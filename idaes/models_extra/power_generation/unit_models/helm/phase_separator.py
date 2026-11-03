@@ -26,7 +26,13 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.environ import value
 
 # Import IDAES cores
-from idaes.core import declare_process_block_class, UnitModelBlockData, useDefault
+from idaes.core import (
+    declare_process_block_class,
+    InletPort,
+    OutletPort,
+    UnitModelBlockData,
+    useDefault,
+)
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.logger as idaeslog
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
@@ -105,7 +111,7 @@ see property package for documentation.}""",
             self.flowsheet().time, **self.config.property_package_args
         )
 
-        self.add_port("inlet", self.mixed_state)
+        self.add_port("inlet", self.mixed_state, port_class=InletPort)
 
         self.vap_state = self.config.property_package.build_state_block(
             self.flowsheet().time, **self.config.property_package_args
@@ -115,8 +121,8 @@ see property package for documentation.}""",
             self.flowsheet().time, **self.config.property_package_args
         )
 
-        self.add_port("vap_outlet", self.vap_state)
-        self.add_port("liq_outlet", self.liq_state)
+        self.add_port("vap_outlet", self.vap_state, port_class=OutletPort)
+        self.add_port("liq_outlet", self.liq_state, port_class=OutletPort)
 
         # vapor outlet state
         @self.Constraint(self.flowsheet().time)

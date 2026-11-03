@@ -31,6 +31,8 @@ from idaes.core import (
     ControlVolume1DBlock,
     MaterialBalanceType,
     FlowDirection,
+    InletPort,
+    OutletPort,
 )
 from idaes.core.util.exceptions import (
     BalanceTypeNotSupportedError,
@@ -222,7 +224,7 @@ def test_add_inlet_port_CV0D():
 
     p_obj = m.fs.u.add_inlet_port()
 
-    assert isinstance(p_obj, Port)
+    assert isinstance(p_obj, InletPort)
     assert m.fs.u.inlet is p_obj
     assert len(m.fs.u.inlet) == 1
 
@@ -258,7 +260,7 @@ def test_add_inlet_port_CV1D():
 
     p_obj = m.fs.u.add_inlet_port()
 
-    assert isinstance(p_obj, Port)
+    assert isinstance(p_obj, InletPort)
     assert m.fs.u.inlet is p_obj
     assert len(m.fs.u.inlet) == 1
 
@@ -294,7 +296,7 @@ def test_add_inlet_port_CV1D_backward():
 
     p_obj = m.fs.u.add_inlet_port()
 
-    assert isinstance(p_obj, Port)
+    assert isinstance(p_obj, InletPort)
     assert m.fs.u.inlet is p_obj
     assert len(m.fs.u.inlet) == 1
 
@@ -346,7 +348,7 @@ def test_add_inlet_port_CV0D_full_args():
 
     p_obj = m.fs.u.add_inlet_port(name="test_port", block=m.fs.u.cv, doc="Test")
 
-    assert isinstance(p_obj, Port)
+    assert isinstance(p_obj, InletPort)
     assert hasattr(m.fs.u, "test_port")
     assert len(m.fs.u.test_port) == 1
 
@@ -431,7 +433,7 @@ def test_add_outlet_port_CV0D():
 
     p_obj = m.fs.u.add_outlet_port()
 
-    assert isinstance(p_obj, Port)
+    assert isinstance(p_obj, OutletPort)
     assert m.fs.u.outlet is p_obj
     assert len(m.fs.u.outlet) == 1
 
@@ -467,7 +469,7 @@ def test_add_outlet_port_CV1D():
 
     p_obj = m.fs.u.add_outlet_port()
 
-    assert isinstance(p_obj, Port)
+    assert isinstance(p_obj, OutletPort)
     assert m.fs.u.outlet is p_obj
     assert len(m.fs.u.outlet) == 1
 
@@ -503,7 +505,7 @@ def test_add_outlet_port_CV1D_backward():
 
     p_obj = m.fs.u.add_outlet_port()
 
-    assert isinstance(p_obj, Port)
+    assert isinstance(p_obj, OutletPort)
     assert m.fs.u.outlet is p_obj
     assert len(m.fs.u.outlet) == 1
 
@@ -556,7 +558,7 @@ def test_add_outlet_port_CV0D_full_args():
 
     p_obj = m.fs.u.add_outlet_port(name="test_port", block=m.fs.u.cv, doc="Test")
 
-    assert isinstance(p_obj, Port)
+    assert isinstance(p_obj, OutletPort)
     assert hasattr(m.fs.u, "test_port")
     assert len(m.fs.u.test_port) == 1
 

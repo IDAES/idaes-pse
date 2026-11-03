@@ -38,7 +38,9 @@ from pyomo.core.expr.numvalue import value as pyo_value
 from idaes.core import (
     declare_process_block_class,
     ControlVolume1DBlock,
+    InletPort,
     StateBlock,
+    OutletPort,
     UnitModelBlockData,
 )
 from idaes.core.util.config import (
@@ -217,11 +219,13 @@ argument).""",
             name="inlet_port",
             block=inlet_state,
             doc="The inlet to the pipeline",
+            port_class=InletPort,
         )
         self.add_port(
             name="outlet_port",
             block=outlet_state,
             doc="The outlet from the pipeline",
+            port_class=OutletPort,
         )
 
         self.add_isothermal_constraint()
