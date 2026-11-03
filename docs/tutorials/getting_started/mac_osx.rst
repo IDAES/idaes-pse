@@ -19,9 +19,10 @@ The following commands should be sufficient to get you started with installing a
 .. literalinclude:: install_templates/quickstart.txt
    :language: bash
 
-.. warning:: Currently, the macOS x86_64 binaries do not include HSL linear solvers, k_aug, or dot_sens, so
-   some linear solvers in Ipopt and some uncertainty propagation features may not be available. Some tests
-   may also fail due to missing features.
+.. warning:: IDAES extensions 4.x are only available for macOS on Apple Silicon (arm64). On macOS Intel
+   (x86_64), the last available release is 3.4.2 (``idaes get-extensions --release 3.4.2``), and those
+   binaries do not include HSL linear solvers, k_aug, or dot_sens, so some linear solvers in Ipopt and some
+   uncertainty propagation features may not be available. Some tests may also fail due to missing features.
 
 ------------------------------------------------
 

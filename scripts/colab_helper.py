@@ -164,4 +164,11 @@ def _print_solver_versions():
     # This does not work for cbc and clp; calling --version with these solvers,
     # enters their scripting language mode.
     for s in ["ipopt", "k_aug", "couenne", "bonmin", "ipopt_l1", "dot_sens"]:
+        # ipopt_l1 is not included in IDAES extensions 4.x and newer
+        if s == "ipopt_l1" and shutil.which(s) is None:
+            print(
+                "Warning: ipopt_l1 was not found. This is expected if you are "
+                "using IDAES extensions 4.x or newer, which no longer include it."
+            )
+            continue
         _print_single_solver_version(s)

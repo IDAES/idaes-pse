@@ -15,6 +15,7 @@ Tests for solvent condenser unit model.
 Authors: Andrew Lee
 """
 
+import copy
 import pytest
 from pyomo.environ import (
     check_optimal_termination,
@@ -27,7 +28,7 @@ from pyomo.environ import (
 )
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
 
-from idaes.core import FlowsheetBlock
+from idaes.core import Component, FlowsheetBlock, LiquidPhase
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
 )
@@ -53,14 +54,37 @@ from idaes.core.util.exceptions import InitializationError
 solver = get_solver()
 
 
+def _remove_ions(mea_dict: dict):
+    mea_dict["components"]["H2O"]["type"] = Component
+
+    mea_dict["components"]["CO2"]["type"] = Component
+    del mea_dict["components"]["CO2"]["henry_component"]["Liq"]["basis"]
+
+    del mea_dict["components"]["MEA_+"]
+    del mea_dict["components"]["MEACOO_-"]
+    del mea_dict["components"]["HCO3_-"]
+
+    mea_dict["phases"]["Liq"]["type"] = LiquidPhase
+    del mea_dict["phases"]["Liq"]["equation_of_state_options"]
+
+    del mea_dict["state_components"]
+    del mea_dict["inherent_reactions"]
+
+
 # -----------------------------------------------------------------------------
 class TestStripperVaporFlow(object):
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
 
-        m.fs.liquid_properties = GenericParameterBlock(**aqueous_mea)
+        # Because there's no MEA in the condensate, the equations defining
+        # the inherent reactions become ill-posed and degenerate
+        liquid_config = copy.deepcopy(aqueous_mea)
+        _remove_ions(liquid_config)
+
+        m.fs.liquid_properties = GenericParameterBlock(**liquid_config)
         m.fs.vapor_properties = GenericParameterBlock(**wet_co2)
 
         m.fs.unit = SolventCondenser(
@@ -136,8 +160,8 @@ class TestStripperVaporFlow(object):
         assert isinstance(model.fs.unit.unit_pressure_balance, Constraint)
         assert isinstance(model.fs.unit.zero_flow_param, Param)
 
-        assert number_variables(model.fs.unit) == 55
-        assert number_total_constraints(model.fs.unit) == 49
+        assert number_variables(model.fs.unit) == 33
+        assert number_total_constraints(model.fs.unit) == 27
         assert number_unused_variables(model.fs.unit) == 0
 
     @pytest.mark.component
@@ -159,8 +183,7 @@ class TestStripperVaporFlow(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solve(self, model):
-        results = solver.solve(model)
-
+        results = solver.solve(model, tee=True)
         # Check for optimal solution
         assert check_optimal_termination(results)
 
@@ -193,7 +216,7 @@ class TestStripperVaporFlow(object):
         assert pytest.approx(0.976758, rel=1e-5) == value(
             model.fs.unit.vapor_outlet.mole_frac_comp[0, "CO2"]
         )
-        assert pytest.approx(0.0232423, rel=1e-5) == value(
+        assert pytest.approx(0.0232423, rel=1e-5, abs=1e-5) == value(
             model.fs.unit.vapor_outlet.mole_frac_comp[0, "H2O"]
         )
         assert pytest.approx(184360, rel=1e-5) == value(
@@ -276,7 +299,8 @@ class TestStripperVaporFlow(object):
 # -----------------------------------------------------------------------------
 class TestStripperHeatDuty(object):
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
 

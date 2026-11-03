@@ -30,8 +30,8 @@ release_base_url = "https://github.com/IDAES/idaes-ext/releases/download"
 release_checksum_url = (
     "https://raw.githubusercontent.com/IDAES/idaes-ext/main/releases/sha256sum_{}.txt"
 )
-# This is a list of platforms with builds
-base_platforms = (
+# Platforms with builds in 3.x releases
+base_platforms_v3 = (
     "darwin-aarch64",
     "darwin-x86_64",
     "el7-x86_64",
@@ -45,39 +45,68 @@ base_platforms = (
     "ubuntu2204-aarch64",
     "windows-x86_64",
 )
+# Platforms with builds in 4.x releases
+base_platforms_v4 = (
+    "darwin-arm64",
+    "el8-x86_64",
+    "el8-aarch64",
+    "el9-x86_64",
+    "el9-aarch64",
+    "ubuntu2004-x86_64",
+    "ubuntu2004-aarch64",
+    "ubuntu2204-x86_64",
+    "ubuntu2204-aarch64",
+    "ubuntu2404-x86_64",
+    "ubuntu2404-aarch64",
+    "ubuntu2604-x86_64",
+    "ubuntu2604-aarch64",
+    "windows-x86_64",
+)
+# All platforms with builds in any supported release
+base_platforms = tuple(dict.fromkeys(base_platforms_v3 + base_platforms_v4))
 # Map some platform names to others for get-extensions
 binary_distro_map = {
     "macos": "darwin",
-    "el9": "ubuntu2204",
     "rhel7": "el7",
     "rhel8": "el8",
+    "rhel9": "el9",
     "scientific7": "el7",
     "centos7": "el7",
     "centos8": "el8",
+    "centos9": "el9",
     "rocky8": "el8",
+    "rocky9": "el9",
     "almalinux8": "el8",
+    "almalinux9": "el9",
     "debian9": "el7",
     "debian10": "el8",
+    "debian11": "ubuntu2004",
+    "debian12": "ubuntu2204",
+    "debian13": "ubuntu2404",
     "linuxmint20": "ubuntu2004",
+    "linuxmint21": "ubuntu2204",
+    "linuxmint22": "ubuntu2404",
     "kubuntu1804": "ubuntu1804",
     "kubuntu2004": "ubuntu2004",
     "kubuntu2204": "ubuntu2204",
+    "kubuntu2404": "ubuntu2404",
+    "kubuntu2604": "ubuntu2604",
     "xubuntu1804": "ubuntu1804",
     "xubuntu2004": "ubuntu2004",
     "xubuntu2204": "ubuntu2204",
+    "xubuntu2404": "ubuntu2404",
+    "xubuntu2604": "ubuntu2604",
     "pop22": "ubuntu2204",
-    "ubuntu2404": "ubuntu2204",
 }
 # Machine map
 binary_arch_map = {
     "x64": "x86_64",
     "intel64": "x86_64",
     "amd64": "x86_64",
-    "arm64": "aarch64",
 }
 # Set of extra binary packages and basic build platform where available
 extra_binaries = {
-    "petsc": base_platforms,
+    "petsc": base_platforms_v3,
 }
 # Store the original environment variable values so we can revert changes
 orig_environ = {
@@ -98,18 +127,43 @@ default_uom = {
 }
 
 
-def canonical_arch(arch):
-    """Get the official machine type in {x86_64, aarch64} if possible, otherwise
-    just return arch.lower().
+def release_major(release):
+    return int(release.split(".", maxsplit=1)[0])
+
+
+def release_platforms(release):
+    """Platforms with builds for the given release."""
+    if release_major(release) >= 4:
+        return base_platforms_v4
+    return base_platforms_v3
+
+
+def canonical_arch(arch, release=None, platform=None):
+    """Get the official machine type in {x86_64, aarch64, arm64} if possible,
+    otherwise just return arch.lower().
 
     Args:
         arch (str): machine type string usually from platform.machine()
+        release (str): optional release string for release-specific mapping
+        platform (str): optional platform/distro/OS string for platform-specific mapping
 
     Returns (str):
         Canonical machine type used by the binary package names.
     """
     arch = arch.lower()
-    return binary_arch_map.get(arch, arch)
+    major = release_major(release) if release is not None else None
+    platform = platform.lower() if platform is not None else None
+
+    # arm64 needs special handling: in 4.x only darwin uses arm64 artifact names.
+    if arch == "arm64":
+        if major is not None and major >= 4 and platform in ("darwin", "macos"):
+            return "arm64"
+        return "aarch64"
+
+    if arch in binary_arch_map:
+        return binary_arch_map[arch]
+
+    return arch
 
 
 def canonical_distro(dist):
@@ -733,14 +787,23 @@ def get_data_directory():
     return data_directory, bin_directory, testing_directory
 
 
+def _merge_env_path(existing, new, prepend):
+    if not existing:
+        return new
+    elif prepend:
+        return os.pathsep.join([new, existing])
+    else:
+        return os.pathsep.join([existing, new])
+
+
 def setup_environment(bin_directory, use_idaes_solvers):
     """
     Set environment variables for the IDAES session.
 
     Args:
-        bin_directory: directory to find idaes libraries and executables
+        bin_directory: directory to find idaes libraries and executables.
         use_idaes_solvers: If true look first in the idaes bin directory for
-                           executables if false look last in the idaes bin
+                           executables; if false look last in the idaes bin
                            directory for executables.
 
     Returns:
@@ -748,16 +811,32 @@ def setup_environment(bin_directory, use_idaes_solvers):
     """
     if bin_directory is None:
         return
+
     oe = orig_environ
-    if use_idaes_solvers:
-        os.environ["PATH"] = os.pathsep.join([bin_directory, oe.get("PATH", "")])
+
+    # With the newest IDAES solvers (4.x+), they aren't in a flat bin structure.
+    # They follow a standard install prefix structure of bin, lib, share, etc.
+    # So we need to step up one level to define the lib_directory.
+    lib_directory = os.path.join(os.path.dirname(bin_directory), "lib")
+    if not os.path.isdir(lib_directory):
+        lib_directory = bin_directory
+
+    if os.name == "nt":
+        # Windows needs special treatment because both bin and library
+        # need to be on the PATH
+        path = oe.get("PATH", "")
+        if lib_directory != bin_directory:
+            path = _merge_env_path(path, lib_directory, use_idaes_solvers)
+        path = _merge_env_path(path, bin_directory, use_idaes_solvers)
+        os.environ["PATH"] = path
     else:
-        os.environ["PATH"] = os.pathsep.join([oe.get("PATH", ""), bin_directory])
-    if os.name != "nt":  # If not Windows set lib search path, Windows uses PATH
-        os.environ["LD_LIBRARY_PATH"] = os.pathsep.join(
-            [oe.get("LD_LIBRARY_PATH", ""), bin_directory]
+        os.environ["PATH"] = _merge_env_path(
+            oe.get("PATH", ""), bin_directory, use_idaes_solvers
+        )
+        os.environ["LD_LIBRARY_PATH"] = _merge_env_path(
+            oe.get("LD_LIBRARY_PATH", ""), lib_directory, use_idaes_solvers
         )
         # This is for macOS, but won't hurt other UNIX
-        os.environ["DYLD_LIBRARY_PATH"] = os.pathsep.join(
-            [oe.get("DYLD_LIBRARY_PATH", ""), bin_directory]
+        os.environ["DYLD_LIBRARY_PATH"] = _merge_env_path(
+            oe.get("DYLD_LIBRARY_PATH", ""), lib_directory, use_idaes_solvers
         )

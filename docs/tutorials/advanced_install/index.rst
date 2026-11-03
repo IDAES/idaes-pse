@@ -104,7 +104,7 @@ Now that conda and pip are installed, and you are in the "idaes" conda environme
     idaes get-extensions
 
 .. warning::
-    The IDAES binary extensions are not fully supported on macOS with an Intel processor and are missing solvers with the HSL linear algebra libraries. Complete binary extensions are available for macOS with Apple Silicon (M1+) processors. If you are using macOS (Intel), you can `build the extensions from source <https://github.com/IDAES/idaes-ext>`_ or `compile the COIN-OR solvers with HSL <https://coin-or.github.io/user_introduction.html>`_. Please note, the optimization solvers are more performant (e.g., reliable, faster) with the HSL libraries.
+    IDAES extensions 4.x are not available for macOS with an Intel processor. The last release for macOS (Intel) is 3.4.2 (``idaes get-extensions --release 3.4.2``), which is missing solvers with the HSL linear algebra libraries. Complete binary extensions are available for macOS with Apple Silicon (M1+) processors. If you are using macOS (Intel), you can `build the extensions from source <https://github.com/IDAES/idaes-ext>`_ or `compile the COIN-OR solvers with HSL <https://coin-or.github.io/user_introduction.html>`_. Please note, the optimization solvers are more performant (e.g., reliable, faster) with the HSL libraries.
 
 .. note::
     This ``pip install`` command would override any package within the conda environment,
