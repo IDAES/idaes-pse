@@ -1,0 +1,114 @@
+{
+    "converted_count": 114,
+    "skipped_count": 22,
+    "skipped_forms": {
+        "IdealGasHelmholtzCP0AlyLee": [
+            "D6.json",
+            "n-Heptane.json"
+        ],
+        "IdealGasHelmholtzCP0Constant": [
+            "HFE143m.json",
+            "R11.json",
+            "R123.json",
+            "R22.json"
+        ],
+        "IdealGasHelmholtzCP0PolyT": [
+            "CycloPropane.json",
+            "HFE143m.json",
+            "Methanol.json",
+            "MethylLinoleate.json",
+            "MethylLinolenate.json",
+            "MethylOleate.json",
+            "MethylPalmitate.json",
+            "MethylStearate.json",
+            "Propyne.json",
+            "R11.json",
+            "R114.json",
+            "R123.json",
+            "R13.json",
+            "R1336mzz(Z).json",
+            "R14.json",
+            "R143a.json",
+            "R21.json",
+            "R22.json",
+            "RC318.json",
+            "n-Undecane.json"
+        ],
+        "ResidualHelmholtzAssociating": [
+            "Methanol.json"
+        ]
+    },
+    "skipped_files": {
+        "CycloPropane.json": [
+            "IdealGasHelmholtzCP0PolyT"
+        ],
+        "D6.json": [
+            "IdealGasHelmholtzCP0AlyLee"
+        ],
+        "HFE143m.json": [
+            "IdealGasHelmholtzCP0Constant",
+            "IdealGasHelmholtzCP0PolyT"
+        ],
+        "Methanol.json": [
+            "IdealGasHelmholtzCP0PolyT",
+            "ResidualHelmholtzAssociating"
+        ],
+        "MethylLinoleate.json": [
+            "IdealGasHelmholtzCP0PolyT"
+        ],
+        "MethylLinolenate.json": [
+            "IdealGasHelmholtzCP0PolyT"
+        ],
+        "MethylOleate.json": [
+            "IdealGasHelmholtzCP0PolyT"
+        ],
+        "MethylPalmitate.json": [
+            "IdealGasHelmholtzCP0PolyT"
+        ],
+        "MethylStearate.json": [
+            "IdealGasHelmholtzCP0PolyT"
+        ],
+        "Propyne.json": [
+            "IdealGasHelmholtzCP0PolyT"
+        ],
+        "R11.json": [
+            "IdealGasHelmholtzCP0Constant",
+            "IdealGasHelmholtzCP0PolyT"
+        ],
+        "R114.json": [
+            "IdealGasHelmholtzCP0PolyT"
+        ],
+        "R123.json": [
+            "IdealGasHelmholtzCP0Constant",
+            "IdealGasHelmholtzCP0PolyT"
+        ],
+        "R13.json": [
+            "IdealGasHelmholtzCP0PolyT"
+        ],
+        "R1336mzz(Z).json": [
+            "IdealGasHelmholtzCP0PolyT"
+        ],
+        "R14.json": [
+            "IdealGasHelmholtzCP0PolyT"
+        ],
+        "R143a.json": [
+            "IdealGasHelmholtzCP0PolyT"
+        ],
+        "R21.json": [
+            "IdealGasHelmholtzCP0PolyT"
+        ],
+        "R22.json": [
+            "IdealGasHelmholtzCP0Constant",
+            "IdealGasHelmholtzCP0PolyT"
+        ],
+        "RC318.json": [
+            "IdealGasHelmholtzCP0PolyT"
+        ],
+        "n-Heptane.json": [
+            "IdealGasHelmholtzCP0AlyLee"
+        ],
+        "n-Undecane.json": [
+            "IdealGasHelmholtzCP0PolyT"
+        ]
+    }
+}
