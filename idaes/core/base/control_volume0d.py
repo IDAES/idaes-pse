@@ -1151,6 +1151,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 * b.properties_in[t].get_material_flow_terms(p, j)
                 * b.properties_out[t].params.element_comp[j][e]
                 for j in component_list
+                if (p, j) in phase_component_set
             )
 
         @self.Expression(
@@ -1165,6 +1166,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 * b.properties_out[t].get_material_flow_terms(p, j)
                 * b.properties_out[t].params.element_comp[j][e]
                 for j in component_list
+                if (p, j) in phase_component_set
             )
 
         # Create material balance terms as needed
