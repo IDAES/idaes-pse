@@ -70,30 +70,51 @@ def test_get_arch_and_platform_auto():
 
 
 @pytest.mark.unit
-def test_get_release_platform_mapping():
-    mach = idaes.config.canonical_arch(machine())
-    for p, m in idaes_config.binary_distro_map.items():
-        if mach == "aarch64" and m == "el7":
+@pytest.mark.parametrize("release", [test_release_3, test_release_4])
+@pytest.mark.parametrize("mach", ["x86_64", "aarch64"])
+def test_get_release_platform_mapping(release, mach):
+    for p in idaes_config.binary_distro_map:
+        try:
+            output = dlb._get_release_platform(p, release, mach)
+        except dlb.UnsupportedPlatformError:
             continue
-        if mach == "x86_64" and m == "darwin":
-            continue
-        output = dlb._get_release_platform(p, test_release_3)
-        if m in ["el9", "ubuntu2404"]:
-            assert output.startswith("ubuntu2204")
-            continue
-        assert output.startswith(m)
-        assert output in idaes_config.base_platforms
+        assert output in idaes_config.release_platforms(release)
 
 
 @pytest.mark.unit
-def test_get_release_platform_mapping_v4():
-    mach = idaes.config.canonical_arch(machine(), test_release_4)
-    for p, m in idaes_config.binary_distro_map.items():
-        if mach == "aarch64" and m == "el7":
-            continue
-        output = dlb._get_release_platform(p, test_release_4)
-        assert output.startswith(m)
-        assert output in idaes_config.base_platforms
+@pytest.mark.parametrize(
+    "release, distro, mach, expected",
+    [
+        (test_release_4, "darwin", "arm64", "darwin-arm64"),
+        (test_release_3, "darwin", "arm64", "darwin-aarch64"),
+        (test_release_3, "darwin", "x86_64", "darwin-x86_64"),
+        (test_release_4, "ubuntu2604", "x86_64", "ubuntu2604-x86_64"),
+        (test_release_4, "kubuntu2604", "aarch64", "ubuntu2604-aarch64"),
+        (test_release_3, "ubuntu2604", "x86_64", "ubuntu2204-x86_64"),
+        (test_release_4, "el9", "aarch64", "el9-aarch64"),
+        (test_release_3, "el9", "aarch64", "ubuntu2204-aarch64"),
+        (test_release_4, "debian13", "x86_64", "ubuntu2404-x86_64"),
+        (test_release_4, "windows", "AMD64", "windows-x86_64"),
+    ],
+)
+def test_get_release_platform(release, distro, mach, expected):
+    assert dlb._get_release_platform(distro, release, mach) == expected
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "distro, mach",
+    [("el7", "x86_64"), ("ubuntu1804", "x86_64"), ("ubuntu1804", "aarch64")],
+)
+def test_get_release_platform_unsupported_v4(distro, mach):
+    with pytest.raises(dlb.UnsupportedPlatformError, match="Unsupported platform"):
+        dlb._get_release_platform(distro, test_release_4, mach)
+
+
+@pytest.mark.unit
+def test_get_release_platform_macos_intel_v4():
+    with pytest.raises(dlb.UnsupportedPlatformError, match="3.4.2"):
+        dlb._get_release_platform("darwin", test_release_4, "x86_64")
 
 
 @pytest.mark.unit

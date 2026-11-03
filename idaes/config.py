@@ -30,26 +30,40 @@ release_base_url = "https://github.com/IDAES/idaes-ext/releases/download"
 release_checksum_url = (
     "https://raw.githubusercontent.com/IDAES/idaes-ext/main/releases/sha256sum_{}.txt"
 )
-# This is a list of platforms with builds
-base_platforms = (
+# Platforms with builds in 3.x releases
+base_platforms_v3 = (
     "darwin-aarch64",
-    "darwin-arm64",
     "darwin-x86_64",
     "el7-x86_64",
     "el8-x86_64",
     "el8-aarch64",
-    "el9-x86_64",
-    "el9-aarch64",
     "ubuntu1804-x86_64",
     "ubuntu1804-aarch64",
     "ubuntu2004-x86_64",
     "ubuntu2004-aarch64",
     "ubuntu2204-x86_64",
     "ubuntu2204-aarch64",
-    "ubuntu2404-x86_64",
-    "ubuntu2404-aarch64",
     "windows-x86_64",
 )
+# Platforms with builds in 4.x releases
+base_platforms_v4 = (
+    "darwin-arm64",
+    "el8-x86_64",
+    "el8-aarch64",
+    "el9-x86_64",
+    "el9-aarch64",
+    "ubuntu2004-x86_64",
+    "ubuntu2004-aarch64",
+    "ubuntu2204-x86_64",
+    "ubuntu2204-aarch64",
+    "ubuntu2404-x86_64",
+    "ubuntu2404-aarch64",
+    "ubuntu2604-x86_64",
+    "ubuntu2604-aarch64",
+    "windows-x86_64",
+)
+# All platforms with builds in any supported release
+base_platforms = tuple(dict.fromkeys(base_platforms_v3 + base_platforms_v4))
 # Map some platform names to others for get-extensions
 binary_distro_map = {
     "macos": "darwin",
@@ -76,10 +90,12 @@ binary_distro_map = {
     "kubuntu2004": "ubuntu2004",
     "kubuntu2204": "ubuntu2204",
     "kubuntu2404": "ubuntu2404",
+    "kubuntu2604": "ubuntu2604",
     "xubuntu1804": "ubuntu1804",
     "xubuntu2004": "ubuntu2004",
     "xubuntu2204": "ubuntu2204",
     "xubuntu2404": "ubuntu2404",
+    "xubuntu2604": "ubuntu2604",
     "pop22": "ubuntu2204",
 }
 # Machine map
@@ -90,7 +106,7 @@ binary_arch_map = {
 }
 # Set of extra binary packages and basic build platform where available
 extra_binaries = {
-    "petsc": base_platforms,
+    "petsc": base_platforms_v3,
 }
 # Store the original environment variable values so we can revert changes
 orig_environ = {
@@ -113,6 +129,13 @@ default_uom = {
 
 def release_major(release):
     return int(release.split(".", maxsplit=1)[0])
+
+
+def release_platforms(release):
+    """Platforms with builds for the given release."""
+    if release_major(release) >= 4:
+        return base_platforms_v4
+    return base_platforms_v3
 
 
 def canonical_arch(arch, release=None, platform=None):

@@ -29,7 +29,7 @@ import click
 
 import idaes
 from idaes.config import (
-    base_platforms,
+    release_platforms,
     binary_distro_map,
     binary_arch_map,
     canonical_arch,
@@ -164,8 +164,8 @@ def print_build_info(release):
 
     print_header("Build Information")
 
-    print("\nAll Builds (Platform-Architecture):")
-    for build in base_platforms:
+    print(f"\nAll Builds for release {release} (Platform-Architecture):")
+    for build in release_platforms(release):
         print(f"   {build}")
 
     for name, data in zip(
@@ -187,17 +187,22 @@ def print_build_info(release):
     arch = machine()
     to_platform = canonical_distro(platform)
     to_mach = canonical_arch(arch, release=release, platform=to_platform)
-    to_build = f"{to_platform}-{to_mach}"
-    has_build = to_build in base_platforms
+    try:
+        to_build = idaes.commands.util.download_bin._get_release_platform(
+            platform, release
+        )
+    except idaes.commands.util.download_bin.UnsupportedPlatformError as e:
+        to_build = None
+        unsupported_msg = str(e)
 
     alias = "" if to_platform == platform else f" -> {to_platform}"
     print(f"       Platform: {platform}{alias}")
     alias = "" if to_mach == arch else f" -> {to_mach}"
     print(f"   Architecture: {arch}{alias}")
-    if has_build:
+    if to_build is not None:
         print(f"      Use build: {to_build}")
     else:
-        print("   !! Unsupported platform/architecture combination")
+        print(f"   !! {unsupported_msg}")
 
     print_footer()
 
@@ -334,7 +339,7 @@ def hash_extensions(release, path):
         fp.write("\n")
 
     with open(hfile, "w") as f:
-        for plat in idaes.config.base_platforms:
+        for plat in release_platforms(release):
             if major >= 4:
                 packs = ["solvers", "functions"]
             else:
@@ -344,7 +349,7 @@ def hash_extensions(release, path):
                 _write_hash(f, pack, plat)
 
         if major < 4:
-            for plat in idaes.config.base_platforms:
+            for plat in idaes.config.base_platforms_v3:
                 for pack, sp in idaes.config.extra_binaries.items():
                     if plat not in sp:
                         continue

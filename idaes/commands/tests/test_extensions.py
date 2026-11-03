@@ -161,6 +161,13 @@ def test_print_build_info(capsys, release):
     assert "Platform:" in out
     assert "Architecture:" in out
 
+    builds = out.split("Platform aliases:")[0]
+    for plat in idaes.config.base_platforms:
+        if plat in idaes.config.release_platforms(release):
+            assert plat in builds
+        else:
+            assert plat not in builds
+
 
 ########################
 # get-extensions CLI   #

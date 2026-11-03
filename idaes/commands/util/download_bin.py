@@ -27,7 +27,7 @@ from pyomo.common.download import FileDownloader
 
 import idaes
 import idaes.logger as idaeslog
-from idaes.config import release_major, base_platforms
+from idaes.config import release_major, release_platforms, base_platforms_v3
 
 _log = idaeslog.getLogger(__name__)
 _release_base_url = idaes.config.release_base_url
@@ -86,12 +86,13 @@ def _map_legacy_distro(platform, release):
 
     legacy_distro_map = {
         "ubuntu2404": "ubuntu2204",
+        "ubuntu2604": "ubuntu2204",
         "el9": "ubuntu2204",
     }
     return legacy_distro_map.get(platform, platform)
 
 
-def _get_release_platform(platform, release):
+def _get_release_platform(platform, release, mach=None):
     # Check if platform (OS) maps to another platform
     platform = idaes.config.canonical_distro(platform)
 
@@ -99,13 +100,22 @@ def _get_release_platform(platform, release):
     platform = _map_legacy_distro(platform, release)
 
     # Get machine type (e.g. x86_64, ...)
-    mach = idaes.config.canonical_arch(machine(), release=release, platform=platform)
+    if mach is None:
+        mach = machine()
+    mach = idaes.config.canonical_arch(mach, release=release, platform=platform)
 
     # full platform name
     platform = f"{platform}-{mach}"
     # See if machine is supported
-    if platform not in idaes.config.base_platforms:
-        raise UnsupportedPlatformError(f"Unsupported platform: {platform}.")
+    if release_major(release) >= 4 and platform == "darwin-x86_64":
+        raise UnsupportedPlatformError(
+            "macOS Intel (darwin-x86_64) is not supported as of IDAES extensions "
+            "4.0.0; the last release with these binaries is 3.4.2."
+        )
+    if platform not in release_platforms(release):
+        raise UnsupportedPlatformError(
+            f"Unsupported platform for release {release}: {platform}."
+        )
     _log.debug(f"Downloading binaries for {platform}")
 
     return platform
@@ -174,7 +184,7 @@ def _supported_extra_binaries(release):
     if major >= 4:
         return {}
     return {
-        "petsc": base_platforms,
+        "petsc": base_platforms_v3,
     }
 
 
