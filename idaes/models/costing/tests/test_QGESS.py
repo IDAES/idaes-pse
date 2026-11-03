@@ -1030,10 +1030,10 @@ class TestQGESSBuildProcessCosts(object):
         m.fs.chemicals = pyo.Var(m.fs.time, initialize=1, units=pyunits.kg / pyunits.s)
         m.fs.chemicals.fix()
 
-        m.fs.nonharzardous_waste_disposal = pyo.Var(
+        m.fs.nonhazardous_waste_disposal = pyo.Var(
             m.fs.time, initialize=1, units=pyunits.kg / pyunits.s
         )
-        m.fs.nonharzardous_waste_disposal.fix()
+        m.fs.nonhazardous_waste_disposal.fix()
 
         m.fs.pure_product = pyo.Var(
             m.fs.time, initialize=1, units=pyunits.kg / pyunits.s
@@ -1074,8 +1074,8 @@ class TestQGESSBuildProcessCosts(object):
                 "water": m.fs.water,
                 "chemicals1": m.fs.chemicals,
                 "chemicals2": m.fs.chemicals,
-                "waste1": m.fs.nonharzardous_waste_disposal,
-                "waste2": m.fs.nonharzardous_waste_disposal,
+                "waste1": m.fs.nonhazardous_waste_disposal,
+                "waste2": m.fs.nonhazardous_waste_disposal,
             },  # for annual OPEX costs
             resource_prices={
                 "coal1": 1 * pyunits.USD_2018 / pyunits.tonne,
@@ -1256,10 +1256,10 @@ class TestQGESSBuildProcessCosts(object):
             )
             m.fs.chemicals.fix()
 
-            m.fs.nonharzardous_waste_disposal = pyo.Var(
+            m.fs.nonhazardous_waste_disposal = pyo.Var(
                 m.fs.time, initialize=1, units=pyunits.kg / pyunits.s
             )
-            m.fs.nonharzardous_waste_disposal.fix()
+            m.fs.nonhazardous_waste_disposal.fix()
 
             m.fs.pure_product = pyo.Var(
                 m.fs.time, initialize=1, units=pyunits.kg / pyunits.s
@@ -1299,8 +1299,8 @@ class TestQGESSBuildProcessCosts(object):
                     "water": m.fs.water,
                     "chemicals1": m.fs.chemicals,
                     "chemicals2": m.fs.chemicals,
-                    "waste1": m.fs.nonharzardous_waste_disposal,
-                    "waste2": m.fs.nonharzardous_waste_disposal,
+                    "waste1": m.fs.nonhazardous_waste_disposal,
+                    "waste2": m.fs.nonhazardous_waste_disposal,
                 },  # for annual OPEX costs
                 resource_prices={
                     "coal1": 1 * pyunits.USD_2018 / pyunits.tonne,

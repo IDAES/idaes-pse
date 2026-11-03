@@ -192,7 +192,7 @@ def load_default_resource_prices():
         "electricity": 71.7 * pyunits.USD_2018_Dec / pyunits.MWh,
         "reactive_membrane_replacement": 15.1 * pyunits.USD_2018_Dec / pyunits.m**2,
         "PSA_adsorbent_waste_disposal": 1.5 * pyunits.USD_2018_Dec / pyunits.ft**3,
-        "nonharzardous_waste_disposal": 38 * pyunits.USD_2018_Dec / pyunits.ton,
+        "nonhazardous_waste_disposal": 38 * pyunits.USD_2018_Dec / pyunits.ton,
         # from X. Ge, R. Zhang, P. Liu, B. Liu, B. Liu, Optimization and control of
         # extractive distillation for formic acid-water separation with maximum-boiling
         # azeotrope, Computers & Chemical Engineering, Vol. 169, 2023. Table 2.
