@@ -17,9 +17,10 @@ import os
 import tarfile
 import tempfile
 import shutil
-from platform import machine
+import sys
 
 from pyomo.common.download import FileDownloader
+from pyomo.common.tempfiles import TempfileManager
 
 import idaes
 import idaes.commands.util.download_bin as dlb
@@ -148,7 +149,7 @@ def test_get_release_url_none():
 def test_get_checksum_paths():
     cto, cfrom = dlb._get_checksum_paths("foo", "bar")
 
-    assert cto == os.path.join("foo", f"sha256sum_bar.txt")
+    assert cto == os.path.join("foo", "sha256sum_bar.txt")
     assert (
         cfrom
         == "https://raw.githubusercontent.com/IDAES/idaes-ext/main/releases/sha256sum_bar.txt"
@@ -427,3 +428,74 @@ def test_verify_tarfile_members():
         Exception, match="Tarball None contained potentially unsafe member dir3/file"
     ):
         dlb._verify_tar_member_targets(tar, os.path.abspath(""))
+
+
+def _make_tar_gz(path, members):
+    """Write a .tar.gz at path; members are (name, data) or (name, "->target")."""
+    with tarfile.open(path, "w:gz") as t:
+        for name, content in members:
+            info = tarfile.TarInfo(name)
+            if content.startswith("->"):
+                info.type = tarfile.SYMTYPE
+                info.linkname = content[2:]
+                t.addfile(info)
+            else:
+                data = content.encode()
+                info.size = len(data)
+                t.addfile(info, io.BytesIO(data))
+
+
+@pytest.mark.unit
+@pytest.mark.skipif(sys.platform == "win32", reason="Symlinks need privileges")
+def test_extract_package_absolute_symlink():
+    with TempfileManager.new_context() as tf:
+        tmpdir = tf.mkdtemp()
+        # Like the el9 tarballs, which link to the system BLAS
+        tar = os.path.join(tmpdir, "idaes-solvers-el9-x86_64.tar.gz")
+        _make_tar_gz(
+            tar,
+            [
+                ("bin/ipopt", "solver"),
+                ("lib/libblas.so.3", "->/usr/lib64/libblas.so.3.9.0"),
+            ],
+        )
+        to_path = os.path.join(tmpdir, "install")
+        os.mkdir(to_path)
+
+        dlb._extract_package(tar, to_path, {})
+
+        with open(os.path.join(to_path, "bin", "ipopt")) as f:
+            assert f.read() == "solver"
+        assert os.readlink(os.path.join(to_path, "lib", "libblas.so.3")) == (
+            "/usr/lib64/libblas.so.3.9.0"
+        )
+
+
+@pytest.mark.unit
+def test_extract_package_unsafe_member():
+    with TempfileManager.new_context() as tf:
+        tmpdir = tf.mkdtemp()
+        tar = os.path.join(tmpdir, "bad.tar.gz")
+        _make_tar_gz(tar, [("../outside.txt", "nope")])
+        to_path = os.path.join(tmpdir, "install")
+        os.mkdir(to_path)
+
+        with pytest.raises(Exception, match="potentially unsafe member"):
+            dlb._extract_package(tar, to_path, {})
+        assert not os.path.exists(os.path.join(tmpdir, "outside.txt"))
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "fname", ["libpynumero_ASL.so", "libpynumero_ASL.dylib", "pynumero_ASL.dll"]
+)
+def test_warn_if_libraries_exist(caplog, fname):
+    caplog.set_level(idaeslog.ERROR, logger="idaes.commands.util.download_bin")
+    with TempfileManager.new_context() as tf:
+        bin_dir = tf.mkdtemp()
+        with open(os.path.join(bin_dir, fname), "w"):
+            pass
+
+        dlb._warn_if_libraries_exist(test_release_4, bin_directory=bin_dir)
+
+    assert "Existing pre-4.x extension files" in caplog.text

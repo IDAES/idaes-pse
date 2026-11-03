@@ -17,6 +17,7 @@
 # TODO: protected access issues
 # pylint: disable=protected-access
 
+import glob
 import os
 import hashlib
 from platform import machine
@@ -393,7 +394,18 @@ def _verify_tar_member_targets(tar, to_path, links=None):
             links[member_path] = (member.type, os.path.join(to_path, member.linkname))
 
 
-def _warn_if_libraries_exist(release):
+def _extract_package(fname, to_path, links):
+    with tarfile.open(fname, "r") as f:
+        _verify_tar_member_targets(f, to_path, links)
+        # Python 3.14 defaults to the "data" filter, which rejects the
+        # absolute symlinks in the el9 tarballs; "tar" gets around this
+        if hasattr(tarfile, "tar_filter"):
+            f.extractall(to_path, filter="tar")
+        else:
+            f.extractall(to_path)
+
+
+def _warn_if_libraries_exist(release, bin_directory=None):
     """
     Warn when installing 4.x+ extensions over an environment that appears to
     contain an older flat-layout binary installation.
@@ -405,9 +417,10 @@ def _warn_if_libraries_exist(release):
     """
     if release_major(release) < 4:
         return
+    if bin_directory is None:
+        bin_directory = idaes.bin_directory
 
-    old_lib = os.path.join(idaes.bin_directory, "libpynumero_ASL.dylib")
-    if os.path.exists(old_lib):
+    if glob.glob(os.path.join(bin_directory, "*pynumero_ASL*")):
         # Setting this as error so it shows up by default. It's really a warning
         # but I don't think it's worth it to change the logging level of the
         # whole system just to print this message as a warning to then immediately
@@ -417,8 +430,8 @@ def _warn_if_libraries_exist(release):
             "IDAES 4.x+ extensions use a different install layout and may "
             "overwrite existing binaries or conflict with older libraries. "
             "Consider removing old extension files from %s before installing.",
-            idaes.bin_directory,
-            idaes.bin_directory,
+            bin_directory,
+            bin_directory,
         )
 
 
@@ -513,6 +526,4 @@ def download_binaries(
     links = {}
     for n, p in zip(pname, ptar):
         _log.debug(f"Extracting files in {p} to {to_path}")
-        with tarfile.open(p, "r") as f:
-            _verify_tar_member_targets(f, to_path, links)
-            f.extractall(to_path)
+        _extract_package(p, to_path, links)
