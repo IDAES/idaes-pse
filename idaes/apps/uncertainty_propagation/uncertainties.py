@@ -27,6 +27,9 @@ from idaes.apps.uncertainty_propagation.sens import (
     get_dsdp,
     get_dfds_dcds,
 )
+from functools import singledispatch
+from collections.abc import Callable
+from pyomo.common.deprecation import deprecation_warning
 
 # will replace with pyomo
 # (Pyomo PR 1613: https://github.com/pyomo/pyomo/pull/1613/)
@@ -34,19 +37,20 @@ from idaes.apps.uncertainty_propagation.sens import (
 logger = logging.getLogger("idaes.apps.uncertainty_propagation")
 
 
+@singledispatch
 def quantify_propagate_uncertainty(
-    model_function,
+    experiment_list,
     model_uncertain,
-    data,
     theta_names,
     obj_function=None,
+    cov_method="finite_difference",
+    cov_step=1e-3,
     tee=False,
     diagnostic_mode=False,
     solver_options=None,
-    covariance_n=None,
 ):
     """This function calculates error propagation of the objective function and
-    constraints. The parmest uses 'model_function' to estimate uncertain
+    constraints. ParmEst uses 'experiment_list' to estimate uncertain
     parameters. The uncertain parameters in 'model_uncertain' are fixed with
     the estimated values. The function 'quantify_propagate_uncertainty'
     calculates error propagation of objective function and constraints
@@ -60,21 +64,24 @@ def quantify_propagate_uncertainty(
 
     Parameters
     ----------
-    model_function : function
-        A python Function that generates an instance of the Pyomo model using
-        'data' as the input argument
+    experiment_list : list
+        List of the Experiment class objects containing
+        the labeled Pyomo model and the data
     model_uncertain : function or Pyomo ConcreteModel
         Function is a python/ Function that generates an instance of the
         Pyomo model
-    data : pandas DataFrame, list of dictionary, or list of json file names
-        Data that is used to build an instance of the Pyomo model and build the
-        objective function
     theta_names : list of strings
         List of Var names to estimate
-    obj_function : function, optional
-        Function used to formulate parameter estimation objective, generally
-        sum of squared error between measurements and model variables,
-        by default None
+    obj_function : str or Callable
+        String specifying a built-in objective function (e.g., 'SSE' or
+        'SSE_weighted') or a callable that defines a custom objective
+        function for parameter estimation. Default is None
+    cov_method : str, optional
+        String specifying the method to use to compute the
+        parameter covariance matrix. Default is 'finite_difference'
+    cov_step : float, optional
+        Float used for relative perturbation of the parameters when computing
+        the covariance matrix via 'finite_difference', Default is 1e-3
     tee : bool, optional
         Indicates that ef solver output should be teed, by default False
     diagnostic_mode : bool, optional
@@ -82,10 +89,241 @@ def quantify_propagate_uncertainty(
     solver_options : dict, optional
         Provides options to the solver (also the name of an attribute),
         by default None
+
+    Returns
+    -------
+    results : tuple,
+        Named tuple containing the parameter estimation and uncertainty
+        propagation results
+
+    Raises
+    ------
+    ValueError
+        When an incorrect string objective function for
+        parameter estimation is supplied
+    TypeError
+        When the covariance method is not a string
+    ValueError
+        When the string object of the covariance method is
+        not supplied correctly or is not supported
+    TypeError
+        When the step entry for the covariance matrix is not a float
+    TypeError
+        When tee entry is not Boolean
+    TypeError
+        When diagnostic_mode entry is not Boolean
+    TypeError
+        When solver_options entry is not None and a Dictionary
+    Warnings
+        When an element of theta_names includes a space
+
+    """
+
+    if isinstance(obj_function, str) and obj_function not in ["SSE", "SSE_weighted"]:
+        raise ValueError(
+            "Invalid objective function for parameter estimation. "
+            "Please select from ['SSE', 'SSE_weighted']."
+        )
+    if not isinstance(cov_method, str):
+        raise TypeError("A string object is expected for the covariance method.")
+    else:
+        supported_methods = [
+            "finite_difference",
+            "automatic_differentiation_kaug",
+            "reduced_hessian",
+        ]
+        if cov_method not in supported_methods:
+            raise ValueError(
+                "Invalid method for covariance matrix calculation. "
+                "Please select from "
+                "['finite_difference', 'automatic_differentiation_kaug', "
+                "'reduced_hessian']."
+            )
+    if not isinstance(cov_step, float):
+        raise TypeError("Expected a float for the covariance step, e.g., 1e-2")
+    if not isinstance(tee, bool):
+        raise TypeError("tee must be boolean.")
+    if not isinstance(diagnostic_mode, bool):
+        raise TypeError("diagnostic_mode must be boolean.")
+    if solver_options is not None:
+        if not isinstance(solver_options, dict):
+            raise TypeError("solver_options must be dictionary.")
+
+    # Remove all "'" and " " in theta_names
+    theta_names, var_dic, variable_clean = clean_variable_name(theta_names)
+
+    # parameter estimation using the new ParmEst interface
+    parmest_class = parmest.Estimator(
+        experiment_list,
+        obj_function=obj_function,
+        tee=tee,
+        diagnostic_mode=diagnostic_mode,
+        solver_options=solver_options,
+    )
+
+    # estimate the parameters
+    obj, theta = parmest_class.theta_est()
+
+    # compute the covariance matrix
+    cov = parmest_class.cov_est(method=cov_method, step=cov_step)
+
+    return _propagate_and_package_results(
+        model_uncertain,
+        theta_names,
+        var_dic,
+        variable_clean,
+        obj,
+        theta,
+        cov,
+        tee,
+        solver_options,
+    )
+
+
+# The deprecated function
+# This works by checking the type of the first argument passed to
+# the function. If it matches the old interface (i.e. is
+# callable) then this _deprecated_quantify_propagate_uncertainty
+# method is called and the deprecation warning is displayed.
+@quantify_propagate_uncertainty.register(Callable)
+def _deprecated_quantify_propagate_uncertainty(
+    model_function,
+    model_uncertain,
+    data,
+    theta_names,
+    obj_function=None,
+    tee=False,
+    diagnostic_mode=False,
+    solver_options=None,
+    covariance_n=None,
+):
+    """
+    Solves the parameter estimation problem of the uncertainty
+    propagation using the old ParmEst interface
+
+    Parameters
+    ----------
+    model_function : function
+        A python Function that generates an instance of the Pyomo model using
+        'data' as the input argument
+    data : pandas DataFrame, list of dictionary, or list of json file names
+        Data that is used to build an instance of the Pyomo model and build the
+        objective function
     covariance_n : int, optional
         Number of datapoints to use in the objective function to
         calculate the covariance matrix.  If omitted, defaults to
         len(data)
+    All other parameters retain the same definitions as
+    in quantify_propagate_uncertainty
+
+    Returns
+    -------
+    results : tuple,
+        Named tuple containing the parameter estimation and uncertainty
+        propagation results
+
+    Raises
+    ------
+    Deprecation Warning
+        When the old ParmEst interface is used for parameter estimation
+    TypeError
+        When tee entry is not Boolean
+    TypeError
+        When diagnostic_mode entry is not Boolean
+    TypeError
+        When solver_options entry is not None and a Dictionary
+    Warnings
+        When an element of theta_names includes a space
+    """
+
+    deprecation_warning(
+        "You're using the deprecated uncertainty propagation interface "
+        "(model_function, data, covariance_n). This interface will be removed "
+        "in a future release. Please update to the new experiment-list "
+        "interface.",
+        version="2.13.0",
+    )
+
+    if not isinstance(tee, bool):
+        raise TypeError("tee must be boolean.")
+    if not isinstance(diagnostic_mode, bool):
+        raise TypeError("diagnostic_mode must be boolean.")
+    if solver_options is not None:
+        if not isinstance(solver_options, dict):
+            raise TypeError("solver_options must be dictionary.")
+    if covariance_n is None:
+        if isinstance(data, pd.DataFrame):
+            covariance_n = len(data.index)
+        else:
+            covariance_n = len(data)
+        logger.info(
+            "covariance_n omitted from quantify_propagate_uncertainty().  "
+            f"Assuming {covariance_n}"
+        )
+    # Remove all "'" and " " in theta_names
+    theta_names, var_dic, variable_clean = clean_variable_name(theta_names)
+    parmest_class = parmest.Estimator(
+        model_function,
+        data,
+        theta_names,
+        obj_function,
+        tee,
+        diagnostic_mode,
+        solver_options,
+    )
+    obj, theta, cov = parmest_class.theta_est(calc_cov=True, cov_n=covariance_n)
+
+    return _propagate_and_package_results(
+        model_uncertain,
+        theta_names,
+        var_dic,
+        variable_clean,
+        obj,
+        theta,
+        cov,
+        tee,
+        solver_options,
+    )
+
+
+def _propagate_and_package_results(
+    model_uncertain,
+    theta_names,
+    var_dic,
+    variable_clean,
+    obj,
+    theta,
+    cov,
+    tee=False,
+    solver_options=None,
+):
+    """
+    Saves the uncertainty propagation results into a tuple
+
+    Parameters
+    ----------
+    model_uncertain : function or Pyomo ConcreteModel
+        Function is a python/ Function that generates an instance of the
+        Pyomo model
+    theta_names : list of strings
+        List of Var names to estimate
+    var_dic : dict
+        Dictionary with keys converted theta_names and values original
+        theta_names
+    variable_clean : bool
+        If True, the variable name of the parameters doesn't have ' and spaces
+    obj : float or int
+        Optimal objective value after parameter estimation
+    theta : dict
+        Dictionary containing the estimated value of the parameters
+    cov : pandas.DataFrame,
+        DataFrame object containing the covariance matrix of
+        the estimated parameters
+    tee : bool, optional
+        Indicates that ef solver output should be teed, by default False
+    solver_options : dict, optional
+        Provides options to the solver (also the name of an attribute),
+        by default None
 
     Returns
     -------
@@ -125,48 +363,8 @@ def quantify_propagate_uncertainty(
             The order can be mixed.
         - results.row: list
             Size Ncon+1. List of constraints and objective function names
-
-    Raises
-    ------
-    TypeError
-        When tee entry is not Boolean
-    TypeError
-        When diagnostic_mode entry is not Boolean
-    TypeError
-        When solver_options entry is not None and a Dictionary
-    Warnings
-        When an element of theta_names includes a space
-
     """
 
-    if not isinstance(tee, bool):
-        raise TypeError("tee  must be boolean.")
-    if not isinstance(diagnostic_mode, bool):
-        raise TypeError("diagnostic_mode  must be boolean.")
-    if not solver_options == None:
-        if not isinstance(solver_options, dict):
-            raise TypeError("solver_options must be dictionary.")
-    if covariance_n is None:
-        if isinstance(data, pd.DataFrame):
-            covariance_n = len(data.index)
-        else:
-            covariance_n = len(data)
-        logger.info(
-            "covariance_n omitted from quantify_propagate_uncertainty().  "
-            f"Assuming {covariance_n}"
-        )
-    # Remove all "'" and " " in theta_names
-    theta_names, var_dic, variable_clean = clean_variable_name(theta_names)
-    parmest_class = parmest.Estimator(
-        model_function,
-        data,
-        theta_names,
-        obj_function,
-        tee,
-        diagnostic_mode,
-        solver_options,
-    )
-    obj, theta, cov = parmest_class.theta_est(calc_cov=True, cov_n=covariance_n)
     # Convert theta keys to the original name
     # Revert theta_names to be original
     if variable_clean:
@@ -177,7 +375,7 @@ def quantify_propagate_uncertainty(
     else:
         theta_out = theta
     propagate_results = propagate_uncertainty(
-        model_uncertain, theta, cov, theta_names, tee
+        model_uncertain, theta, cov, theta_names, tee, solver_options
     )
 
     Output = namedtuple(
@@ -317,9 +515,11 @@ def propagate_uncertainty(
         model.find_component(var_dic[v]).setub(theta[v])
     # get gradient of the objective function, constraints,
     # and the column,row names
-    dsdp, col = get_dsdp(model, theta_names, theta, var_dic, tee)
+    dsdp, col = get_dsdp(model, theta_names, theta, var_dic, tee, solver_options)
     dsdp = dsdp.toarray().T  # change shape, Nvar by Ntheta
-    gradient_f, gradient_c, col, row, line_dic = get_dfds_dcds(model, theta_names, tee)
+    gradient_f, gradient_c, col, row, line_dic = get_dfds_dcds(
+        model, theta_names, tee, solver_options
+    )
     num_constraints = len(
         list(model.component_data_objects(Constraint, active=True, descend_into=True))
     )
