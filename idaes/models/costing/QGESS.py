@@ -432,7 +432,8 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         self.installation_components[k] for k in installation_components
                     ),
                     to_units=pyunits.dimensionless,
-                ) + 1
+                )
+                + 1
             )
 
         else:  # assume there is no Lang factor and TPC = BEC
@@ -3189,9 +3190,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         def total_variable_cost_eq(c, t):
             return (
                 c.total_variable_OM_cost[t]
-                == sum(
-                    c.variable_operating_costs[t, r] for r in resources
-                )
+                == sum(c.variable_operating_costs[t, r] for r in resources)
                 + (
                     c.plant_overhead_cost[t]
                     if hasattr(c, "plant_overhead_cost")
@@ -4211,10 +4210,14 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             var_dict["Total As Spent Cost [$MM]"] = value(self.total_as_spent_cost)
 
         if hasattr(self, "annualized_cost"):
-            var_dict["Total Annualized Capital Cost [$MM/year]"] = value(self.annualized_cost)
+            var_dict["Total Annualized Capital Cost [$MM/year]"] = value(
+                self.annualized_cost
+            )
 
         if hasattr(self, "total_fixed_OM_cost"):
-            var_dict["Total fixed O&M cost [$MM/year]"] = value(self.total_fixed_OM_cost)
+            var_dict["Total fixed O&M cost [$MM/year]"] = value(
+                self.total_fixed_OM_cost
+            )
 
         if hasattr(self, "annual_operating_labor_cost"):
             var_dict["Total Annual Operating Labor Cost"] = value(
@@ -4299,7 +4302,9 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 )
 
             if hasattr(self, "plant_overhead_cost"):
-                var_dict["General Plant Overhead Cost"] = value(self.plant_overhead_cost[0])
+                var_dict["General Plant Overhead Cost"] = value(
+                    self.plant_overhead_cost[0]
+                )
 
                 var_dict[
                     "Total Plant Overhead Cost, Including Maintenance & Quality Assurance"
@@ -4321,7 +4326,9 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 value(self.annualized_cost)
                 + value(self.total_fixed_OM_cost if self.config.has_fixed_OM else 0)
                 + self.capacity_factor
-                * value(self.total_variable_OM_cost[0] if self.config.has_variable_OM else 0)
+                * value(
+                    self.total_variable_OM_cost[0] if self.config.has_variable_OM else 0
+                )
                 + value(self.net_tax_owed if self.config.has_taxes_and_credits else 0)
             )
 
@@ -4346,7 +4353,9 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             )
 
         if hasattr(self, "cost_of_CO2_capture including all transport"):
-            var_dict["Cost of Capture [$/unit CO2]"] = value(self.cost_of_CO2_capture * 1e6)
+            var_dict["Cost of Capture [$/unit CO2]"] = value(
+                self.cost_of_CO2_capture * 1e6
+            )
 
         if hasattr(self, "CO2_transport_cost"):
             var_dict["Total Transport Cost of Captured CO2 [$MM]"] = value(

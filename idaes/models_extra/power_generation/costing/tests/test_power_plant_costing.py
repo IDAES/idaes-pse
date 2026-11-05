@@ -259,13 +259,13 @@ def test_PP_costing_with_all_methods(tech, capsys):
     dt.assert_no_numerical_warnings()
 
     if tech == 1:  # check power plant reports methods
-    # some values will be different for other PP tech values, don't need to check them all here
+        # some values will be different for other PP tech values, don't need to check them all here
 
         PowerPlantCostingData.display_total_plant_costs(m.fs.costing)
         PowerPlantCostingData.display_bare_erected_costs(m.fs.costing)
-    
+
         PowerPlantCostingData.report(m.fs.costing, export=True)
-    
+
         # check exported file
         assert os.path.exists(os.path.join(os.getcwd(), "costing_report.csv"))
         # cleanup
@@ -307,11 +307,11 @@ def test_PP_costing_with_all_methods(tech, capsys):
                 "Additional Tax Owed": 1.0000e-12,
                 "Additional Tax Credit": 1.0000e-12,
                 "Net Tax Owed": 2.6094e-11,
-                }
             }
-    
+        }
+
         assert m.fs.costing.report_dir["Value"].keys() == expected["Value"].keys()
-    
+
         for k in m.fs.costing.report_dir["Value"]:
             assert m.fs.costing.report_dir["Value"][k] == pytest.approx(
                 expected["Value"][k], rel=1e-4
