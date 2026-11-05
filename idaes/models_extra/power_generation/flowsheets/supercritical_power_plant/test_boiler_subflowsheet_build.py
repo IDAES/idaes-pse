@@ -12,6 +12,8 @@
 #################################################################################
 """Regression tests for the supercritical boiler subflowsheet."""
 
+from unittest.mock import mock_open
+
 import pytest
 
 from pyomo.environ import value
@@ -34,15 +36,6 @@ from idaes.models_extra.power_generation.unit_models.boiler_heat_exchanger impor
 from idaes.models_extra.power_generation.flowsheets.supercritical_power_plant import (
     boiler_subflowsheet_build as boiler,
 )
-
-pytestmark = [
-    pytest.mark.skipif(
-        not helmholtz_available(), reason="General Helmholtz not available"
-    ),
-    pytest.mark.integration,
-    pytest.mark.solver,
-]
-
 
 expected_results = {
     # External water/steam boundary conditions
@@ -189,9 +182,19 @@ expected_results = {
 
 
 @pytest.fixture(scope="module")
-def solved_boiler():
-    """Build, initialize, connect, and solve the flowsheet once."""
+def built_boiler():
+    """Build the flowsheet without initializing or solving it."""
+    if not helmholtz_available():
+        pytest.skip("General Helmholtz not available")
+
     model, solver = boiler.main()
+    return model, solver
+
+
+@pytest.fixture(scope="module")
+def solved_boiler(built_boiler):
+    """Initialize, connect, and solve the shared flowsheet once."""
+    model, solver = built_boiler
     solver.options = {
         "tol": 1e-6,
         "linear_solver": "ma27",
@@ -208,6 +211,8 @@ def solved_boiler():
     return model
 
 
+@pytest.mark.integration
+@pytest.mark.solver
 def test_structural_issues(solved_boiler):
     """Check for structural warnings in the fully specified flowsheet."""
     diagnostics = DiagnosticsToolbox(solved_boiler)
@@ -219,9 +224,11 @@ def test_structural_issues(solved_boiler):
     # the flowsheet outside its validated operating region
 
 
-def test_build_flowsheet(solved_boiler):
+@pytest.mark.component
+def test_build_flowsheet(built_boiler):
     """Confirm the expected property packages, unit models, and arcs exist."""
-    fs = solved_boiler.fs
+    model, _ = built_boiler
+    fs = model.fs
 
     assert isinstance(fs, FlowsheetBlock)
 
@@ -252,11 +259,15 @@ def test_build_flowsheet(solved_boiler):
         assert isinstance(arc, Arc)
 
 
+@pytest.mark.integration
+@pytest.mark.solver
 def test_solution(solved_boiler):
     """Check the KPI values produced by the original boiler flowsheet."""
     assert_solution_equivalent(solved_boiler.fs, expected_results)
 
 
+@pytest.mark.integration
+@pytest.mark.solver
 def test_water_steam_flow_conservation(solved_boiler):
     """Check molar-flow conservation along both water/steam paths."""
     fs = solved_boiler.fs
@@ -278,6 +289,8 @@ def test_water_steam_flow_conservation(solved_boiler):
     )
 
 
+@pytest.mark.integration
+@pytest.mark.solver
 def test_flue_gas_component_conservation(solved_boiler):
     """Check component-flow conservation through the complete flue-gas path."""
     fs = solved_boiler.fs
@@ -312,6 +325,8 @@ def test_flue_gas_component_conservation(solved_boiler):
         )
 
 
+@pytest.mark.integration
+@pytest.mark.solver
 def test_heat_exchanger_energy_conservation(solved_boiler):
     """Check equal and opposite heat transfer on both sides of each exchanger."""
     fs = solved_boiler.fs
@@ -325,6 +340,8 @@ def test_heat_exchanger_energy_conservation(solved_boiler):
         )
 
 
+@pytest.mark.integration
+@pytest.mark.solver
 def test_pressure_and_splitter_kpis(solved_boiler):
     """Check pressure-loss direction and the solved flue-gas split."""
     fs = solved_boiler.fs
@@ -352,6 +369,81 @@ def test_pressure_and_splitter_kpis(solved_boiler):
 
     assert outlet_1_flow / inlet_flow == pytest.approx(0.75, rel=1e-7)
     assert outlet_2_flow / inlet_flow == pytest.approx(0.25, rel=1e-7)
+
+
+class _DataFrame:
+    index = ("stream",)
+
+    class _Loc:
+        values = {
+            ("stream", "Molar Flow"): 36,
+            ("stream", "T"): 37,
+            ("stream", "P"): 38,
+            ("stream", "Vapor Fraction"): 39,
+        }
+
+        def __getitem__(self, key):
+            return self.values[key]
+
+    loc = _Loc()
+
+
+@pytest.mark.component
+def test_pfd_result_uses_named_sides(built_boiler, monkeypatch):
+    """The PFD tags are populated from the public side names."""
+    rendered = {}
+    monkeypatch.setattr(boiler, "value", lambda _obj: 0)
+    monkeypatch.setattr(boiler, "this_file_dir", lambda: "test")
+    monkeypatch.setattr(boiler, "open", mock_open(read_data="<svg/>"), raising=False)
+    monkeypatch.setattr(
+        boiler,
+        "svg_tag",
+        lambda tags, _svg, outfile: rendered.update(tags=tags, outfile=outfile),
+    )
+
+    model, _ = built_boiler
+    boiler.pfd_result("result.svg", model, _DataFrame())
+
+    assert rendered["outfile"] == "result.svg"
+    assert rendered["tags"]["stream_F"] == 36
+    assert "FG_2_RH_Fm" in rendered["tags"]
+    assert "FG_PrSH_2_Mix_T" in rendered["tags"]
+    assert "FG_2_STACK_P" in rendered["tags"]
+
+
+@pytest.mark.component
+def test_stream_dict_uses_named_sides(built_boiler):
+    """The display stream mapping exposes each expected state block."""
+    model, _ = built_boiler
+    boiler._stream_dict(model)
+
+    assert tuple(model._streams) == (
+        "MS",
+        "ATMP_In",
+        "FSH_In",
+        "PrSH_IN",
+        "RHT_COLD",
+        "RHT_HOT",
+        "PlatenSH_IN",
+        "BFW",
+        "ECON_OUT",
+    )
+    assert model._streams["ATMP_In"] is model.fs.FSH.cold_side.properties_out
+    assert model._streams["ECON_OUT"] is model.fs.ECON.cold_side.properties_out
+
+
+@pytest.mark.component
+def test_print_results_uses_named_sides(built_boiler, capsys, monkeypatch):
+    """The text report can read all results through the public side names."""
+    model, _ = built_boiler
+    monkeypatch.setattr(boiler, "value", lambda obj: getattr(obj, "value", obj))
+    boiler.print_results(model)
+
+    output = capsys.readouterr().out
+    assert "Results" in output
+    assert "driving force" in output
+    assert "heat transfer area" in output
+    assert "steam temp out (to HP turbine)" in output
 
 
 # def test_flowsheet_jacobian_condition_number(solved_boiler):
