@@ -558,37 +558,37 @@ def pfd_result(outfile, m, df):
         tags[i + "_P"] = df.loc[i, "P"]
         tags[i + "_X"] = df.loc[i, "Vapor Fraction"]
 
-    tags["FG_2_RH_Fm"] = value(m.fs.RH.side_2.properties_in[0].flow_mass)
-    tags["FG_2_RH_T"] = value(m.fs.RH.side_2.properties_in[0].temperature)
-    tags["FG_2_RH_P"] = value(m.fs.RH.side_2.properties_in[0].pressure)
+    tags["FG_2_RH_Fm"] = value(m.fs.RH.hot_side.properties_in[0].flow_mass)
+    tags["FG_2_RH_T"] = value(m.fs.RH.hot_side.properties_in[0].temperature)
+    tags["FG_2_RH_P"] = value(m.fs.RH.hot_side.properties_in[0].pressure)
 
-    tags["FG_RH_2_Mix_Fm"] = value(m.fs.RH.side_2.properties_out[0].flow_mass)
-    tags["FG_RH_2_Mix_T"] = value(m.fs.RH.side_2.properties_out[0].temperature)
-    tags["FG_RH_2_Mix_P"] = value(m.fs.RH.side_2.properties_out[0].pressure)
+    tags["FG_RH_2_Mix_Fm"] = value(m.fs.RH.hot_side.properties_out[0].flow_mass)
+    tags["FG_RH_2_Mix_T"] = value(m.fs.RH.hot_side.properties_out[0].temperature)
+    tags["FG_RH_2_Mix_P"] = value(m.fs.RH.hot_side.properties_out[0].pressure)
 
-    tags["FG_2_FSH_Fm"] = value(m.fs.FSH.side_2.properties_in[0].flow_mass)
-    tags["FG_2_FSH_T"] = value(m.fs.FSH.side_2.properties_in[0].temperature)
-    tags["FG_2_FSH_P"] = value(m.fs.FSH.side_2.properties_in[0].pressure)
+    tags["FG_2_FSH_Fm"] = value(m.fs.FSH.hot_side.properties_in[0].flow_mass)
+    tags["FG_2_FSH_T"] = value(m.fs.FSH.hot_side.properties_in[0].temperature)
+    tags["FG_2_FSH_P"] = value(m.fs.FSH.hot_side.properties_in[0].pressure)
 
-    tags["FG_2_PrSH_Fm"] = value(m.fs.PrSH.side_2.properties_in[0].flow_mass)
-    tags["FG_2_PrSH_T"] = value(m.fs.PrSH.side_2.properties_in[0].temperature)
-    tags["FG_2_PrSH_P"] = value(m.fs.PrSH.side_2.properties_in[0].pressure)
+    tags["FG_2_PrSH_Fm"] = value(m.fs.PrSH.hot_side.properties_in[0].flow_mass)
+    tags["FG_2_PrSH_T"] = value(m.fs.PrSH.hot_side.properties_in[0].temperature)
+    tags["FG_2_PrSH_P"] = value(m.fs.PrSH.hot_side.properties_in[0].pressure)
 
-    tags["FG_PrSH_2_Mix_Fm"] = value(m.fs.PrSH.side_2.properties_out[0].flow_mass)
-    tags["FG_PrSH_2_Mix_T"] = value(m.fs.PrSH.side_2.properties_out[0].temperature)
-    tags["FG_PrSH_2_Mix_P"] = value(m.fs.PrSH.side_2.properties_out[0].pressure)
+    tags["FG_PrSH_2_Mix_Fm"] = value(m.fs.PrSH.hot_side.properties_out[0].flow_mass)
+    tags["FG_PrSH_2_Mix_T"] = value(m.fs.PrSH.hot_side.properties_out[0].temperature)
+    tags["FG_PrSH_2_Mix_P"] = value(m.fs.PrSH.hot_side.properties_out[0].pressure)
 
-    tags["FG_2_ECON_Fm"] = value(m.fs.ECON.side_2.properties_in[0].flow_mass)
-    tags["FG_2_ECON_T"] = value(m.fs.ECON.side_2.properties_in[0].temperature)
-    tags["FG_2_ECON_P"] = value(m.fs.ECON.side_2.properties_in[0].pressure)
+    tags["FG_2_ECON_Fm"] = value(m.fs.ECON.hot_side.properties_in[0].flow_mass)
+    tags["FG_2_ECON_T"] = value(m.fs.ECON.hot_side.properties_in[0].temperature)
+    tags["FG_2_ECON_P"] = value(m.fs.ECON.hot_side.properties_in[0].pressure)
 
-    tags["FG_2_AIRPH_Fm"] = value(m.fs.ECON.side_2.properties_out[0].flow_mass)
-    tags["FG_2_AIRPH_T"] = value(m.fs.ECON.side_2.properties_out[0].temperature)
-    tags["FG_2_AIRPH_P"] = value(m.fs.ECON.side_2.properties_out[0].pressure)
+    tags["FG_2_AIRPH_Fm"] = value(m.fs.ECON.hot_side.properties_out[0].flow_mass)
+    tags["FG_2_AIRPH_T"] = value(m.fs.ECON.hot_side.properties_out[0].temperature)
+    tags["FG_2_AIRPH_P"] = value(m.fs.ECON.hot_side.properties_out[0].pressure)
 
-    tags["FG_2_STACK_Fm"] = value(m.fs.ECON.side_2.properties_out[0].flow_mass)
-    tags["FG_2_STACK_T"] = value(m.fs.ECON.side_2.properties_out[0].temperature)
-    tags["FG_2_STACK_P"] = value(m.fs.ECON.side_2.properties_out[0].pressure)
+    tags["FG_2_STACK_Fm"] = value(m.fs.ECON.hot_side.properties_out[0].flow_mass)
+    tags["FG_2_STACK_T"] = value(m.fs.ECON.hot_side.properties_out[0].temperature)
+    tags["FG_2_STACK_P"] = value(m.fs.ECON.hot_side.properties_out[0].pressure)
 
     original_svg_file = os.path.join(this_file_dir(), "Boiler_scpc_PFD.svg")
     with open(original_svg_file, "r") as f:
@@ -598,10 +598,12 @@ def pfd_result(outfile, m, df):
 def _stream_dict(m):
     """Adds _streams to m, which contains a dictionary of streams for display
 
-    Args:
+    Parameters
+    ----------
         m (ConcreteModel): A Pyomo model from create_model()
 
-    Returns:
+    Returns
+    -------
         None
     """
     # We control m
@@ -609,14 +611,14 @@ def _stream_dict(m):
     m._streams = OrderedDict(
         [
             ("MS", m.fs.ATMP1.mixed_state),
-            ("ATMP_In", m.fs.FSH.side_1.properties_out),
-            ("FSH_In", m.fs.FSH.side_1.properties_in),
-            ("PrSH_IN", m.fs.PrSH.side_1.properties_in),
-            ("RHT_COLD", m.fs.RH.side_1.properties_in),
-            ("RHT_HOT", m.fs.RH.side_1.properties_out),
+            ("ATMP_In", m.fs.FSH.cold_side.properties_out),
+            ("FSH_In", m.fs.FSH.cold_side.properties_in),
+            ("PrSH_IN", m.fs.PrSH.cold_side.properties_in),
+            ("RHT_COLD", m.fs.RH.cold_side.properties_in),
+            ("RHT_HOT", m.fs.RH.cold_side.properties_out),
             ("PlatenSH_IN", m.fs.PlSH.control_volume.properties_in),
-            ("BFW", m.fs.ECON.side_1.properties_in),
-            ("ECON_OUT", m.fs.ECON.side_1.properties_out),
+            ("BFW", m.fs.ECON.cold_side.properties_in),
+            ("ECON_OUT", m.fs.ECON.cold_side.properties_out),
         ]
     )
 
@@ -626,9 +628,9 @@ def print_results(m):
     print("Results")
     print()
 
-    print("viscosity gas side = ", m.fs.PrSH.side_2.properties_in[0].visc_d.value)
+    print("viscosity gas side = ", m.fs.PrSH.hot_side.properties_in[0].visc_d.value)
     print(
-        "conductivity gas side = ", m.fs.PrSH.side_2.properties_in[0].therm_cond.value
+        "conductivity gas side = ", m.fs.PrSH.hot_side.properties_in[0].therm_cond.value
     )
     print("velocity_tube = ", m.fs.PrSH.v_tube[0].value)
     print("velocity_shell = ", m.fs.PrSH.v_shell[0].value)
@@ -638,7 +640,7 @@ def print_results(m):
     print("hconv_shell_rad = ", m.fs.PrSH.hconv_shell_rad[0].value)
     print("hconv_shell_conv = ", m.fs.PrSH.hconv_shell_conv[0].value)
     print("hconv_shell_total = ", m.fs.PrSH.hconv_shell_total[0].value)
-    print("driving force = ", m.fs.PrSH.temperature_driving_force[0].value)
+    print("driving force = ", m.fs.PrSH.delta_temperature[0])
     print("dT_inlet = ", m.fs.PrSH.deltaT_1[0].value)
     print("dT_outlet = ", m.fs.PrSH.deltaT_2[0].value)
     print("deltaP tube = ", m.fs.PrSH.deltaP_tube[0].value)
@@ -652,24 +654,26 @@ def print_results(m):
         print("gas gray fraction = ", m.fs.PrSH.gas_gray_fraction[0].value)
     print(
         "liquid density in = ",
-        value(m.fs.PrSH.side_1.properties_in[0].dens_mass_phase["Liq"]),
+        value(m.fs.PrSH.cold_side.properties_in[0].dens_mass_phase["Liq"]),
     )
 
     print(
         "liquid density out = ",
-        value(m.fs.PrSH.side_1.properties_out[0].dens_mass_phase["Liq"]),
+        value(m.fs.PrSH.cold_side.properties_out[0].dens_mass_phase["Liq"]),
     )
-    print("heat transfer area = ", value(m.fs.PrSH.area_heat_transfer))
+    print("heat transfer area = ", value(m.fs.PrSH.area))
     print(
         "overall heat transfer = ",
         value(m.fs.PrSH.overall_heat_transfer_coefficient[0]),
     )
 
     print("\n\n ------------- Economizer   ---------")
-    print("liquid temp in = ", value(m.fs.ECON.side_1.properties_in[0].temperature))
-    print("liquid temp out = ", value(m.fs.ECON.side_1.properties_out[0].temperature))
-    print("gas temp in = ", value(m.fs.ECON.side_2.properties_in[0].temperature))
-    print("gas temp out = ", value(m.fs.ECON.side_2.properties_out[0].temperature))
+    print("liquid temp in = ", value(m.fs.ECON.cold_side.properties_in[0].temperature))
+    print(
+        "liquid temp out = ", value(m.fs.ECON.cold_side.properties_out[0].temperature)
+    )
+    print("gas temp in = ", value(m.fs.ECON.hot_side.properties_in[0].temperature))
+    print("gas temp out = ", value(m.fs.ECON.hot_side.properties_out[0].temperature))
 
     print("\n\n ------------- water wall  ---------")
     print(
@@ -682,10 +686,10 @@ def print_results(m):
     )
 
     print("\n\n ------------- Primary Superheater  ---------")
-    print("steam temp in = ", value(m.fs.PrSH.side_1.properties_in[0].temperature))
-    print("steam temp out = ", value(m.fs.PrSH.side_1.properties_out[0].temperature))
-    print("gas temp in = ", value(m.fs.PrSH.side_2.properties_in[0].temperature))
-    print("gas temp out = ", value(m.fs.PrSH.side_2.properties_out[0].temperature))
+    print("steam temp in = ", value(m.fs.PrSH.cold_side.properties_in[0].temperature))
+    print("steam temp out = ", value(m.fs.PrSH.cold_side.properties_out[0].temperature))
+    print("gas temp in = ", value(m.fs.PrSH.hot_side.properties_in[0].temperature))
+    print("gas temp out = ", value(m.fs.PrSH.hot_side.properties_out[0].temperature))
 
     print("\n\n ------------- Platen SH  ---------")
     print(
@@ -697,19 +701,19 @@ def print_results(m):
     )
 
     print("\n\n ------------- Finishing Superheater  ---------")
-    print("steam temp in = ", value(m.fs.FSH.side_1.properties_in[0].temperature))
+    print("steam temp in = ", value(m.fs.FSH.cold_side.properties_in[0].temperature))
     print(
         "steam temp out (to attmp) = ",
-        value(m.fs.FSH.side_1.properties_out[0].temperature),
+        value(m.fs.FSH.cold_side.properties_out[0].temperature),
     )
-    print("gas temp in = ", value(m.fs.FSH.side_2.properties_in[0].temperature))
-    print("gas temp out = ", value(m.fs.FSH.side_2.properties_out[0].temperature))
+    print("gas temp in = ", value(m.fs.FSH.hot_side.properties_in[0].temperature))
+    print("gas temp out = ", value(m.fs.FSH.hot_side.properties_out[0].temperature))
 
     print("\n\n ------------- Attemperator  ---------")
     print(
         "steam temp in = ",
         value(m.fs.ATMP1.Steam.enth_mol[0]),
-        value(m.fs.FSH.side_1.properties_out[0].temperature),
+        value(m.fs.FSH.cold_side.properties_out[0].temperature),
     )
     print(
         "steam temp out (to HP turbine) = ",
@@ -719,10 +723,10 @@ def print_results(m):
     print()
 
     print("\n\n ------------- Reheater  ---------")
-    print("liquid temp in = ", value(m.fs.RH.side_1.properties_in[0].temperature))
-    print("liquid temp out = ", value(m.fs.RH.side_1.properties_out[0].temperature))
-    print("gas temp in = ", value(m.fs.RH.side_2.properties_in[0].temperature))
-    print("gas temp out = ", value(m.fs.RH.side_2.properties_out[0].temperature))
+    print("liquid temp in = ", value(m.fs.RH.cold_side.properties_in[0].temperature))
+    print("liquid temp out = ", value(m.fs.RH.cold_side.properties_out[0].temperature))
+    print("gas temp in = ", value(m.fs.RH.hot_side.properties_in[0].temperature))
+    print("gas temp out = ", value(m.fs.RH.hot_side.properties_out[0].temperature))
 
 
 if __name__ == "__main__":
@@ -742,7 +746,7 @@ if __name__ == "__main__":
     # users can change the following fixed values to obtain certain performance
     # m.fs.ATMP1.outlet.enth_mol[0].fix(62710.01)
     # m.fs.Water_wall.heat_duty.unfix()
-    # m.fs.RH.side_1_outlet.enth_mol.fix(66043.35)
+    # m.fs.RH.cold_side_outlet.enth_mol.fix(66043.35)
     # m.fs.PlSH.heat_duty.unfix()
     #    m.fs.ATMP1.SprayWater.flow_mol[0].unfix()
     print("flowsheet degrees of freedom = " + str(degrees_of_freedom(m)))
