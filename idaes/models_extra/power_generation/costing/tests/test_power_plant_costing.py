@@ -313,9 +313,12 @@ def test_PP_costing_with_all_methods(tech, capsys):
         assert m.fs.costing.report_dir["Value"].keys() == expected["Value"].keys()
 
         for k in m.fs.costing.report_dir["Value"]:
-            assert m.fs.costing.report_dir["Value"][k] == pytest.approx(
-                expected["Value"][k], rel=1e-4
-            ), f"Value mismatch for key {k}"
+            if k == "Plant Cost Units":
+                assert m.fs.costing.report_dir["Value"][k] == "MUSD_2018"
+            else:
+                assert m.fs.costing.report_dir["Value"][k] == pytest.approx(
+                    expected["Value"][k], rel=1e-4
+                ), f"Value mismatch for key {k}"
 
 
 @pytest.mark.unit
