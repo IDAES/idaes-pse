@@ -432,7 +432,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         self.installation_components[k] for k in installation_components
                     ),
                     to_units=pyunits.dimensionless,
-                )
+                ) + 1
             )
 
         else:  # assume there is no Lang factor and TPC = BEC
