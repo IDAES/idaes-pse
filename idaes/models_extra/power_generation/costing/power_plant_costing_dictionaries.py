@@ -31,16 +31,11 @@ __version__ = "1.0.0"
 
 import os
 import json
-from sys import stdout
-import textwrap
-
-from pandas import DataFrame
 
 from pyomo.common.fileutils import this_file_dir
-from pyomo.environ import value, units as pyunits
+from pyomo.environ import units as pyunits
 
 from idaes.core import register_idaes_currency_units
-from idaes.core.util.tables import stream_table_dataframe_to_string
 import idaes.logger as idaeslog
 
 directory = this_file_dir()
