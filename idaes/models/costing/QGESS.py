@@ -4186,3 +4186,227 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         ),
                     )
                 )
+
+    def report(self, export=False):
+        """
+        self: flowsheet-level costing block
+        export: generate csv results file of costing results
+        """
+        var_dict = {}
+
+        if hasattr(self, "total_TPC"):
+            var_dict["Plant Cost Units"] = str(pyunits.get_units(self.total_TPC))
+            var_dict["Total TPC [$MM]"] = value(self.total_TPC)
+        elif hasattr(self, "npv"):
+            var_dict["Plant Cost Units"] = str(pyunits.get_units(self.npv))
+
+        if hasattr(self, "capacity_factor"):
+            var_dict["Capacity Factor"] = value(self.capacity_factor)
+            var_dict["Estimated Operating Days Per Year"] = value(
+                self.capacity_factor * 365.25
+            )
+
+        if hasattr(self, "total_BEC"):
+            var_dict["Total Bare Erected Cost"] = value(self.total_BEC)
+
+        if hasattr(self, "total_overnight_capital"):
+            var_dict["Total Overnight Cost [$MM]"] = value(self.total_overnight_capital)
+
+        if hasattr(self, "other_plant_costs"):
+            var_dict["Total Other Plant Costs"] = value(self.other_plant_costs)
+
+        if hasattr(self, "total_as_spent_cost"):
+            var_dict["Total As Spent Cost [$MM]"] = value(self.total_as_spent_cost)
+
+        if hasattr(self, "annualized_cost"):
+            var_dict["Total Annualized Capital Cost [$MM/year]"] = value(self.annualized_cost)
+
+        if hasattr(self, "total_fixed_OM_cost"):
+            var_dict["Total fixed O&M cost [$MM/year]"] = value(self.total_fixed_OM_cost)
+
+        if hasattr(self, "annual_operating_labor_cost"):
+            var_dict["Total Annual Operating Labor Cost"] = value(
+                self.annual_operating_labor_cost
+            )
+
+            var_dict["Total Annual Technical Labor Cost"] = value(
+                self.annual_technical_labor_cost
+            )
+
+            var_dict["Summation of Annual Labor Costs"] = value(self.annual_labor_cost)
+
+        if hasattr(self, "maintenance_and_material_cost"):
+            var_dict["Total Maintenance and Material Cost"] = value(
+                self.maintenance_and_material_cost
+            )
+
+        if hasattr(self, "quality_assurance_and_control_cost"):
+            var_dict["Total Quality Assurance and Control Cost"] = value(
+                self.quality_assurance_and_control_cost
+            )
+
+        general_sales_and_admin = 0
+
+        if hasattr(self, "sales_patenting_and_research_cost"):
+            var_dict["Total Sales, Patenting and Research Cost"] = value(
+                self.sales_patenting_and_research_cost
+            )
+            general_sales_and_admin += value(self.sales_patenting_and_research_cost)
+
+        if hasattr(self, "admin_and_support_labor_cost"):
+            var_dict["Total Admin Support and Labor Cost"] = value(
+                self.admin_and_support_labor_cost
+            )
+            general_sales_and_admin += value(self.admin_and_support_labor_cost)
+
+        if hasattr(self, "property_taxes_and_insurance_cost"):
+            var_dict["Total Property Taxes and Insurance Cost"] = value(
+                self.property_taxes_and_insurance_cost
+            )
+            general_sales_and_admin += value(self.property_taxes_and_insurance_cost)
+
+        var_dict["Summation of Sales, Admin and Insurance Cost"] = value(
+            general_sales_and_admin
+        )
+
+        if hasattr(self, "other_fixed_costs"):
+            var_dict["Total Other Fixed Costs"] = value(self.other_fixed_costs)
+
+        if hasattr(self, "total_variable_OM_cost"):
+            var_dict["Total variable O&M cost full capacity [$MM/year]"] = value(
+                self.total_variable_OM_cost[0]
+            )
+            var_dict["Total variable O&M cost operating capacity [$MM/year]"] = value(
+                self.total_variable_OM_cost[0] * self.capacity_factor
+            )
+
+        if hasattr(self, "variable_operating_costs"):
+
+            if (0, "power") in self.variable_operating_costs.id_index_map().values():
+
+                var_dict["Total Variable Power Cost"] = value(
+                    self.variable_operating_costs[0, "power"]
+                )
+
+            if hasattr(self, "additional_waste_cost"):
+                var_dict["Total Variable Waste Cost"] = value(
+                    sum(
+                        self.variable_operating_costs[0, waste]
+                        for waste in self.waste_list
+                    )
+                    + self.additional_waste_cost
+                )
+
+            if hasattr(self, "additional_chemicals_cost"):
+                var_dict["Total Variable Chemicals Cost"] = value(
+                    sum(
+                        self.variable_operating_costs[0, chemical]
+                        for chemical in self.chemicals_list
+                    )
+                    + self.additional_chemicals_cost
+                )
+
+            if hasattr(self, "plant_overhead_cost"):
+                var_dict["General Plant Overhead Cost"] = value(self.plant_overhead_cost[0])
+
+                var_dict[
+                    "Total Plant Overhead Cost, Including Maintenance & Quality Assurance"
+                ] = value(
+                    self.plant_overhead_cost[0]
+                    + self.maintenance_and_material_cost
+                    + self.quality_assurance_and_control_cost
+                )
+
+        if hasattr(self, "land_cost"):
+            var_dict["Total Land Cost"] = value(self.land_cost)
+
+        if (
+            hasattr(self, "annualized_cost")
+            and hasattr(self, "total_fixed_OM_cost")
+            and hasattr(self, "total_variable_OM_cost")
+        ):
+            var_dict["Total Annualized Cost excluding all transport [$MM/year]"] = (
+                value(self.annualized_cost)
+                + value(self.total_fixed_OM_cost if self.config.has_fixed_OM else 0)
+                + self.capacity_factor
+                * value(self.total_variable_OM_cost[0] if self.config.has_variable_OM else 0)
+                + value(self.net_tax_owed if self.config.has_taxes_and_credits else 0)
+            )
+
+        if hasattr(self, "cost_of_production including all transport"):
+            var_dict["Cost of Production [$/unit product]"] = value(
+                self.cost_of_production * 1e6
+            )
+
+        if hasattr(self, "transport_cost_of_product"):
+            var_dict["Total Transport Cost Of Product [$MM]"] = value(
+                self.transport_cost_of_product
+            )
+
+        if hasattr(self, "cost_of_feedstock including all transport"):
+            var_dict["Cost of Feedstock [$/unit feedstock]"] = value(
+                self.cost_of_production * 1e6
+            )
+
+        if hasattr(self, "transport_cost_of_product"):
+            var_dict["Total Transport Cost Of Product [$MM]"] = value(
+                self.transport_cost_of_product
+            )
+
+        if hasattr(self, "cost_of_CO2_capture including all transport"):
+            var_dict["Cost of Capture [$/unit CO2]"] = value(self.cost_of_CO2_capture * 1e6)
+
+        if hasattr(self, "CO2_transport_cost"):
+            var_dict["Total Transport Cost of Captured CO2 [$MM]"] = value(
+                self.CO2_transport_cost
+            )
+
+        if hasattr(self, "total_sales_revenue"):
+            var_dict["Total Sales Revenue Cost"] = value(self.total_sales_revenue)
+
+        if hasattr(self, "npv"):
+            var_dict["Net Present Value [$MM]"] = value(self.npv)
+
+        if hasattr(self, "royalty_charge"):
+            var_dict["Royalty Charge"] = value(self.royalty_charge)
+
+        if hasattr(self, "mineral_depletion_charge"):
+            var_dict["Mineral Depletion Charge"] = value(self.mineral_depletion_charge)
+
+        if hasattr(self, "production_incentive_charge"):
+            var_dict["Production Incentive Charge"] = value(
+                self.production_incentive_charge
+            )
+
+        if hasattr(self, "income_tax"):
+            var_dict["Income Tax"] = value(self.income_tax)
+
+        if hasattr(self, "additional_tax_owed"):
+            var_dict["Additional Tax Owed"] = value(self.additional_tax_owed)
+
+        if hasattr(self, "additional_tax_credit"):
+            var_dict["Additional Tax Credit"] = value(self.additional_tax_credit)
+
+        if hasattr(self, "net_tax_owed"):
+            var_dict["Net Tax Owed"] = value(self.net_tax_owed)
+
+        self.report_dir = {}
+        self.report_dir["Value"] = {}
+        self.report_dir["pos"] = {}
+
+        count = 1
+        for k, v in var_dict.items():
+            self.report_dir["Value"][k] = value(v)
+            self.report_dir["pos"][k] = count
+            count += 1
+
+        df = DataFrame.from_dict(self.report_dir, orient="columns")
+        del df["pos"]
+        if export:
+            df.to_csv(f"{self.local_name}_report.csv")
+
+        print("\n" + "=" * 84)
+        print(f"{self.local_name} report")
+        print("-" * 84)
+        stdout.write(textwrap.indent(stream_table_dataframe_to_string(df), " " * 4))
+        print("\n" + "=" * 84 + "\n")

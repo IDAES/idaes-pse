@@ -16,6 +16,7 @@ __author__ = (
 )
 __version__ = "1.0.0"
 
+import os
 import re
 from pyomo.core.base.expression import ScalarExpression
 from pyomo.core.base.units_container import InconsistentUnitsError, UnitsError
@@ -48,7 +49,7 @@ from pyomo.environ import units as pyunits
     ],
 )
 @pytest.mark.component
-def test_PP_costing_with_all_methods(tech):
+def test_PP_costing_with_all_methods(tech, capsys):
     # Create a Concrete Model as the top level object
     m = pyo.ConcreteModel()
 
@@ -256,6 +257,65 @@ def test_PP_costing_with_all_methods(tech):
     results = solver.solve(m, tee=True)
     pyo.assert_optimal_termination(results)
     dt.assert_no_numerical_warnings()
+
+    if tech == 1:  # check power plant reports methods
+    # some values will be different for other PP tech values, don't need to check them all here
+
+        PowerPlantCostingData.display_total_plant_costs(m.fs.costing)
+        PowerPlantCostingData.display_bare_erected_costs(m.fs.costing)
+    
+        PowerPlantCostingData.report(m.fs.costing, export=True)
+    
+        # check exported file
+        assert os.path.exists(os.path.join(os.getcwd(), "costing_report.csv"))
+        # cleanup
+        os.remove(os.path.join(os.getcwd(), "costing_report.csv"))
+        assert not os.path.exists(os.path.join(os.getcwd(), "costing_report.csv"))
+
+        # check report
+        expected = {
+            "Value": {
+                "Plant Cost Units": "MUSD_2018",
+                "Total TPC [$MM]": 906.53,
+                "Capacity Factor": 0.85000,
+                "Estimated Operating Days Per Year": 310.46,
+                "Total Bare Erected Cost": 737.39,
+                "Total Overnight Cost [$MM]": 1135.2,
+                "Total Other Plant Costs": 1.0000e-12,
+                "Total As Spent Cost [$MM]": 1240.7,
+                "Total Annualized Capital Cost [$MM/year]": 87.719,
+                "Total fixed O&M cost [$MM/year]": 28.673,
+                "Total Annual Operating Labor Cost": 2.6324,
+                "Total Annual Technical Labor Cost": 1.0000e-12,
+                "Summation of Annual Labor Costs": 2.6324,
+                "Total Admin Support and Labor Cost": 2.1086,
+                "Total Property Taxes and Insurance Cost": 18.131,
+                "Summation of Sales, Admin and Insurance Cost": 20.239,
+                "Total Other Fixed Costs": 1.0000e-12,
+                "Total variable O&M cost full capacity [$MM/year]": 184.92,
+                "Total variable O&M cost operating capacity [$MM/year]": 157.19,
+                "Total Variable Waste Cost": 0.0000,
+                "Total Variable Chemicals Cost": 7.3050,
+                "Total Land Cost": 0.0000,
+                "Total Annualized Cost excluding all transport [$MM/year]": 273.58,
+                "Total Sales Revenue Cost": 1.7532e-08,
+                "Net Present Value [$MM]": -1486.6,
+                "Royalty Charge": 1.1396e-09,
+                "Mineral Depletion Charge": 2.2949e-09,
+                "Production Incentive Charge": 21.360,
+                "Income Tax": -78.343,
+                "Additional Tax Owed": 1.0000e-12,
+                "Additional Tax Credit": 1.0000e-12,
+                "Net Tax Owed": 2.6094e-11,
+                }
+            }
+    
+        assert m.fs.costing.report_dir["Value"].keys() == expected["Value"].keys()
+    
+        for k in m.fs.costing.report_dir["Value"]:
+            assert m.fs.costing.report_dir["Value"][k] == pytest.approx(
+                expected["Value"][k], rel=1e-4
+            ), f"Value mismatch for key {k}"
 
 
 @pytest.mark.unit
@@ -2424,11 +2484,6 @@ def test_power_plant_costing():
         pytest.approx(pyo.value(m.fs.AUSC.costing.bare_erected_cost["8.4"]), abs=1e-1)
         == 57265 / 1e3
     )
-
-    # test various report utilities - "smoke tests" only
-    m.fs.costing.report()
-    PowerPlantCostingData.display_total_plant_costs(m.fs.costing)
-    PowerPlantCostingData.display_bare_erected_costs(m.fs.costing)
 
 
 @pytest.mark.component
