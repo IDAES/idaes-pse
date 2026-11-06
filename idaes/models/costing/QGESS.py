@@ -1523,39 +1523,44 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         # TODO look into protected access issue with pint
 
         # levelized cost per unit production
-        # store valid units to check production, feedstock rates against
-        # pylint: disable-next=protected-access
-        ureg = pyunits.get_units(pyunits.kg)._pint_unit
-        # pylint: disable-next=protected-access
-        reg = ureg._REGISTRY
+        # # store valid units to check production, feedstock rates against
+        # # pylint: disable-next=protected-access
+        # ureg = pyunits.get_units(pyunits.kg)._pint_unit
+        # # pylint: disable-next=protected-access
+        # reg = ureg._REGISTRY
 
-        valid_units = {}
-        for name in reg._units.keys():  # pylint: disable=protected-access
-            try:
-                dim = (1 * reg.parse_units(name)).dimensionality
-                valid_units.setdefault(dim, []).append(name)
-            except UndefinedUnitError:
-                pass
+        # valid_units = {}
+        # for name in reg._units.keys():  # pylint: disable=protected-access
+        #     try:
+        #         dim = (1 * reg.parse_units(name)).dimensionality
+        #         valid_units.setdefault(dim, []).append(name)
+        #     except UndefinedUnitError:
+        #         pass
 
         if production_rate is not None:
 
-            # check that production rate units are valid_units/time
+            if pyunits.get_units(production_rate) == pyunits.MW:
+                # assume the rate was intentionally set as continuous power
+                # calculate MWh/year to use for levelized costs
+                production_rate = (
+                    pyunits.convert(
+                        production_rate * pyunits.year, to_units=pyunits.MWh
+                    )
+                    / pyunits.year
+                )
+                self.production_numerator = pyunits.MWh
+
+            # check that production rate units are on an annual basis
             # pylint: disable-next=protected-access
             dim = pyunits.get_units(production_rate)._pint_unit.dimensionality
-            # pylint: disable-next=protected-access
-            dim_numerator = pyunits.get_units(
-                production_rate * pyunits.s
-            )._pint_unit.dimensionality
 
             allowed_production_units = (
                 True  # check if production units are compatible with LCOP
             )
 
             if (
-                "[time]" not in dim
-                or dim["[time]"] >= 0
-                or dim_numerator not in valid_units
-            ):  # units not in form valid_units/time
+                "[time]" not in dim or dim["[time]"] >= 0
+            ):  # units not in form numerator/time
                 allowed_production_units = False
 
             if not allowed_production_units:
@@ -1564,12 +1569,25 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     f"with dimensions {dim}. Please ensure that the production rate has units of valid_units/time."
                 )
 
+            # pylint: disable-next=protected-access
+            self.production_numerator = pyunits.get_units(
+                production_rate
+            )._pint_unit._REGISTRY.UnitsContainer(
+                {
+                    u: e
+                    for u, e in pyunits.get_units(
+                        production_rate
+                    )._pint_unit._units.items()
+                    if e >= 0
+                }
+            )
+
             self.additional_cost_of_production = Var(
                 initialize=0,
                 doc="Additional cost to be added to the LCOP calculations; use 70.9 for NGCC baseline "
-                + "report and 43.3 for NGCC without carbon capture, both for production rate in MWh/[time]",
+                + "report and 43.3 for NGCC without carbon capture, both for production rate in MWh/[production]",
                 units=self.base_currency
-                / pyunits.get_units(production_rate * pyunits.year),
+                / getattr(pyunits, str(self.production_numerator)),
             )
             self.additional_cost_of_production.fix()
 
@@ -1600,7 +1618,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         * pyunits.year
                         / (production_rate * pyunits.year * self.capacity_factor),
                         to_units=self.base_currency
-                        / pyunits.get_units(production_rate * pyunits.year),
+                        / getattr(pyunits, str(self.production_numerator)),
                     )
                     + self.additional_cost_of_production
                 )
@@ -1613,20 +1631,14 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             # check that feedstock rate units are valid_units/time
             # pylint: disable-next=protected-access
             dim = pyunits.get_units(feedstock_rate)._pint_unit.dimensionality
-            # pylint: disable-next=protected-access
-            dim_numerator = pyunits.get_units(
-                feedstock_rate * pyunits.s
-            )._pint_unit.dimensionality
 
             allowed_feedstock_units = (
-                True  # check if feedstock units are compatible with LCOF
+                True  # check if feedstock units are compatible with LCOP
             )
 
             if (
-                "[time]" not in dim
-                or dim["[time]"] >= 0
-                or dim_numerator not in valid_units
-            ):  # units not in form valid_units/time
+                "[time]" not in dim or dim["[time]"] >= 0
+            ):  # units not in form numerator/time
                 allowed_feedstock_units = False
 
             if not allowed_feedstock_units:
@@ -1635,11 +1647,24 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     f"with dimensions {dim}. Please ensure that the feedstock rate has units of valid_units/time."
                 )
 
+            # pylint: disable-next=protected-access
+            self.feedstock_numerator = pyunits.get_units(
+                feedstock_rate
+            )._pint_unit._REGISTRY.UnitsContainer(
+                {
+                    u: e
+                    for u, e in pyunits.get_units(
+                        feedstock_rate
+                    )._pint_unit._units.items()
+                    if e >= 0
+                }
+            )
+
             self.additional_cost_of_feedstock = Var(
                 initialize=0,
                 doc="Additional cost to be added to the LCOF calculations",
                 units=self.base_currency
-                / pyunits.get_units(feedstock_rate * pyunits.year),
+                / getattr(pyunits, str(self.feedstock_numerator)),
             )
             self.additional_cost_of_feedstock.fix()
 
@@ -1670,7 +1695,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         * pyunits.year
                         / (feedstock_rate * pyunits.year * self.capacity_factor),
                         to_units=self.base_currency
-                        / pyunits.get_units(feedstock_rate * pyunits.year),
+                        / getattr(pyunits, str(self.feedstock_numerator)),
                     )
                     + self.additional_cost_of_feedstock
                 )
@@ -1683,20 +1708,14 @@ class QGESSCostingData(FlowsheetCostingBlockData):
             # check that CO2 capture rate units are valid_units/time
             # pylint: disable-next=protected-access
             dim = pyunits.get_units(CO2_capture_rate)._pint_unit.dimensionality
-            # pylint: disable-next=protected-access
-            dim_numerator = pyunits.get_units(
-                CO2_capture_rate * pyunits.s
-            )._pint_unit.dimensionality
 
             allowed_CO2_capture_units = (
-                True  # check if CO2 capture units are compatible with LCOC
+                True  # check if CO2 capture units are compatible with LCOP
             )
 
             if (
-                "[time]" not in dim
-                or dim["[time]"] >= 0
-                or dim_numerator not in valid_units
-            ):  # units not in form valid_units/time
+                "[time]" not in dim or dim["[time]"] >= 0
+            ):  # units not in form numerator/time
                 allowed_CO2_capture_units = False
 
             if not allowed_CO2_capture_units:
@@ -1705,11 +1724,24 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                     f"with dimensions {dim}. Please ensure that the CO2 capture rate has units of valid_units/time."
                 )
 
+            # pylint: disable-next=protected-access
+            self.CO2_capture_numerator = pyunits.get_units(
+                CO2_capture_rate
+            )._pint_unit._REGISTRY.UnitsContainer(
+                {
+                    u: e
+                    for u, e in pyunits.get_units(
+                        CO2_capture_rate
+                    )._pint_unit._units.items()
+                    if e >= 0
+                }
+            )
+
             self.additional_cost_of_CO2_capture = Var(
                 initialize=0,
                 doc="Additional cost to be added to the LCOC calculations",
                 units=self.base_currency
-                / pyunits.get_units(CO2_capture_rate * pyunits.year),
+                / getattr(pyunits, str(self.CO2_capture_numerator)),
             )
             self.additional_cost_of_CO2_capture.fix()
 
@@ -1740,7 +1772,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                         * pyunits.year
                         / (CO2_capture_rate * pyunits.year * self.capacity_factor),
                         to_units=self.base_currency
-                        / pyunits.get_units(CO2_capture_rate * pyunits.year),
+                        / getattr(pyunits, str(self.CO2_capture_numerator)),
                     )
                     + self.additional_cost_of_CO2_capture
                 )
@@ -4332,9 +4364,19 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 + value(self.net_tax_owed if self.config.has_taxes_and_credits else 0)
             )
 
-        if hasattr(self, "cost_of_production including all transport"):
-            var_dict["Cost of Production [$/unit product]"] = value(
-                self.cost_of_production * 1e6
+        if hasattr(self, "cost_of_production"):
+            var_dict[
+                "Cost of Production [$/" + str(self.production_numerator) + "]"
+            ] = value(self.cost_of_production)
+
+        if hasattr(self, "transport_cost_of_product"):
+            var_dict["Total Transport Cost Of Product [$MM]"] = value(
+                self.transport_cost_of_product
+            )
+
+        if hasattr(self, "cost_of_feedstock"):
+            var_dict["Cost of Feedstock [$/" + str(self.feedstock_numerator) + "]"] = (
+                value(self.cost_of_feedstock)
             )
 
         if hasattr(self, "transport_cost_of_product"):
@@ -4342,19 +4384,9 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 self.transport_cost_of_product
             )
 
-        if hasattr(self, "cost_of_feedstock including all transport"):
-            var_dict["Cost of Feedstock [$/unit feedstock]"] = value(
-                self.cost_of_production * 1e6
-            )
-
-        if hasattr(self, "transport_cost_of_product"):
-            var_dict["Total Transport Cost Of Product [$MM]"] = value(
-                self.transport_cost_of_product
-            )
-
-        if hasattr(self, "cost_of_CO2_capture including all transport"):
-            var_dict["Cost of Capture [$/unit CO2]"] = value(
-                self.cost_of_CO2_capture * 1e6
+        if hasattr(self, "cost_of_CO2_capture"):
+            var_dict["Cost of Capture [$/" + str(self.CO2_capture_numerator) + "]"] = (
+                value(self.cost_of_CO2_capture)
             )
 
         if hasattr(self, "CO2_transport_cost"):

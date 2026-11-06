@@ -298,6 +298,8 @@ def test_PP_costing_with_all_methods(tech, capsys):
                 "Total Variable Chemicals Cost": 7.3050,
                 "Total Land Cost": 0.0000,
                 "Total Annualized Cost excluding all transport [$MM/year]": 273.58,
+                "Cost of Production [$/megawatt_hour]": 56.487,
+                "Cost of Feedstock [$/megabritish_thermal_unit]": 8.4992,
                 "Total Sales Revenue Cost": 1.7532e-08,
                 "Net Present Value [$MM]": -1486.6,
                 "Royalty Charge": 1.1396e-09,
