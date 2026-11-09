@@ -17,6 +17,7 @@ pytest
 coverage
 pytest-cov
 # @lbianchi-lbl: both pylint and astroid should be tightly pinned; see .pylint/idaes_transform.py for more info
+# NOTE: astroid must stay <4 while sphinx-autodoc2 (docs) requires astroid<4; pylint>=4 requires astroid>=4.3.4
 pylint==3.3.9
 astroid==3.3.11
 black
