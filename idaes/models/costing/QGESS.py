@@ -38,7 +38,6 @@ import textwrap
 from sys import stdout
 
 from pandas import DataFrame
-from pint.errors import UndefinedUnitError
 from pyomo.common.config import ConfigValue, ListOf
 from pyomo.core.base.units_container import InconsistentUnitsError, UnitsError
 from pyomo.environ import Expression, Param, Var, log10
@@ -1538,8 +1537,10 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 self.production_numerator = pyunits.MWh
 
             # check that production rate units are on an annual basis
-            # pylint: disable-next=protected-access
-            dim = pyunits.get_units(production_rate)._pint_unit.dimensionality
+            pint_units = pyunits.get_units(
+                production_rate
+            )._pint_unit  # pylint: disable=protected-access
+            dim = pint_units.dimensionality
 
             allowed_production_units = (
                 True  # check if production units are compatible with LCOP
@@ -1557,14 +1558,10 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 )
 
             # pylint: disable-next=protected-access
-            self.production_numerator = pyunits.get_units(
-                production_rate
-            )._pint_unit._REGISTRY.UnitsContainer(
+            self.production_numerator = pint_units._REGISTRY.UnitsContainer(
                 {
                     u: e
-                    for u, e in pyunits.get_units(
-                        production_rate
-                    )._pint_unit._units.items()
+                    for u, e in pint_units._units.items()  # pylint: disable=protected-access
                     if e >= 0
                 }
             )
@@ -1627,8 +1624,10 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
         if feedstock_rate is not None:
 
-            # pylint: disable-next=protected-access
-            dim = pyunits.get_units(feedstock_rate)._pint_unit.dimensionality
+            pint_units = pyunits.get_units(
+                feedstock_rate
+            )._pint_unit  # pylint: disable=protected-access
+            dim = pint_units.dimensionality
 
             allowed_feedstock_units = (
                 True  # check if feedstock units are compatible with LCOP
@@ -1646,14 +1645,10 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 )
 
             # pylint: disable-next=protected-access
-            self.feedstock_numerator = pyunits.get_units(
-                feedstock_rate
-            )._pint_unit._REGISTRY.UnitsContainer(
+            self.feedstock_numerator = pint_units._REGISTRY.UnitsContainer(
                 {
                     u: e
-                    for u, e in pyunits.get_units(
-                        feedstock_rate
-                    )._pint_unit._units.items()
+                    for u, e in pint_units._units.items()  # pylint: disable=protected-access
                     if e >= 0
                 }
             )
@@ -1715,8 +1710,10 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
         if CO2_capture_rate is not None:
 
-            # pylint: disable-next=protected-access
-            dim = pyunits.get_units(CO2_capture_rate)._pint_unit.dimensionality
+            pint_units = pyunits.get_units(
+                CO2_capture_rate
+            )._pint_unit  # pylint: disable=protected-access
+            dim = pint_units.dimensionality
 
             allowed_CO2_capture_units = (
                 True  # check if CO2 capture units are compatible with LCOP
@@ -1734,14 +1731,10 @@ class QGESSCostingData(FlowsheetCostingBlockData):
                 )
 
             # pylint: disable-next=protected-access
-            self.CO2_capture_numerator = pyunits.get_units(
-                CO2_capture_rate
-            )._pint_unit._REGISTRY.UnitsContainer(
+            self.CO2_capture_numerator = pint_units._REGISTRY.UnitsContainer(
                 {
                     u: e
-                    for u, e in pyunits.get_units(
-                        CO2_capture_rate
-                    )._pint_unit._units.items()
+                    for u, e in pint_units._units.items()  # pylint: disable=protected-access
                     if e >= 0
                 }
             )
