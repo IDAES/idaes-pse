@@ -1538,9 +1538,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
 
             # check that production rate units are on an annual basis
             # pylint: disable-next=protected-access
-            pint_units = pyunits.get_units(
-                production_rate
-            )._pint_unit
+            pint_units = pyunits.get_units(production_rate)._pint_unit
             dim = pint_units.dimensionality
 
             allowed_production_units = (
@@ -1626,9 +1624,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         if feedstock_rate is not None:
 
             # pylint: disable-next=protected-access
-            pint_units = pyunits.get_units(
-                feedstock_rate
-            )._pint_unit
+            pint_units = pyunits.get_units(feedstock_rate)._pint_unit
             dim = pint_units.dimensionality
 
             allowed_feedstock_units = (
@@ -1713,9 +1709,7 @@ class QGESSCostingData(FlowsheetCostingBlockData):
         if CO2_capture_rate is not None:
 
             # pylint: disable-next=protected-access
-            pint_units = pyunits.get_units(
-                CO2_capture_rate
-            )._pint_unit
+            pint_units = pyunits.get_units(CO2_capture_rate)._pint_unit
             dim = pint_units.dimensionality
 
             allowed_CO2_capture_units = (
