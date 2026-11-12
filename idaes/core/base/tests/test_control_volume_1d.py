@@ -2966,6 +2966,39 @@ def test_add_total_element_balances_lineraly_dependent(caplog):
     assert_units_consistent(m)
 
 
+@pytest.mark.unit
+def test_add_total_element_balances_phase_component_set():
+    m = ConcreteModel()
+    m.fs = Flowsheet(dynamic=False)
+    m.fs.pp = PhysicalParameterTestBlock()
+
+    # c2 does not exist in p2
+    m.fs.pp.p2.config.component_list = ["c1"]
+
+    m.fs.cv = ControlVolume1DBlock(
+        property_package=m.fs.pp,
+        transformation_method="dae.finite_difference",
+        transformation_scheme="BACKWARD",
+        finite_elements=10,
+    )
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+
+    m.fs.cv.add_total_element_balances()
+
+    assert ("p2", "c2") not in m.fs.cv.properties.phase_component_set
+
+    # All material flow terms are 1 mol/s, so the elemental flow is the sum
+    # of the element counts over the phase-component pairs that exist
+    comp = m.fs.pp.element_comp
+    for e in m.fs.pp.element_list:
+        flow_sum = m.fs.cv.elemental_flow_constraint[0, 0, e].expr.args[1]
+        assert value(flow_sum) == 2 * comp["c1"][e] + comp["c2"][e]
+
+    assert_units_consistent(m)
+
+
 # -----------------------------------------------------------------------------
 # Test unsupported material balance types
 @pytest.mark.unit
