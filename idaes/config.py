@@ -658,6 +658,7 @@ class _WarningToExceptionFilter(logging.Filter):
     def filter(record):
         if record.levelno >= logging.WARNING:
             raise RuntimeError(f"Logged Warning converted to exception: {record.msg}")
+        return True
 
 
 class _DeprecationToExceptionFilter(logging.Filter):
@@ -670,6 +671,7 @@ class _DeprecationToExceptionFilter(logging.Filter):
                 raise RuntimeError(
                     f"Logged deprecation converted to exception: {record.msg}"
                 )
+        return True
 
 
 def reconfig(cfg):

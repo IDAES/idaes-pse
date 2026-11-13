@@ -86,6 +86,18 @@ def test_deprecate_to_except():
 
 
 @pytest.mark.unit
+def test_warning_to_except_passes_other_records(caplog):
+    with idaes.temporary_config_ctx():
+        _log = logging.getLogger("idaes")
+        idaes.cfg.warning_to_exception = True
+        idaes.cfg.deprecation_to_exception = True
+        idaes.reconfig()
+        with caplog.at_level(logging.INFO, logger="idaes"):
+            _log.info("Just letting you know.")
+    assert "Just letting you know." in caplog.text
+
+
+@pytest.mark.unit
 def test_get_data_directory():
     # this tests the function that give that data, binary and testing directories
     # it doesn't actually change the idaes configuration.
