@@ -514,3 +514,32 @@ def test_warn_if_libraries_exist(caplog, fname):
         dlb._warn_if_libraries_exist(test_release_4, bin_directory=bin_dir)
 
     assert "Existing pre-4.x extension files" in caplog.text
+
+
+@pytest.mark.unit
+def test_warn_if_libraries_exist_default_bin_directory():
+    # With no bin_directory given, the check falls back to idaes.bin_directory.
+    # Whether or not old files are present there, this should not raise.
+    dlb._warn_if_libraries_exist(test_release_4)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "extra, release, platform, expected",
+    [
+        # Unknown extras are dropped
+        (("not_a_real_package",), test_release_3, None, ()),
+        # Supported extra on a supported platform is kept
+        (("petsc",), test_release_3, "el8-x86_64", ("petsc",)),
+        # Supported extra with no platform filter is kept
+        (("petsc",), test_release_3, None, ("petsc",)),
+        # Supported extra on a platform it is not built for is dropped
+        (("petsc",), test_release_3, "not-a-platform", ()),
+        # Mixed: only the supported extra survives
+        (("not_a_real_package", "petsc"), test_release_3, None, ("petsc",)),
+        # PETSc is part of the base package in 4.x, so it is dropped as an extra
+        (("petsc",), test_release_4, None, ()),
+    ],
+)
+def test_normalize_extras(extra, release, platform, expected):
+    assert dlb._normalize_extras(extra, release, platform=platform) == expected
