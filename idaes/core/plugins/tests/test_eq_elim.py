@@ -81,6 +81,19 @@ def test_transform(model):
 
 
 @pytest.mark.unit
+def test_transform_not_reversible(model):
+    m = model
+    elim = pyo.TransformationFactory("simple_equality_eliminator")
+    elim.apply_to(m, reversible=False)
+    assert degrees_of_freedom(m) == 0
+
+    assert len([c for c in m.component_data_objects(pyo.Constraint, active=True)]) == 1
+    assert m.x[1].fixed
+    assert m.x[2].fixed
+    assert m.y.fixed
+
+
+@pytest.mark.unit
 def test_revert_constraint():
     # test that multiple replaced constraints are reverted right
     m = pyo.ConcreteModel()
