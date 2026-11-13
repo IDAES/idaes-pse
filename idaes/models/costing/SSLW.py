@@ -912,17 +912,17 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         SSLWCostingData.cost_vessel(
             blk,
             vertical=True,
-            material_type=VesselMaterial.CarbonSteel,
-            shell_thickness=1.25 * pyo.units.inch,
-            weight_limit=1,
-            aspect_ratio_range=1,
-            include_platforms_ladders=True,
-            vessel_diameter=None,
-            vessel_length=None,
-            number_of_units=1,
-            number_of_trays=None,
-            tray_material=TrayMaterial.CarbonSteel,
-            tray_type=TrayType.Sieve,
+            material_type=material_type,
+            shell_thickness=shell_thickness,
+            weight_limit=weight_limit,
+            aspect_ratio_range=aspect_ratio_range,
+            include_platforms_ladders=include_platforms_ladders,
+            vessel_diameter=vessel_diameter,
+            vessel_length=vessel_length,
+            number_of_units=number_of_units,
+            number_of_trays=number_of_trays,
+            tray_material=tray_material,
+            tray_type=tray_type,
         )
 
     def cost_horizontal_vessel(
@@ -956,13 +956,13 @@ class SSLWCostingData(FlowsheetCostingBlockData):
         SSLWCostingData.cost_vessel(
             blk,
             vertical=False,
-            material_type=VesselMaterial.CarbonSteel,
-            shell_thickness=1.25 * pyo.units.inch,
+            material_type=material_type,
+            shell_thickness=shell_thickness,
             weight_limit=1,
-            include_platforms_ladders=True,
-            vessel_diameter=None,
-            vessel_length=None,
-            number_of_units=1,
+            include_platforms_ladders=include_platforms_ladders,
+            vessel_diameter=vessel_diameter,
+            vessel_length=vessel_length,
+            number_of_units=number_of_units,
         )
 
     def cost_fired_heater(
