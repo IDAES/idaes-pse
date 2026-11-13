@@ -87,9 +87,11 @@ variables.
 Installing PETSc
 ~~~~~~~~~~~~~~~~
 
-The PETSc solver is an extra binary package, and not installed by default.  If
-you are using a supported platform, you can use the command
-``idaes get-extensions --extra petsc`` to install it.
+In IDAES extensions 4.x, the PETSc solver is included in the main binary
+package and is installed by ``idaes get-extensions``. In 3.x, it is an extra
+binary package and not installed by default; if you are using a supported
+platform, you can use the command ``idaes get-extensions --extra petsc`` to
+install it.
 
 Registered Solvers
 ~~~~~~~~~~~~~~~~~~

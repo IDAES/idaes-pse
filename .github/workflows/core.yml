@@ -97,6 +97,9 @@ jobs:
             runner-image: ubuntu-24.04
           - os: win64
             runner-image: windows-2022
+          - os: linux-2604
+            runner-image: ubuntu-26.04
+            python-version: "3.13"
           - python-version: "3.12"
             # only generate coverage report for a single python version in the matrix
             # to avoid overloading Codecov
@@ -119,10 +122,11 @@ jobs:
         uses: ./.github/actions/setup-idaes
         with:
           install-target: -r requirements-dev.txt
+          version: '4.0.0rc3'
       - name: Add pytest CLI options for coverage
         if: matrix.cov-report
         run: |
-          echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov --cov-report=xml" >> "$GITHUB_ENV"
+          echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov=idaes --cov-report=xml" >> "$GITHUB_ENV"
       - name: Install pandoc
         run: conda install -c conda-forge pandoc
       - name: Run pytest (not integration)

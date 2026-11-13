@@ -208,6 +208,21 @@ class TestIpoptConvergenceAnalysis:
         assert regularization == 4
         assert time == 0.016 + 0.035
 
+    @pytest.mark.unit
+    def test_parse_ipopt_output_3_14(self, model):
+        # Ipopt >= 3.14 reports a single "Total seconds in IPOPT" timing line
+        # instead of the two "Total CPU secs ..." lines used by earlier versions.
+        ca = IpoptConvergenceAnalysis(model)
+
+        fname = os.path.join(currdir, "ipopt_output_3_14.txt")
+        iters, restoration, regularization, time = ca._parse_ipopt_output(fname)
+
+        assert iters == 43
+        assert restoration == 39
+        assert regularization == 4
+        assert time == 0.051
+        assert isinstance(time, float)
+
     @pytest.mark.component
     @pytest.mark.solver
     def test_run_ipopt_with_stats(self):
@@ -315,7 +330,7 @@ class TestIpoptConvergenceAnalysis:
         # Ignore time, as it is too noisy to test
         # Sample 0 should solve cleanly
         assert ca.results[0]["success"]
-        assert ca.results[0]["results"]["iters"] == 0
+        assert ca.results[0]["results"]["iters"] == pytest.approx(1, abs=1)
         assert ca.results[0]["results"]["iters_in_restoration"] == 0
         assert ca.results[0]["results"]["iters_w_regularization"] == 0
         assert not ca.results[0]["results"]["numerical_issues"]

@@ -83,7 +83,7 @@ are not necessarily realistic.
       m.fs.soec.oxygen_side_outlet_temperature.fix(1023)
       m.fs.soec.water_utilization.fix(0.7)
       iscale.calculate_scaling_factors(m)
-      m.fs.soec.initialize(optarg={"max_iter":30})
+      m.fs.soec.initialize(optarg={"max_iter":30, "bound_relax_factor": 0})
       return m
 
   # create a flowsheet with the SOEC model

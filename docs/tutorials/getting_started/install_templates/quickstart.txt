@@ -3,7 +3,9 @@ conda create --yes --name my-idaes-env -c conda-forge python=3.10 idaes-pse
 conda activate my-idaes-env
 
 # Install IDAES Extensions
-idaes get-extensions --extra petsc
+# (extensions 4.x include PETSc; for 3.x, which older idaes-pse versions
+#  install, use: idaes get-extensions --extra petsc)
+idaes get-extensions
 
 # Install and browse IDAES Examples (optional)
 pip install idaes-examples

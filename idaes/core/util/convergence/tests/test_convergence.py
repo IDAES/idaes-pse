@@ -278,6 +278,20 @@ def test_parse_ipopt_output():
 
 
 @pytest.mark.unit
+def test_parse_ipopt_output_3_14():
+    # Ipopt >= 3.14 reports a single "Total seconds in IPOPT" timing line
+    # instead of the two "Total CPU secs ..." lines used by earlier versions.
+    fname = os.path.join(currdir, "ipopt_output_3_14.txt")
+    iters, restoration, regularization, time = cb._parse_ipopt_output(fname)
+
+    assert iters == 43
+    assert restoration == 39
+    assert regularization == 4
+    assert time == 0.051
+    assert isinstance(time, float)
+
+
+@pytest.mark.unit
 def test_compare_convergence_runs_all_same():
     run1 = [
         OrderedDict(

@@ -137,6 +137,9 @@ jobs:
             runner-image: ubuntu-24.04
           - os: win64
             runner-image: windows-2022
+          - os: linux-2604
+            runner-image: ubuntu-26.04
+            python-version: "3.13"
     steps:
       - uses: actions/checkout@v6
         with:
@@ -154,6 +157,7 @@ jobs:
         uses: ./.github/actions/setup-idaes
         with:
           install-target: -r requirements-dev.txt
+          version: '4.0.0rc3'
       - name: Run pytest (integration)
         run: pytest --pyargs idaes -m integration
 
@@ -196,6 +200,7 @@ jobs:
         uses: ./.github/actions/setup-idaes
         with:
           install-target: -r requirements-dev.txt
+          version: '4.0.0rc3'
       - name: Fetch and run examples
         uses: ./.github/actions/run-examples
         with:
@@ -254,6 +259,7 @@ jobs:
         uses: ./.github/actions/setup-idaes
         with:
           install-target: ${{ matrix.pip-install-target }}
+          version: '4.0.0rc3'
       - name: Remove dependencies installable with pip but not with conda
         # NOTE some dependencies that are installed by default with pip are not available through conda
         # so they're not installed if IDAES is installed with `conda -c conda-forge idaes-pse`

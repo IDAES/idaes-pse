@@ -17,9 +17,10 @@ import os
 import tarfile
 import tempfile
 import shutil
-from platform import machine
+import sys
 
 from pyomo.common.download import FileDownloader
+from pyomo.common.tempfiles import TempfileManager
 
 import idaes
 import idaes.commands.util.download_bin as dlb
@@ -27,6 +28,8 @@ import idaes.logger as idaeslog
 import idaes.config as idaes_config
 
 _log = idaeslog.getLogger(__name__)
+test_release_3 = "3.4.2"
+test_release_4 = "4.0.1"
 
 
 def _del_data_file(path):
@@ -68,16 +71,51 @@ def test_get_arch_and_platform_auto():
 
 
 @pytest.mark.unit
-def test_get_release_platform_mapping():
-    mach = idaes.config.canonical_arch(machine())
-    for p, m in idaes_config.binary_distro_map.items():
-        if mach == "aarch64" and m == "el7":
+@pytest.mark.parametrize("release", [test_release_3, test_release_4])
+@pytest.mark.parametrize("mach", ["x86_64", "aarch64"])
+def test_get_release_platform_mapping(release, mach):
+    for p in idaes_config.binary_distro_map:
+        try:
+            output = dlb._get_release_platform(p, release, mach)
+        except dlb.UnsupportedPlatformError:
             continue
-        if mach == "x86_64" and m == "darwin":
-            continue
-        output = dlb._get_release_platform(p)
-        assert output.startswith(m)
-        assert output in idaes_config.base_platforms
+        assert output in idaes_config.release_platforms(release)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "release, distro, mach, expected",
+    [
+        (test_release_4, "darwin", "arm64", "darwin-arm64"),
+        (test_release_3, "darwin", "arm64", "darwin-aarch64"),
+        (test_release_3, "darwin", "x86_64", "darwin-x86_64"),
+        (test_release_4, "ubuntu2604", "x86_64", "ubuntu2604-x86_64"),
+        (test_release_4, "kubuntu2604", "aarch64", "ubuntu2604-aarch64"),
+        (test_release_3, "ubuntu2604", "x86_64", "ubuntu2204-x86_64"),
+        (test_release_4, "el9", "aarch64", "el9-aarch64"),
+        (test_release_3, "el9", "aarch64", "ubuntu2204-aarch64"),
+        (test_release_4, "debian13", "x86_64", "ubuntu2404-x86_64"),
+        (test_release_4, "windows", "AMD64", "windows-x86_64"),
+    ],
+)
+def test_get_release_platform(release, distro, mach, expected):
+    assert dlb._get_release_platform(distro, release, mach) == expected
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "distro, mach",
+    [("el7", "x86_64"), ("ubuntu1804", "x86_64"), ("ubuntu1804", "aarch64")],
+)
+def test_get_release_platform_unsupported_v4(distro, mach):
+    with pytest.raises(dlb.UnsupportedPlatformError, match="Unsupported platform"):
+        dlb._get_release_platform(distro, test_release_4, mach)
+
+
+@pytest.mark.unit
+def test_get_release_platform_macos_intel_v4():
+    with pytest.raises(dlb.UnsupportedPlatformError, match="3.4.2"):
+        dlb._get_release_platform("darwin", test_release_4, "x86_64")
 
 
 @pytest.mark.unit
@@ -111,7 +149,7 @@ def test_get_release_url_none():
 def test_get_checksum_paths():
     cto, cfrom = dlb._get_checksum_paths("foo", "bar")
 
-    assert cto == os.path.join("foo", f"sha256sum_bar.txt")
+    assert cto == os.path.join("foo", "sha256sum_bar.txt")
     assert (
         cfrom
         == "https://raw.githubusercontent.com/IDAES/idaes-ext/main/releases/sha256sum_bar.txt"
@@ -165,17 +203,38 @@ def test_read_checksum():
 @pytest.mark.unit
 def test_create_download_package(platform):
     pname, ptar, ftar, furl = dlb._create_download_package(
-        platform, "foo", "bar", [], False, False
+        test_release_3, platform, "foo", "bar", [], False, False
     )
 
     assert len(ptar) == 2
     assert (os.path.join("foo", f"idaes-lib-{platform}.tar.gz")) in ptar
     assert (os.path.join("foo", f"idaes-solvers-{platform}.tar.gz")) in ptar
 
-    assert ftar == [f"idaes-lib-{platform}.tar.gz", f"idaes-solvers-{platform}.tar.gz"]
+    assert ftar == [f"idaes-solvers-{platform}.tar.gz", f"idaes-lib-{platform}.tar.gz"]
     assert furl == [
-        f"bar/idaes-lib-{platform}.tar.gz",
         f"bar/idaes-solvers-{platform}.tar.gz",
+        f"bar/idaes-lib-{platform}.tar.gz",
+    ]
+
+
+@pytest.mark.parametrize("platform", idaes_config.base_platforms)
+@pytest.mark.unit
+def test_create_download_package_v4(platform):
+    pname, ptar, ftar, furl = dlb._create_download_package(
+        test_release_4, platform, "foo", "bar", [], False, False
+    )
+
+    assert len(ptar) == 2
+    assert os.path.join("foo", f"idaes-functions-{platform}.tar.gz") in ptar
+    assert os.path.join("foo", f"idaes-solvers-{platform}.tar.gz") in ptar
+
+    assert ftar == [
+        f"idaes-solvers-{platform}.tar.gz",
+        f"idaes-functions-{platform}.tar.gz",
+    ]
+    assert furl == [
+        f"bar/idaes-solvers-{platform}.tar.gz",
+        f"bar/idaes-functions-{platform}.tar.gz",
     ]
 
 
@@ -183,7 +242,7 @@ def test_create_download_package(platform):
 @pytest.mark.unit
 def test_create_download_package_extras(platform):
     pname, ptar, ftar, furl = dlb._create_download_package(
-        platform, "foo", "bar", ["petsc", "baz"], False, False
+        test_release_3, platform, "foo", "bar", ["petsc", "baz"], False, False
     )
 
     # baz should be ignored as an unknown extra
@@ -193,14 +252,14 @@ def test_create_download_package_extras(platform):
     assert (os.path.join("foo", f"idaes-petsc-{platform}.tar.gz")) in ptar
 
     assert ftar == [
-        f"idaes-petsc-{platform}.tar.gz",
-        f"idaes-lib-{platform}.tar.gz",
         f"idaes-solvers-{platform}.tar.gz",
+        f"idaes-lib-{platform}.tar.gz",
+        f"idaes-petsc-{platform}.tar.gz",
     ]
     assert furl == [
-        f"bar/idaes-petsc-{platform}.tar.gz",
-        f"bar/idaes-lib-{platform}.tar.gz",
         f"bar/idaes-solvers-{platform}.tar.gz",
+        f"bar/idaes-lib-{platform}.tar.gz",
+        f"bar/idaes-petsc-{platform}.tar.gz",
     ]
 
 
@@ -208,7 +267,7 @@ def test_create_download_package_extras(platform):
 @pytest.mark.unit
 def test_create_download_package_extras_only(platform):
     pname, ptar, ftar, furl = dlb._create_download_package(
-        platform, "foo", "bar", ["petsc", "baz"], True, False
+        test_release_3, platform, "foo", "bar", ["petsc", "baz"], True, False
     )
 
     # baz should be ignored as an unknown extra
@@ -221,9 +280,24 @@ def test_create_download_package_extras_only(platform):
 
 @pytest.mark.parametrize("platform", idaes_config.base_platforms)
 @pytest.mark.unit
+def test_create_download_package_v4_extras_ignored(platform):
+    pname, ptar, ftar, furl = dlb._create_download_package(
+        test_release_4, platform, "foo", "bar", ["petsc", "baz"], False, False
+    )
+
+    assert len(ptar) == 2
+    assert os.path.join("foo", f"idaes-functions-{platform}.tar.gz") in ptar
+    assert os.path.join("foo", f"idaes-solvers-{platform}.tar.gz") in ptar
+
+    assert all("petsc" not in x for x in ftar)
+    assert all("baz" not in x for x in ftar)
+
+
+@pytest.mark.parametrize("platform", idaes_config.base_platforms)
+@pytest.mark.unit
 def test_create_download_package_library_only(platform):
     pname, ptar, ftar, furl = dlb._create_download_package(
-        platform, "foo", "bar", [], False, True
+        test_release_3, platform, "foo", "bar", [], False, True
     )
 
     assert len(ptar) == 1
@@ -231,6 +305,19 @@ def test_create_download_package_library_only(platform):
 
     assert ftar == [f"idaes-lib-{platform}.tar.gz"]
     assert furl == [f"bar/idaes-lib-{platform}.tar.gz"]
+
+
+@pytest.mark.parametrize("platform", idaes_config.base_platforms)
+@pytest.mark.unit
+def test_create_download_package_v4_library_only(platform):
+    pname, ptar, ftar, furl = dlb._create_download_package(
+        test_release_4, platform, "foo", "bar", [], False, True
+    )
+
+    assert len(ptar) == 1
+    assert os.path.join("foo", f"idaes-functions-{platform}.tar.gz") in ptar
+    assert ftar == [f"idaes-functions-{platform}.tar.gz"]
+    assert furl == [f"bar/idaes-functions-{platform}.tar.gz"]
 
 
 @pytest.mark.unit
@@ -249,6 +336,47 @@ def test_download_package():
     assert os.path.getsize(target) == 1
 
     shutil.rmtree(tmpdir)
+
+
+@pytest.mark.unit
+def test_download_binaries_no_download_v3_install_path():
+    d = dlb.download_binaries(
+        release=test_release_3,
+        no_download=True,
+        nochecksum=True,
+    )
+    for url, path in d.items():
+        if url in ("release", "platform"):
+            continue
+        assert path.startswith(idaes.bin_directory)
+
+
+@pytest.mark.unit
+def test_download_binaries_no_download_v4_install_path():
+    d = dlb.download_binaries(
+        release=test_release_4,
+        no_download=True,
+        nochecksum=True,
+    )
+    for url, path in d.items():
+        if url in ("release", "platform"):
+            continue
+        assert path.startswith(idaes.data_directory)
+
+
+@pytest.mark.unit
+def test_download_binaries_no_download_url_only():
+    mirror = "https://example.com/mirror"
+    d = dlb.download_binaries(
+        url=mirror,
+        no_download=True,
+        nochecksum=True,
+    )
+    assert d["release"] == idaes.config.default_binary_release
+    for url, path in d.items():
+        if url in ("release", "platform"):
+            continue
+        assert url.startswith(mirror)
 
 
 @pytest.mark.unit
@@ -315,3 +443,103 @@ def test_verify_tarfile_members():
         Exception, match="Tarball None contained potentially unsafe member dir3/file"
     ):
         dlb._verify_tar_member_targets(tar, os.path.abspath(""))
+
+
+def _make_tar_gz(path, members):
+    """Write a .tar.gz at path; members are (name, data) or (name, "->target")."""
+    with tarfile.open(path, "w:gz") as t:
+        for name, content in members:
+            info = tarfile.TarInfo(name)
+            if content.startswith("->"):
+                info.type = tarfile.SYMTYPE
+                info.linkname = content[2:]
+                t.addfile(info)
+            else:
+                data = content.encode()
+                info.size = len(data)
+                t.addfile(info, io.BytesIO(data))
+
+
+@pytest.mark.unit
+@pytest.mark.skipif(sys.platform == "win32", reason="Symlinks need privileges")
+def test_extract_package_absolute_symlink():
+    with TempfileManager.new_context() as tf:
+        tmpdir = tf.mkdtemp()
+        # Like the el9 tarballs, which link to the system BLAS
+        tar = os.path.join(tmpdir, "idaes-solvers-el9-x86_64.tar.gz")
+        _make_tar_gz(
+            tar,
+            [
+                ("bin/ipopt", "solver"),
+                ("lib/libblas.so.3", "->/usr/lib64/libblas.so.3.9.0"),
+            ],
+        )
+        to_path = os.path.join(tmpdir, "install")
+        os.mkdir(to_path)
+
+        dlb._extract_package(tar, to_path, {})
+
+        with open(os.path.join(to_path, "bin", "ipopt")) as f:
+            assert f.read() == "solver"
+        assert os.readlink(os.path.join(to_path, "lib", "libblas.so.3")) == (
+            "/usr/lib64/libblas.so.3.9.0"
+        )
+
+
+@pytest.mark.unit
+def test_extract_package_unsafe_member():
+    with TempfileManager.new_context() as tf:
+        tmpdir = tf.mkdtemp()
+        tar = os.path.join(tmpdir, "bad.tar.gz")
+        _make_tar_gz(tar, [("../outside.txt", "nope")])
+        to_path = os.path.join(tmpdir, "install")
+        os.mkdir(to_path)
+
+        with pytest.raises(Exception, match="potentially unsafe member"):
+            dlb._extract_package(tar, to_path, {})
+        assert not os.path.exists(os.path.join(tmpdir, "outside.txt"))
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "fname", ["libpynumero_ASL.so", "libpynumero_ASL.dylib", "pynumero_ASL.dll"]
+)
+def test_warn_if_libraries_exist(caplog, fname):
+    caplog.set_level(idaeslog.ERROR, logger="idaes.commands.util.download_bin")
+    with TempfileManager.new_context() as tf:
+        bin_dir = tf.mkdtemp()
+        with open(os.path.join(bin_dir, fname), "w"):
+            pass
+
+        dlb._warn_if_libraries_exist(test_release_4, bin_directory=bin_dir)
+
+    assert "Existing pre-4.x extension files" in caplog.text
+
+
+@pytest.mark.unit
+def test_warn_if_libraries_exist_default_bin_directory():
+    # With no bin_directory given, the check falls back to idaes.bin_directory.
+    # Whether or not old files are present there, this should not raise.
+    dlb._warn_if_libraries_exist(test_release_4)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "extra, release, platform, expected",
+    [
+        # Unknown extras are dropped
+        (("not_a_real_package",), test_release_3, None, ()),
+        # Supported extra on a supported platform is kept
+        (("petsc",), test_release_3, "el8-x86_64", ("petsc",)),
+        # Supported extra with no platform filter is kept
+        (("petsc",), test_release_3, None, ("petsc",)),
+        # Supported extra on a platform it is not built for is dropped
+        (("petsc",), test_release_3, "not-a-platform", ()),
+        # Mixed: only the supported extra survives
+        (("not_a_real_package", "petsc"), test_release_3, None, ("petsc",)),
+        # PETSc is part of the base package in 4.x, so it is dropped as an extra
+        (("petsc",), test_release_4, None, ()),
+    ],
+)
+def test_normalize_extras(extra, release, platform, expected):
+    assert dlb._normalize_extras(extra, release, platform=platform) == expected
