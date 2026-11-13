@@ -365,6 +365,21 @@ def test_download_binaries_no_download_v4_install_path():
 
 
 @pytest.mark.unit
+def test_download_binaries_no_download_url_only():
+    mirror = "https://example.com/mirror"
+    d = dlb.download_binaries(
+        url=mirror,
+        no_download=True,
+        nochecksum=True,
+    )
+    assert d["release"] == idaes.config.default_binary_release
+    for url, path in d.items():
+        if url in ("release", "platform"):
+            continue
+        assert url.startswith(mirror)
+
+
+@pytest.mark.unit
 def test_dl_bin_unknown():
     _del_data_file(os.path.join(idaes.testing_directory, "version_lib.txt"))
     _del_data_file(os.path.join(idaes.testing_directory, "version_solvers.txt"))

@@ -92,8 +92,9 @@ def _find_extensions_file(filename, bin_directory=None):
     candidates = [
         os.path.join(root, filename),
         os.path.join(root, "bin", filename),
-        os.path.join(idaes.bin_directory, filename),
     ]
+    if bin_directory is None:
+        candidates.append(os.path.join(idaes.bin_directory, filename))
 
     for path in candidates:
         if os.path.isfile(path):
@@ -300,9 +301,10 @@ def get_extensions(
             # are one level up, similar to a standard install prefix
             # structure. So we will manually set the path to save
             # some time.
-            if release_major(release) >= 4:
+            if release_major(release or idaes.config.default_binary_release) >= 4:
                 print_extensions_version(
-                    library_only=library_only, bin_directory=idaes.data_directory
+                    library_only=library_only,
+                    bin_directory=to or idaes.data_directory,
                 )
             else:
                 print_extensions_version(library_only=library_only, bin_directory=to)

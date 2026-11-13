@@ -496,7 +496,7 @@ def download_binaries(
     platform = _get_release_platform(platform, release=release)
 
     # Get release url
-    url = _get_release_url(release, url)
+    url = _get_release_url(release if url is None else None, url)
 
     # Get checksum
     checksum = _get_checksums(fd, to_path, release, nochecksum)

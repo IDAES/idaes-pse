@@ -148,6 +148,17 @@ def test_print_extensions_version_library_only_skips_solvers(capsys):
     assert "Solvers:" not in out
 
 
+@pytest.mark.unit
+def test_print_extensions_version_explicit_dir_missing_files(capsys):
+    with tempfile.TemporaryDirectory() as tmpdir:
+        rc = extensions.print_extensions_version(bin_directory=tmpdir)
+        out = capsys.readouterr().out
+
+    assert rc == 0
+    assert "Solvers:  no version file found" in out
+    assert "Library:  no version file found" in out
+
+
 ######################
 # print_build_info   #
 ######################
