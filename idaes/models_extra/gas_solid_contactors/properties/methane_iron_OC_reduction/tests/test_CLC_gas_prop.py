@@ -15,12 +15,16 @@ Tests for CLC gas phase thermo state block; tests for construction and solve
 Author: Chinedu Okoli
 """
 
+import math
+
 import pytest
 
-from pyomo.environ import check_optimal_termination, ConcreteModel, Var
+from pyomo.environ import check_optimal_termination, ConcreteModel, Var, value
+from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
+from idaes.core.util.constants import Constants
 
 from idaes.core.util import scaling as iscale
 from idaes.core.solvers import get_solver
@@ -77,6 +81,40 @@ def test_build_inlet_state_block(gas_prop):
 @pytest.mark.unit
 def test_setInputs_state_block(gas_prop):
     assert degrees_of_freedom(gas_prop.fs.unit[0]) == 0
+
+
+@pytest.mark.unit
+def test_entropy_of_mixing():
+    # For an ideal gas mixture,
+    # entr_mol = sum_j x_j * entr_mol_j - R * sum_j x_j * ln(x_j),
+    # where entr_mol_j is the entropy of pure j at the same T and P
+    x_mix = {"CO2": 0.4772, "H2O": 0.0646, "CH4": 0.4582}
+
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+    m.fs.properties = GasPhaseParameterBlock()
+    # Index 0 is the mixture, the other indices are each (nearly) pure component
+    m.fs.unit = m.fs.properties.build_state_block(
+        range(len(x_mix) + 1), parameters=m.fs.properties, defined_state=True
+    )
+    compositions = [x_mix] + [{k: 1 if k == j else 1e-12 for k in x_mix} for j in x_mix]
+    for i, x in enumerate(compositions):
+        m.fs.unit[i].flow_mol.fix(1)
+        m.fs.unit[i].temperature.fix(450)
+        m.fs.unit[i].pressure.fix(1.60e5)
+        for j, x_j in x.items():
+            m.fs.unit[i].mole_frac_comp[j].fix(x_j)
+        calculate_variable_from_constraint(
+            m.fs.unit[i].entr_mol, m.fs.unit[i].entropy_correlation
+        )
+
+    expected = sum(
+        x_j * value(m.fs.unit[i].entr_mol)
+        for i, x_j in enumerate(x_mix.values(), start=1)
+    ) - value(Constants.gas_constant) * sum(
+        x_j * math.log(x_j) for x_j in x_mix.values()
+    )
+    assert value(m.fs.unit[0].entr_mol) == pytest.approx(expected, rel=1e-8)
 
 
 @pytest.fixture(scope="class")
