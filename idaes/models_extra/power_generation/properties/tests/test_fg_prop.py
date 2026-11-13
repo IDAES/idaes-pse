@@ -64,7 +64,7 @@ def read_data(fname, params):
         comp = {"N2": 0.2, "O2": 0.2, "H2O": 0.2, "CO2": 0.2, "NO": 0.1, "SO2": 0.1}
         d["Cp"] = sum(data[i][T]["Cp"] * comp[i] for i in comp)
         d["H"] = sum(data[i][T]["H"] * comp[i] for i in comp)
-        d["S"] = sum((data[i][T]["S"] + 8.314 * log(comp[i])) * comp[i] for i in comp)
+        d["S"] = sum((data[i][T]["S"] - 8.314 * log(comp[i])) * comp[i] for i in comp)
         d["comp"] = comp
     return data
 

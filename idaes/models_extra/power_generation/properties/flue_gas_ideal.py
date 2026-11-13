@@ -769,7 +769,7 @@ class FlueGasStateBlockData(StateBlockData):
                     + self.params.cp_mol_ig_comp_coeff_D[j] * t**3 / 3
                     - self.params.cp_mol_ig_comp_coeff_E[j] / t**2 / 2
                     + self.params.cp_mol_ig_comp_coeff_G[j]
-                    + r_gas * log(x[j])
+                    - r_gas * log(x[j])
                 )
                 for j in self.params.component_list
             )
