@@ -174,19 +174,19 @@ class InitializerBase:
         # 1. Get current model state
         self.get_current_state(model)
 
-        # 2. Load initial guesses
-        self.load_initial_guesses(
-            model, initial_guesses=initial_guesses, json_file=json_file
-        )
-
-        # 3. Fix states to make square
-        self.fix_initialization_states(model)
-
-        # 4. Prechecks
-        self.precheck(model)
-
-        # 5. try: Call specified initialization routine
         try:
+            # 2. Load initial guesses
+            self.load_initial_guesses(
+                model, initial_guesses=initial_guesses, json_file=json_file
+            )
+
+            # 3. Fix states to make square
+            self.fix_initialization_states(model)
+
+            # 4. Prechecks
+            self.precheck(model)
+
+            # 5. Call specified initialization routine
             # Base method does not have a return (NotImplementedError),
             # but we expect this to be overloaded, disable pylint warning
             # pylint: disable=E1111
