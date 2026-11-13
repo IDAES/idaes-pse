@@ -16,6 +16,7 @@ __author__ = (
 )
 __version__ = "1.0.0"
 
+import os
 import re
 from pyomo.core.base.expression import ScalarExpression
 from pyomo.core.base.units_container import InconsistentUnitsError, UnitsError
@@ -48,7 +49,7 @@ from pyomo.environ import units as pyunits
     ],
 )
 @pytest.mark.component
-def test_PP_costing_with_all_methods(tech):
+def test_PP_costing_with_all_methods(tech, capsys):
     # Create a Concrete Model as the top level object
     m = pyo.ConcreteModel()
 
@@ -256,6 +257,79 @@ def test_PP_costing_with_all_methods(tech):
     results = solver.solve(m, tee=True)
     pyo.assert_optimal_termination(results)
     dt.assert_no_numerical_warnings()
+
+    if tech == 1:  # check power plant reports methods
+        # some values will be different for other PP tech values, don't need to check them all here
+
+        PowerPlantCostingData.display_total_plant_costs(m.fs.costing)
+        PowerPlantCostingData.display_bare_erected_costs(m.fs.costing)
+
+        PowerPlantCostingData.report(m.fs.costing, export=True)
+
+        # check exported file
+        assert os.path.exists(os.path.join(os.getcwd(), "costing_report.csv"))
+        # cleanup
+        os.remove(os.path.join(os.getcwd(), "costing_report.csv"))
+        assert not os.path.exists(os.path.join(os.getcwd(), "costing_report.csv"))
+
+        # check report - the indents are intentional for formatting
+        expected = {
+            "Value": {
+                "Capacity Factor": 0.85000,
+                "Estimated Operating Days Per Year": 310.46,
+                "Plant Cost Units": "MUSD_2018",
+                "Total TPC [$MM]": 906.53,
+                "    Total Bare Erected Cost [$MM]": 737.39,
+                "    Installation Cost [$MM]": 169.14,
+                "    Other Plant Costs [$MM]": 1.0000e-12,
+                "Total Overnight Cost [$MM]": 1135.2,
+                "    Land Cost [$MM]": 0.0000,
+                "    Additional Waste Cost [$MM]": 0.0000,
+                "    Additional Chemicals Cost [$MM]": 0.0000,
+                "Total As Spent Cost [$MM]": 1240.7,
+                "Annualized Capital Cost [$MM/year]": 87.719,
+                "Total Fixed O&M Cost [$MM/year]": 28.673,
+                "    Annual Labor Costs [$MM/year]": 2.6324,
+                "        Annual Operating Labor Cost [$MM/year]": 2.6324,
+                "        Annual Technical Labor Cost [$MM/year]": 1.0000e-12,
+                "    Maintenance Labor Cost [$MM/year]": 5.8018,
+                "    Admin Support and Labor Cost [$MM/year]": 2.1086,
+                "    Property Taxes and Insurance Cost [$MM/year]": 18.131,
+                "    Other Fixed Costs [$MM/year]": 1.0000e-12,
+                "    Fixed Costs From Custom Cost Models [$MM/year]": 1.0000e-12,
+                "Total Variable O&M Cost Operating Capacity [$MM/year]": 157.19,
+                "Total Variable O&M Cost Full Capacity [$MM/year]": 184.92,
+                "    Total Variable Waste Cost [$MM/year]": 0,
+                "    Total Variable Chemicals Cost [$MM/year]": 7.3050,
+                "    Other Variable Costs [$MM/year]": 1.0000e-12,
+                "    Variable Costs From Custom Cost Models [$MM/year]": 1.0000e-12,
+                "Annualized Cost excluding all transport [$MM/year]": 273.58,
+                "Cost of Production [$/megawatt_hour]": 56.487,
+                "Transport Cost Of Product [$MM]": 0.0000,
+                "Cost of Feedstock [$/megabritish_thermal_unit]": 8.4992,
+                "Transport Cost Of Feedstock [$MM]": 0.0000,
+                "Transport Cost of Captured CO2 [$MM]": 0.0000,
+                "Total Sales Revenue [$MM/year]": 1.7532e-08,
+                "Net Present Value [$MM]": -1486.6,
+                "Net Tax Owed [$MM/year]": 2.6065e-11,
+                "    Royalty Charge [$MM/year]": 1.1396e-09,
+                "    Mineral Depletion Charge [$MM/year]": 2.2949e-09,
+                "    Production Incentive Charge [$MM/year]": 21.360,
+                "    Income Tax [$MM/year]": -78.343,
+                "    Additional Tax Owed [$MM/year]": 1.0000e-12,
+                "    Additional Tax Credit [$MM/year]": 1.0000e-12,
+            }
+        }
+
+        assert m.fs.costing.report_dir["Value"].keys() == expected["Value"].keys()
+
+        for k in m.fs.costing.report_dir["Value"]:
+            if k == "Plant Cost Units":
+                assert m.fs.costing.report_dir["Value"][k] == "MUSD_2018"
+            else:
+                assert m.fs.costing.report_dir["Value"][k] == pytest.approx(
+                    expected["Value"][k], rel=1e-4
+                ), f"Value mismatch for key {k}"
 
 
 @pytest.mark.unit
@@ -2424,11 +2498,6 @@ def test_power_plant_costing():
         pytest.approx(pyo.value(m.fs.AUSC.costing.bare_erected_cost["8.4"]), abs=1e-1)
         == 57265 / 1e3
     )
-
-    # test various report utilities - "smoke tests" only
-    m.fs.costing.report()
-    PowerPlantCostingData.display_total_plant_costs(m.fs.costing)
-    PowerPlantCostingData.display_bare_erected_costs(m.fs.costing)
 
 
 @pytest.mark.component
