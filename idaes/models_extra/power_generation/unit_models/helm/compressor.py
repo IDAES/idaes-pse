@@ -20,8 +20,9 @@ import pyomo.environ as pyo
 from pyomo.common.config import In
 from idaes.core import declare_process_block_class
 from idaes.models_extra.power_generation.unit_models.balance import BalanceBlockData
-from idaes.core.util import from_json, to_json, StoreSpec
+from idaes.core.scaling import CustomScalerBase
 from idaes.core.solvers import get_solver
+from idaes.core.util import from_json, to_json, StoreSpec
 import idaes.models.properties.helmholtz.helmholtz as hltz
 from idaes.models.properties.helmholtz.helmholtz import (
     HelmholtzThermoExpressions as ThermoExpr,
@@ -50,6 +51,84 @@ def _assert_properties(pb):
         raise
 
 
+class HelmIsentropicCompressorScaler(CustomScalerBase):
+    """
+    Base scaler for the HelmIsentropicCompressor
+    """
+
+    def variable_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: pyo.ComponentMap = None
+    ):
+        """
+        Routine to apply scaling factors to variables in model.
+
+        Args:
+            model: model to be scaled
+            overwrite: whether to overwrite existing scaling factors
+            submodel_scalers: dict of Scalers to use for sub-models, keyed by submodel local name
+
+        Returns:
+            None
+        """
+        self.call_submodel_scaler_method(
+            model.control_volume,
+            method="variable_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+
+        for t in model.flowsheet().time:
+            self.set_component_scaling_factor(
+                model.efficiency_isentropic[t], 1.5, overwrite=overwrite
+            )
+            self.set_component_scaling_factor(
+                model.ratioP[t], 1 / 3, overwrite=overwrite
+            )
+
+            sf_F = self.get_scaling_factor(
+                model.control_volume.properties_out[t].flow_mol, default=1, warning=True
+            )
+            # Compressor, so the stream should be in a vapor phase
+            sf_H = self.get_scaling_factor(
+                model.control_volume.properties_out[t].enth_mol_phase["Vap"],
+                default=1e-4,
+                warning=True,
+            )
+            self.set_component_scaling_factor(model.h_is[t], sf_H)
+            self.set_component_scaling_factor(model.work_isentropic[t], sf_F * sf_H)
+            self.set_component_scaling_factor(model.h_o[t], sf_H)
+
+    def constraint_scaling_routine(
+        self, model, overwrite: bool = False, submodel_scalers: pyo.ComponentMap = None
+    ):
+        """
+        Routine to apply scaling factors to constraints in model.
+
+        Args:
+            model: model to be scaled
+            overwrite: whether to overwrite existing scaling factors
+            submodel_scalers: dict of Scalers to use for sub-models, keyed by submodel local name
+
+        Returns:
+            None
+        """
+        self.call_submodel_scaler_method(
+            model.control_volume,
+            method="constraint_scaling_routine",
+            submodel_scalers=submodel_scalers,
+            overwrite=overwrite,
+        )
+        for t in model.flowsheet().time:
+            self.scale_constraint_by_component(
+                model.eq_work[t], model.h_o[t], overwrite=overwrite
+            )
+            self.scale_constraint_by_component(
+                model.eq_pressure_ratio[t],
+                model.control_volume.properties_out[t].pressure,
+                overwrite=overwrite,
+            )
+
+
 @declare_process_block_class("HelmIsentropicCompressor")
 class HelmIsentropicCompressorData(BalanceBlockData):
     """
@@ -69,6 +148,8 @@ class HelmIsentropicCompressorData(BalanceBlockData):
     3) Pressure:
         0 = P_in[t] + deltaP[t] - P_out[t]
     """
+
+    default_scaler = HelmIsentropicCompressorScaler
 
     CONFIG = BalanceBlockData.CONFIG()
     # For dynamics assume pseudo-steady-state
