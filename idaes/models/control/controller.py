@@ -545,9 +545,10 @@ class PIDControllerData(UnitModelBlockData):
         #             "terminating in an actual process variable."
         #         )
 
-        if self.config.calculate_initial_integral:
-            sf_mv = gsf(self.manipulated_var[t0], default=1, warning=True)
-            cst(self.initial_integral_error_eqn, sf_mv)
+        if self.config.controller_type in [ControllerType.PI, ControllerType.PID]:
+            if self.config.calculate_initial_integral:
+                sf_mv = gsf(self.manipulated_var[t0], default=1, warning=True)
+                cst(self.initial_integral_error_eqn, sf_mv)
 
         for t in time_set:
             sf_pv = gsf(self.process_var[t], default=1, warning=True)
