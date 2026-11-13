@@ -324,6 +324,87 @@ def test_cost_vessel_horizontal(model, material_type):
 
 
 @pytest.mark.component
+def test_cost_vertical_vessel(model):
+    arguments = {
+        "material_type": VesselMaterial.StainlessSteel316,
+        "shell_thickness": 2 * pyunits.inch,
+        "weight_limit": 2,
+        "aspect_ratio_range": 2,
+        "include_platforms_ladders": False,
+        "number_of_units": 2,
+        "number_of_trays": 10,
+        "tray_material": TrayMaterial.StainlessSteel316,
+        "tray_type": TrayType.Valve,
+    }
+
+    # Cost the same vessel with cost_vertical_vessel and with cost_vessel
+    model.fs.unit.length = Param(initialize=0.00075, units=pyunits.m)
+    model.fs.unit.diameter = Param(initialize=2, units=pyunits.m)
+    model.fs.unit.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=model.fs.costing,
+        costing_method=SSLWCostingData.cost_vertical_vessel,
+        costing_method_arguments=arguments,
+    )
+
+    model.fs.unit2 = UnitModelBlock()
+    model.fs.unit2.length = Param(initialize=0.00075, units=pyunits.m)
+    model.fs.unit2.diameter = Param(initialize=2, units=pyunits.m)
+    model.fs.unit2.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=model.fs.costing,
+        costing_method=SSLWCostingData.cost_vessel,
+        costing_method_arguments={"vertical": True, **arguments},
+    )
+
+    assert degrees_of_freedom(model) == 0
+
+    res = solver.solve(model)
+
+    assert check_optimal_termination(res)
+
+    assert pytest.approx(value(model.fs.unit2.costing.capital_cost), 1e-8) == value(
+        model.fs.unit.costing.capital_cost
+    )
+
+
+@pytest.mark.component
+def test_cost_horizontal_vessel(model):
+    arguments = {
+        "material_type": VesselMaterial.StainlessSteel316,
+        "shell_thickness": 2 * pyunits.inch,
+        "include_platforms_ladders": False,
+        "number_of_units": 2,
+    }
+
+    # Cost the same vessel with cost_horizontal_vessel and with cost_vessel
+    model.fs.unit.length = Param(initialize=0.00075, units=pyunits.m)
+    model.fs.unit.diameter = Param(initialize=2, units=pyunits.m)
+    model.fs.unit.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=model.fs.costing,
+        costing_method=SSLWCostingData.cost_horizontal_vessel,
+        costing_method_arguments=arguments,
+    )
+
+    model.fs.unit2 = UnitModelBlock()
+    model.fs.unit2.length = Param(initialize=0.00075, units=pyunits.m)
+    model.fs.unit2.diameter = Param(initialize=2, units=pyunits.m)
+    model.fs.unit2.costing = UnitModelCostingBlock(
+        flowsheet_costing_block=model.fs.costing,
+        costing_method=SSLWCostingData.cost_vessel,
+        costing_method_arguments={"vertical": False, **arguments},
+    )
+
+    assert degrees_of_freedom(model) == 0
+
+    res = solver.solve(model)
+
+    assert check_optimal_termination(res)
+
+    assert pytest.approx(value(model.fs.unit2.costing.capital_cost), 1e-8) == value(
+        model.fs.unit.costing.capital_cost
+    )
+
+
+@pytest.mark.component
 @pytest.mark.parametrize("material_type", HeaterMaterial)
 @pytest.mark.parametrize("heat_source", HeaterSource)
 def test_cost_fired_heater(model, material_type, heat_source):
