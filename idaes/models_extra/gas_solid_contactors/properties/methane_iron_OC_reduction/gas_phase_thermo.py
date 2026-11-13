@@ -1080,7 +1080,7 @@ class GasPhaseStateBlockData(StateBlockData):
                     + self.params.cp_param_4[j] * t**3 / 3
                     - self.params.cp_param_5[j] / t**2 / 2
                     + self.params.cp_param_7[j]
-                    + r_gas * log(x[j])
+                    - r_gas * log(x[j])
                 )
                 for j in self.params.component_list
             )
