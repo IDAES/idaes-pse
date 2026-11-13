@@ -423,6 +423,30 @@ class TestSubMethods:
         assert initializer.summary[model]["DoF"] == -1
 
     @pytest.mark.unit
+    def test_initialize_precheck_fail(self, model):
+        def fix_initialization_states(blk):
+            blk.v1.fix(2)
+
+        model.fix_initialization_states = types.MethodType(
+            fix_initialization_states, model
+        )
+
+        initializer = InitializerBase()
+        with pytest.raises(
+            InitializationError,
+            match=re.escape(
+                "Degrees of freedom for unknown were not equal to zero during "
+                "initialization (DoF = -1)."
+            ),
+        ):
+            initializer.initialize(model, output_level=idaeslog.DEBUG)
+
+        # Model state should be restored even though initialization failed
+        assert not model.v1.fixed
+        assert not model.v2.fixed
+        assert initializer._local_logger_level is None
+
+    @pytest.mark.unit
     def test_precheck_ok(self, model):
         initializer = InitializerBase()
         initializer.precheck(model)
