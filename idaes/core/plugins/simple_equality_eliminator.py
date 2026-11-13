@@ -156,7 +156,7 @@ class SimpleEqualityEliminator(NonIsomorphicTransformation):
             for c in instance.component_data_objects(
                 (pyo.Constraint, pyo.Objective), descend_into=True, active=True
             ):
-                if id(c) not in self._original and reversible:
+                if reversible and id(c) not in self._original:
                     self._original[id(c)] = c.expr
                     self._expr_map[id(c)] = c
                 c.set_value(expr=vis.walk_expression(c.expr))

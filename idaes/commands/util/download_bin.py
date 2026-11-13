@@ -198,7 +198,7 @@ def _download_package(fd, name, frm, to, platform):
 
 def _verify_checksums(checksum, pname, ptar, ftar):
     # If release checksum is not False, nochecksum opt allows hash to be ignored
-    if checksum:
+    if checksum is not False:
         for n, p, f in zip(pname, ptar, ftar):
             hash_l = _hash(p)
             _log.debug(f"{n} Hash {hash_l}")
@@ -268,7 +268,7 @@ def _verify_tar_member_targets(tar, to_path, links=None):
 
     Nominally, this would be a simple task: verify that every member of
     the tarfile (when converted to an absolute path and normalized)
-    starts with the to_path.  Unfortunately, symbolic links make this
+    is inside the to_path.  Unfortunately, symbolic links make this
     more difficult.  It is not sufficient to just check the absolute
     path of the link target, as sequences of links could walk out of the
     target space.  In this routine, we attempt to identify symbolic
@@ -307,7 +307,7 @@ def _verify_tar_member_targets(tar, to_path, links=None):
 
     for member in tar.getmembers():
         member_path = _resolve_path(os.path.join(to_path, member.name), links)
-        if not member_path.startswith(to_path):
+        if os.path.commonpath([to_path, member_path]) != to_path:
             # PYLINT-TODO
             # pylint: disable-next=broad-exception-raised
             raise Exception(

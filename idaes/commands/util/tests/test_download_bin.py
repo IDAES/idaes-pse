@@ -161,6 +161,23 @@ def test_read_checksum():
     }
 
 
+@pytest.mark.unit
+def test_verify_checksums():
+    # The file hash does not need to be right, just consistently computed
+    pname = ["solvers"]
+    ptar = [__file__]
+    ftar = ["idaes-solvers-ubuntu2004-64.tar.gz"]
+
+    dlb._verify_checksums({ftar[0]: dlb._hash(__file__)}, pname, ptar, ftar)
+    # False means checksum verification was skipped at user request
+    dlb._verify_checksums(False, pname, ptar, ftar)
+    with pytest.raises(Exception, match="solvers hash does not match expected"):
+        dlb._verify_checksums({ftar[0]: "0" * 64}, pname, ptar, ftar)
+    # An empty checksum file must not skip verification
+    with pytest.raises(Exception, match="solvers hash does not match expected"):
+        dlb._verify_checksums({}, pname, ptar, ftar)
+
+
 @pytest.mark.parametrize("platform", idaes_config.base_platforms)
 @pytest.mark.unit
 def test_create_download_package(platform):
@@ -315,3 +332,22 @@ def test_verify_tarfile_members():
         Exception, match="Tarball None contained potentially unsafe member dir3/file"
     ):
         dlb._verify_tar_member_targets(tar, os.path.abspath(""))
+
+    # Tarball with a member in a sibling directory whose name starts with the
+    # name of the target directory:
+    #
+    # [REGTYPE] ../<target>-sibling/file
+    #
+    to_path = os.path.abspath("")
+    data = io.BytesIO()
+    with tarfile.open(None, "w", data) as tar:
+        tar.addfile(
+            tarfile.TarInfo(f"../{os.path.basename(to_path)}-sibling/file"),
+            io.BytesIO(b""),
+        )
+    data.seek(0)
+    tar = tarfile.open(None, "r", data)
+    with pytest.raises(
+        Exception, match="Tarball None contained potentially unsafe member"
+    ):
+        dlb._verify_tar_member_targets(tar, to_path)
