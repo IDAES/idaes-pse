@@ -50,6 +50,7 @@ from idaes.core.util.model_statistics import (
 from idaes.core.util.testing import PhysicalParameterTestBlock, initialization_tester
 from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import ConfigurationError
+import idaes.core.util.scaling as iscale
 from idaes.models_extra.power_generation.unit_models.soc_submodels.testing import (
     _build_test_utility,
 )
@@ -219,6 +220,37 @@ def test_pd_control():
         comp_dict=comp_dict,
         references=["process_var", "manipulated_var"],
     )
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("controller_type", [ControllerType.P, ControllerType.PD])
+def test_scaling_no_integral_action(controller_type):
+    m = ConcreteModel()
+    nt = 3  # Three timepoints
+    m.fs = FlowsheetBlock(dynamic=True, time_set=range(nt), time_units=pyunits.s)
+
+    m.fs.process_var = Var(m.fs.time, units=pyunits.m)
+    m.fs.manipulated_var = Var(m.fs.time, units=pyunits.K)
+
+    unit = m.fs.unit = PIDController(
+        process_var=m.fs.process_var,
+        manipulated_var=m.fs.manipulated_var,
+        controller_type=controller_type,
+    )
+
+    for t in m.fs.time:
+        iscale.set_scaling_factor(m.fs.process_var[t], 10)
+        iscale.set_scaling_factor(m.fs.manipulated_var[t], 0.1)
+
+    iscale.calculate_scaling_factors(m)
+
+    for t in m.fs.time:
+        assert iscale.get_scaling_factor(unit.setpoint[t]) == 10
+        assert iscale.get_scaling_factor(unit.mv_ref[t]) == 0.1
+        assert (
+            iscale.get_constraint_transform_applied_scaling_factor(unit.mv_eqn[t])
+            == 0.1
+        )
 
 
 @pytest.mark.unit
