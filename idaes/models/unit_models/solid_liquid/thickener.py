@@ -40,8 +40,10 @@ from pyomo.network import Port
 # Import IDAES cores
 from idaes.core import (
     declare_process_block_class,
+    InletPort,
     MaterialBalanceType,
     MomentumBalanceType,
+    OutletPort,
     UnitModelBlockData,
     useDefault,
 )
@@ -239,9 +241,10 @@ class Thickener0DData(UnitModelBlockData):
             name="solid_inlet",
             block=self.solid_inlet_state,
             doc="Solid inlet to thickener",
+            port_class=InletPort,
         )
-        self.solid_underflow = Port(extends=self.solid_split.underflow)
-        self.solid_overflow = Port(extends=self.solid_split.overflow)
+        self.solid_underflow = OutletPort(extends=self.solid_split.underflow)
+        self.solid_overflow = OutletPort(extends=self.solid_split.overflow)
 
         # Build liquid Phase
         # Setup StateBlock argument dict
