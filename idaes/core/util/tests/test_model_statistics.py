@@ -115,7 +115,7 @@ def m():
         m.b2[i].c2 = Constraint(expr=2 <= m.b2[i].v1)
 
         if i == "a":
-            m.b2[i].o1 = Objective(expr=m.b2[i].v1)
+            m.b2[i].o1 = Objective(expr=m.b2[i].v2["b"])
             m.b2[i].o2 = Objective(expr=m.b2[i].v1)
             m.b2[i].o2.deactivate()
             m.b2[i].c1.deactivate()
@@ -943,14 +943,14 @@ def test_number_fixed_variables_only_in_inequalities(m):
 # Unused and un-Transformed Variables
 @pytest.mark.unit
 def test_unused_variables_set(m):
-    assert len(unused_variables_set(m)) == 6
-    assert len(unused_variables_set(m.b2)) == 5
+    assert len(unused_variables_set(m)) == 5
+    assert len(unused_variables_set(m.b2)) == 4
 
 
 @pytest.mark.unit
 def test_number_unused_variables(m):
-    assert number_unused_variables(m) == 6
-    assert number_unused_variables(m.b2) == 5
+    assert number_unused_variables(m) == 5
+    assert number_unused_variables(m.b2) == 4
 
 
 @pytest.mark.unit
@@ -1077,6 +1077,13 @@ def test_activated_objectives_set(m):
 def test_number_activated_objectives(m):
     assert number_activated_objectives(m) == 1
     assert number_activated_objectives(m.b2) == 1
+
+
+@pytest.mark.unit
+def test_variables_in_activated_objectives_set(m):
+    vset = variables_in_activated_objectives_set(m)
+    assert len(vset) == 1
+    assert m.b2["a"].v2["b"] in vset
 
 
 @pytest.mark.unit
