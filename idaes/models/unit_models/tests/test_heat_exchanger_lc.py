@@ -33,6 +33,7 @@ from pyomo.environ import (
 from pyomo.dae import DerivativeVar
 from pyomo.common.config import ConfigBlock
 from pyomo.util.check_units import assert_units_consistent, assert_units_equivalent
+from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 from idaes.core.solvers import get_solver
 from idaes.core.util.exceptions import DynamicError, ConfigurationError, IdaesError
@@ -514,6 +515,66 @@ class TestHXLCGeneric(object):
                 "Delta T Driving": model.fs.unit.delta_temperature[0],
             },
         }
+
+
+class TestWallTimeUnits:
+    @pytest.fixture(params=[(pyunits.s, 1), (pyunits.min, 60), (pyunits.hour, 3600)])
+    def model_and_time_scale(self, request):
+        time_units, seconds_per_unit = request.param
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(
+            dynamic=True, time_set=[0, 60 / seconds_per_unit], time_units=time_units
+        )
+        m.fs.properties = SaponificationParameterBlock()
+        m.fs.unit = HeatExchangerLumpedCapacitance(
+            hot_side={"property_package": m.fs.properties},
+            cold_side={"property_package": m.fs.properties},
+            dynamic=False,
+            dynamic_heat_balance=True,
+        )
+        return m, seconds_per_unit
+
+    @pytest.mark.unit
+    def test_wall_derivative_units(self, model_and_time_scale):
+        m, seconds_per_unit = model_and_time_scale
+        assert_units_consistent(m)
+        assert pyunits.convert_value(
+            1,
+            from_units=pyunits.get_units(m.fs.unit.dT_wall_dt),
+            to_units=pyunits.K / pyunits.s,
+        ) == pytest.approx(1 / seconds_per_unit)
+
+    @pytest.mark.unit
+    def test_wall_accumulation_power(self, model_and_time_scale):
+        m, seconds_per_unit = model_and_time_scale
+        unit = m.fs.unit
+        t = m.fs.time.last()
+        unit.heat_capacity_wall.set_value(1000)  # J/K
+        unit.hot_side.heat[t].set_value(-200)  # W
+        unit.cold_side.heat[t].set_value(100)  # W
+        unit.dT_wall_dt[t].set_value(0.1 * seconds_per_unit)  # 0.1 K/s
+        con = unit.dynamic_heat_balance[t]
+        assert value(con.body - con.lower) == pytest.approx(0, abs=1e-10)
+
+    @pytest.mark.unit
+    def test_discretized_wall_first_law(self, model_and_time_scale):
+        m, _ = model_and_time_scale
+        TransformationFactory("dae.finite_difference").apply_to(
+            m, nfe=1, wrt=m.fs.time, scheme="BACKWARD"
+        )
+        unit = m.fs.unit
+        t0, tf = m.fs.time.first(), m.fs.time.last()
+        # 100 W for 60 s stores 6000 J in a wall with capacity 1000 J/K.
+        unit.heat_capacity_wall.set_value(1000)
+        unit.temperature_wall[t0].set_value(300)
+        unit.temperature_wall[tf].set_value(306)
+        unit.hot_side.heat[tf].set_value(-200)
+        unit.cold_side.heat[tf].set_value(100)
+        calculate_variable_from_constraint(
+            unit.dT_wall_dt[tf], unit.dT_wall_dt_disc_eq[tf]
+        )
+        con = unit.dynamic_heat_balance[tf]
+        assert value(con.body - con.lower) == pytest.approx(0, abs=1e-10)
 
 
 class TestInitializers:

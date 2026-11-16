@@ -16,7 +16,7 @@ Extension of the IDAES heat exchanger model for transient simulations
 
 __author__ = "Rusty Gentile, John Eslick, Andrew Lee"
 
-from pyomo.environ import Var, Param
+from pyomo.environ import Var, Param, units as pyunits
 from pyomo.dae import DerivativeVar
 from pyomo.common.config import ConfigValue
 from idaes.core import declare_process_block_class, useDefault
@@ -259,7 +259,8 @@ be included in the overall energy balance,
 
             s1_metadata = self.hot_side.config.property_package.get_metadata()
             temp_units = s1_metadata.get_derived_units("temperature")
-            time_units = s1_metadata.get_derived_units("time")
+            # Derivatives follow the numerical flowsheet time coordinate.
+            time_units = self.flowsheet().time_units
 
             self.dT_wall_dt = DerivativeVar(
                 self.temperature_wall,
@@ -275,7 +276,11 @@ be included in the overall energy balance,
             def dynamic_heat_balance(b, t):
                 return (
                     b.hot_side.heat[t] + b.cold_side.heat[t]
-                    == -b.dT_wall_dt[t] * b.heat_capacity_wall
+                    == -pyunits.convert(
+                        b.dT_wall_dt[t],
+                        to_units=temp_units / s1_metadata.get_derived_units("time"),
+                    )
+                    * b.heat_capacity_wall
                 )
 
             self.activate_dynamic_heat_eq()
