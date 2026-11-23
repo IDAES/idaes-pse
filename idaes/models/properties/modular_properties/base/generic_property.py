@@ -4872,10 +4872,34 @@ class GenericStateBlockData(StateBlockData):
             raise
 
     def _pressure_sat_comp(self):
+        # An unconfigured saturation pressure is unnecessary for a phase-only
+        # component, unless another vapor-liquid pair needs it.
+        phase_only = set()
+        shared = set()
+        for p1, p2 in getattr(self.params, "_pe_pairs", ()):
+            phase1, phase2 = self.params.get_phase(p1), self.params.get_phase(p2)
+            if not (
+                (phase1.is_liquid_phase() and phase2.is_vapor_phase())
+                or (phase1.is_vapor_phase() and phase2.is_liquid_phase())
+            ):
+                continue
+
+            for j in self.component_list:
+                in_p1 = (p1, j) in self.phase_component_set
+                in_p2 = (p2, j) in self.phase_component_set
+                if in_p1 and in_p2:
+                    shared.add(j)
+                elif in_p1 or in_p2:
+                    phase_only.add(j)
+
+        phase_only.difference_update(shared)
+
         try:
 
             def rule_pressure_sat_comp(b, j):
                 cobj = b.params.get_component(j)
+                if j in phase_only and cobj.config.pressure_sat_comp is None:
+                    return Expression.Skip
                 try:
                     return get_method(b, "pressure_sat_comp", j)(b, cobj, b.temperature)
                 except GenericPropertyPackageError:

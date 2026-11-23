@@ -34,6 +34,7 @@ from idaes.models.properties.modular_properties.base.generic_property import (
 from idaes.models.properties.modular_properties.base.tests.dummy_eos import DummyEoS
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.scaling.util import set_scaling_factor
+from idaes.core.util.scaling import get_constraint_transform_applied_scaling_factor
 
 # Dummy class to use for Psat calls
 Psat = {"H2O": 1e5, "EtOH": 5e4}
@@ -653,8 +654,6 @@ class TestBubblePresIdeal(object):
         ):
             IdealBubbleDew.pressure_bubble(frame_inert.props[1])
 
-    # TODO test nonvolatiles---currently broken due to #1665
-
     @pytest.mark.unit
     def test_build_noncondensable(self, frame_noncondensable):
         params = frame_noncondensable.params
@@ -801,64 +800,48 @@ class TestDewPressureIdeal(object):
         scaler_obj.constraint_scaling_routine(blk)
         assert len(blk.scaling_factor) == 3
 
-    # TODO Test noncondensables. Currently broken due to #1665
-    # @pytest.mark.unit
-    # def test_build_noncondensable(self, frame_noncondensable):
-    #     params = frame_noncondensable.params
-    #     blk = frame_noncondensable.props[1]
-    #     blk.pressure_dew = Var(params._pe_pairs)
-    #     blk._mole_frac_pdew = Var(
-    #         params._pe_pairs, params.component_list, initialize=0.5
-    #     )
 
-    #     IdealBubbleDew.pressure_dew(blk)
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "point, fixture, phase_only",
+    [
+        ("bubble", "frame_nonvolatile", "NaCl"),
+        ("dew", "frame_noncondensable", "N2"),
+    ],
+)
+def test_pressure_with_phase_only_component(request, point, fixture, phase_only):
+    b = request.getfixturevalue(fixture).props[1]
+    pairs = b.params._pe_pairs
+    pair = ("Vap", "Liq")
+    abbrv = "bub" if point == "bubble" else "dew"
+    pressure = Var(pairs)
+    composition = Var(pairs, b.component_list, initialize=0.5)
+    b.add_component(f"pressure_{point}", pressure)
+    b.add_component(f"_mole_frac_p{abbrv}", composition)
 
-    #     assert isinstance(blk.eq_pressure_dew, Constraint)
-    #     assert len(blk.eq_pressure_dew) == 1
+    getattr(IdealBubbleDew, f"pressure_{point}")(b)
+    assert set(b.pressure_sat_comp) == {"H2O"}
 
-    #     assert isinstance(blk.eq_mole_frac_pdew, Constraint)
-    #     assert len(blk.eq_mole_frac_pdew) == 2
-    #     for k in blk.eq_mole_frac_pdew:
-    #         assert k in [("Vap", "Liq", "H2O"), ("Vap", "Liq", "N2")]
+    eq_pressure = getattr(b, f"eq_pressure_{point}")
+    eq_composition = getattr(b, f"eq_mole_frac_p{abbrv}")
+    assert len(eq_pressure) == 1
+    assert len(eq_composition) == 2
+    composition[pair, "H2O"].set_value(1)
+    composition[pair, phase_only].set_value(0)
 
-    # @pytest.mark.unit
-    # def test_expressions_noncondensable(self, frame_noncondensable):
-    #     blk = frame_noncondensable.props[1]
-    #     params = frame_noncondensable.params
-    #     for x1 in range(1, 11, 1):
-    #         blk.mole_frac_comp["H2O"].value = x1 / 10
-    #         blk.mole_frac_comp["N2"].value = 1 - x1 / 10
+    for x in (0.1, 0.5, 0.9):
+        b.mole_frac_comp["H2O"].set_value(x)
+        b.mole_frac_comp[phase_only].set_value(1 - x)
+        expected_pressure = Psat["H2O"] * (x if point == "bubble" else 1 / x)
+        pressure[pair].set_value(expected_pressure)
 
-    #         for pp in params._pe_pairs:
-    #             blk.pressure_dew[pp[0], pp[1]] = value(
-    #                 Psat["H2O"] / blk.mole_frac_comp["H2O"]
-    #             )
+        assert value(eq_pressure[pair].body) == pytest.approx(0, abs=1e-8)
+        for con in eq_composition.values():
+            assert value(con.body) == pytest.approx(0, abs=1e-8)
 
-    #             blk._mole_frac_pdew[pp[0], pp[1], "H2O"].value = 1
-    #             blk._mole_frac_pdew[pp[0], pp[1], "N2"].value = 0
+    composition[pair, phase_only].set_value(0.125)
+    assert value(eq_composition[pair, phase_only].body) == 0.125
 
-    #             assert value(
-    #                 blk.eq_pressure_dew[pp[0], pp[1]].body
-    #             ) == pytest.approx(0, abs=1e-8)
-    #             for k in params.component_list:
-    #                 assert value(
-    #                     blk.eq_mole_frac_pdew[pp[0], pp[1], k].body
-    #                 ) == pytest.approx(0, abs=1e-8)
-
-    # @pytest.mark.unit
-    # def test_scaling_noncondensable(self, frame_noncondensable):
-    #     blk = frame_noncondensable.props[1]
-    #     assert len(blk.scaling_factor) == 3
-
-    #     scaler_obj = IdealBubbleDewScaler()
-
-    #     scaler_obj.variable_scaling_routine(blk)
-    #     # No variables to scale
-    #     assert len(blk.scaling_factor) == 3
-
-    #     scaler_obj.constraint_scaling_routine(blk)
-
-    #     assert len(blk.scaling_factor) == 6
-    #     assert blk.scaling_factor[blk.eq_mole_frac_pdew["Vap","Liq","H2O"]] == pytest.approx(7e-5)
-    #     assert blk.scaling_factor[blk.eq_mole_frac_pdew["Vap","Liq","N2"]] == 11
-    #     assert blk.scaling_factor[blk.eq_pressure_dew["Vap","Liq"]] == 1
+    getattr(IdealBubbleDew, f"scale_pressure_{point}")(b)
+    for con in eq_composition.values():
+        assert get_constraint_transform_applied_scaling_factor(con) is not None
