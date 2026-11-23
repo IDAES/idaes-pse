@@ -25,19 +25,23 @@ from pyomo.core.expr.compare import compare_expressions
 from pyomo.util.check_units import assert_units_equivalent
 
 from idaes.core import (
+    Anion,
+    Apparent,
+    AqueousPhase,
+    Cation,
     declare_process_block_class,
     LiquidPhase,
     VaporPhase,
     SolidPhase,
     Solute,
     Solvent,
-    Apparent,
     PhaseType,
 )
 from idaes.models.properties.modular_properties.eos.ideal import Ideal
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
     GenericParameterData,
+    StateIndex,
 )
 from idaes.models.properties.modular_properties.state_definitions import FTPx
 from idaes.models.properties.modular_properties.phase_equil.henry import HenryType
@@ -1505,3 +1509,63 @@ class TestFugacityLiquidOnlyComponent:
 
 
 # TODO need tests with inherent reactions
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("property_basis", ["true", "apparent"])
+def test_fugacity_apparent_electrolyte_state(property_basis):
+    def solvent_pressure(b, j, T):
+        return 3200 * pyunits.Pa
+
+    def apparent_pressure(b, j, T):
+        return 800 * pyunits.Pa
+
+    apparent_data = {
+        "type": Apparent,
+        "dissociation_species": {"Na+": 1, "Cl-": 1},
+    }
+    if property_basis == "apparent":
+        apparent_data["pressure_sat_comp"] = apparent_pressure
+
+    m = ConcreteModel()
+    m.params = GenericParameterBlock(
+        components={
+            "H2O": {"type": Solvent, "pressure_sat_comp": solvent_pressure},
+            "NaCl": apparent_data,
+            "Na+": {"type": Cation, "charge": 1},
+            "Cl-": {"type": Anion, "charge": -1},
+        },
+        phases={
+            "Liq": {
+                "type": AqueousPhase,
+                "equation_of_state": Ideal,
+                "equation_of_state_options": {"property_basis": property_basis},
+            }
+        },
+        state_definition=FTPx,
+        state_components=StateIndex.apparent,
+        pressure_ref=1e5,
+        temperature_ref=300,
+        base_units={
+            "time": pyunits.s,
+            "length": pyunits.m,
+            "mass": pyunits.kg,
+            "amount": pyunits.mol,
+            "temperature": pyunits.K,
+        },
+    )
+    m.props = m.params.build_state_block([0], defined_state=True)
+    b = m.props[0]
+    b.mole_frac_phase_comp_apparent["Liq", "H2O"].set_value(0.8)
+    b.mole_frac_phase_comp_apparent["Liq", "NaCl"].set_value(0.2)
+    b.mole_frac_phase_comp_true["Liq", "H2O"].set_value(2 / 3)
+
+    fugacity = b.fug_phase_comp
+    assert_units_equivalent(fugacity["Liq", "H2O"], pyunits.Pa)
+    if property_basis == "true":
+        assert set(fugacity) == {("Liq", "H2O")}
+        assert value(fugacity["Liq", "H2O"]) == pytest.approx(3200 * 2 / 3)
+    else:
+        assert set(fugacity) == {("Liq", "H2O"), ("Liq", "NaCl")}
+        assert value(fugacity["Liq", "H2O"]) == pytest.approx(3200 * 0.8)
+        assert value(fugacity["Liq", "NaCl"]) == pytest.approx(800 * 0.2)

@@ -519,8 +519,11 @@ def _fug_phase_comp(b, p, j, T):
             # Use Henry's Law
             return henry_pressure(b, p, j, T)
         elif cobj(b, j).config.has_vapor_pressure:
-            # Use Raoult's Law
-            return b.get_mole_frac(p)[p, j] * get_method(b, "pressure_sat_comp", j)(
+            mole_frac = b.get_mole_frac(p)
+            # A flow-basis component may be absent from the property basis.
+            if b.params._electrolyte and (p, j) not in mole_frac.index_set():
+                return Expression.Skip
+            return mole_frac[p, j] * get_method(b, "pressure_sat_comp", j)(
                 b, cobj(b, j), T
             )
         else:
