@@ -31,16 +31,11 @@ __version__ = "1.0.0"
 
 import os
 import json
-from sys import stdout
-import textwrap
-
-from pandas import DataFrame
 
 from pyomo.common.fileutils import this_file_dir
-from pyomo.environ import value, units as pyunits
+from pyomo.environ import units as pyunits
 
 from idaes.core import register_idaes_currency_units
-from idaes.core.util.tables import stream_table_dataframe_to_string
 import idaes.logger as idaeslog
 
 directory = this_file_dir()
@@ -192,7 +187,7 @@ def load_default_resource_prices():
         "electricity": 71.7 * pyunits.USD_2018_Dec / pyunits.MWh,
         "reactive_membrane_replacement": 15.1 * pyunits.USD_2018_Dec / pyunits.m**2,
         "PSA_adsorbent_waste_disposal": 1.5 * pyunits.USD_2018_Dec / pyunits.ft**3,
-        "nonharzardous_waste_disposal": 38 * pyunits.USD_2018_Dec / pyunits.ton,
+        "nonhazardous_waste_disposal": 38 * pyunits.USD_2018_Dec / pyunits.ton,
         # from X. Ge, R. Zhang, P. Liu, B. Liu, B. Liu, Optimization and control of
         # extractive distillation for formic acid-water separation with maximum-boiling
         # azeotrope, Computers & Chemical Engineering, Vol. 169, 2023. Table 2.
@@ -260,100 +255,3 @@ def load_fixed_OM_data():
     }
 
     return labor_types, labor_rates, maintenance_percentages
-
-
-# TODO add any missing quantities that should be reported
-def report(b, export=False):
-    """
-    b: flowsheet-level costing block
-    export: generate csv results file of costing results
-    """
-    var_dict = {}
-
-    if hasattr(b, "total_TPC"):
-        var_dict["Total TPC [$MM]"] = value(b.total_TPC)
-
-    if hasattr(b, "total_overnight_capital"):
-        var_dict["Total Overnight Cost [$MM]"] = value(b.total_overnight_capital)
-
-    if hasattr(b, "total_as_spent_cost"):
-        var_dict["Total As Spent Cost [$MM]"] = value(b.total_as_spent_cost)
-
-    if hasattr(b, "annualized_cost"):
-        var_dict["Total Annualized Capital Cost [$MM/year]"] = value(b.annualized_cost)
-
-    if hasattr(b, "total_fixed_OM_cost"):
-        var_dict["Total fixed O&M cost [$MM/year]"] = value(b.total_fixed_OM_cost)
-
-    if hasattr(b, "total_variable_OM_cost"):
-        var_dict["Total variable O&M cost full capacity [$MM/year]"] = value(
-            b.total_variable_OM_cost[0]
-        )
-        var_dict["Total variable O&M cost operating capacity [$MM/year]"] = value(
-            b.total_variable_OM_cost[0] * b.capacity_factor
-        )
-
-    if (
-        hasattr(b, "annualized_cost")
-        and hasattr(b, "total_fixed_OM_cost")
-        and hasattr(b, "total_variable_OM_cost")
-    ):
-        var_dict["Total Annualized Cost excluding all transport [$MM/year]"] = (
-            value(b.annualized_cost)
-            + value(b.total_fixed_OM_cost if b.config.has_fixed_OM else 0)
-            + b.capacity_factor
-            * value(b.total_variable_OM_cost[0] if b.config.has_variable_OM else 0)
-            + value(b.net_tax_owed if b.config.has_taxes_and_credits else 0)
-        )
-
-    if hasattr(b, "cost_of_production including all transport"):
-        var_dict["Cost of Production [$/unit product]"] = value(
-            b.cost_of_production * 1e6
-        )
-
-    if hasattr(b, "transport_cost_of_product"):
-        var_dict["Total Transport Cost Of Product [$MM]"] = value(
-            b.transport_cost_of_product
-        )
-
-    if hasattr(b, "cost_of_feedstock including all transport"):
-        var_dict["Cost of Feedstock [$/unit feedstock]"] = value(
-            b.cost_of_production * 1e6
-        )
-
-    if hasattr(b, "transport_cost_of_product"):
-        var_dict["Total Transport Cost Of Product [$MM]"] = value(
-            b.transport_cost_of_product
-        )
-
-    if hasattr(b, "cost_of_CO2_capture including all transport"):
-        var_dict["Cost of Capture [$/unit CO2]"] = value(b.cost_of_CO2_capture * 1e6)
-
-    if hasattr(b, "CO2_transport_cost"):
-        var_dict["Total Transport Cost of Captured CO2 [$MM]"] = value(
-            b.CO2_transport_cost
-        )
-
-    if hasattr(b, "npv"):
-        var_dict["Net Present Value [$MM]"] = value(b.npv)
-
-    report_dir = {}
-    report_dir["Value"] = {}
-    report_dir["pos"] = {}
-
-    count = 1
-    for k, v in var_dict.items():
-        report_dir["Value"][k] = value(v)
-        report_dir["pos"][k] = count
-        count += 1
-
-    df = DataFrame.from_dict(report_dir, orient="columns")
-    del df["pos"]
-    if export:
-        df.to_csv(f"{b.local_name}_report.csv")
-
-    print("\n" + "=" * 84)
-    print(f"{b.local_name} report")
-    print("-" * 84)
-    stdout.write(textwrap.indent(stream_table_dataframe_to_string(df), " " * 4))
-    print("\n" + "=" * 84 + "\n")

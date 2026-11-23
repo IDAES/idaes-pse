@@ -1030,10 +1030,10 @@ class TestQGESSBuildProcessCosts(object):
         m.fs.chemicals = pyo.Var(m.fs.time, initialize=1, units=pyunits.kg / pyunits.s)
         m.fs.chemicals.fix()
 
-        m.fs.nonharzardous_waste_disposal = pyo.Var(
+        m.fs.nonhazardous_waste_disposal = pyo.Var(
             m.fs.time, initialize=1, units=pyunits.kg / pyunits.s
         )
-        m.fs.nonharzardous_waste_disposal.fix()
+        m.fs.nonhazardous_waste_disposal.fix()
 
         m.fs.pure_product = pyo.Var(
             m.fs.time, initialize=1, units=pyunits.kg / pyunits.s
@@ -1074,8 +1074,8 @@ class TestQGESSBuildProcessCosts(object):
                 "water": m.fs.water,
                 "chemicals1": m.fs.chemicals,
                 "chemicals2": m.fs.chemicals,
-                "waste1": m.fs.nonharzardous_waste_disposal,
-                "waste2": m.fs.nonharzardous_waste_disposal,
+                "waste1": m.fs.nonhazardous_waste_disposal,
+                "waste2": m.fs.nonhazardous_waste_disposal,
             },  # for annual OPEX costs
             resource_prices={
                 "coal1": 1 * pyunits.USD_2018 / pyunits.tonne,
@@ -1256,10 +1256,10 @@ class TestQGESSBuildProcessCosts(object):
             )
             m.fs.chemicals.fix()
 
-            m.fs.nonharzardous_waste_disposal = pyo.Var(
+            m.fs.nonhazardous_waste_disposal = pyo.Var(
                 m.fs.time, initialize=1, units=pyunits.kg / pyunits.s
             )
-            m.fs.nonharzardous_waste_disposal.fix()
+            m.fs.nonhazardous_waste_disposal.fix()
 
             m.fs.pure_product = pyo.Var(
                 m.fs.time, initialize=1, units=pyunits.kg / pyunits.s
@@ -1299,8 +1299,8 @@ class TestQGESSBuildProcessCosts(object):
                     "water": m.fs.water,
                     "chemicals1": m.fs.chemicals,
                     "chemicals2": m.fs.chemicals,
-                    "waste1": m.fs.nonharzardous_waste_disposal,
-                    "waste2": m.fs.nonharzardous_waste_disposal,
+                    "waste1": m.fs.nonhazardous_waste_disposal,
+                    "waste2": m.fs.nonhazardous_waste_disposal,
                 },  # for annual OPEX costs
                 resource_prices={
                     "coal1": 1 * pyunits.USD_2018 / pyunits.tonne,
@@ -1966,12 +1966,12 @@ class TestQGESSBuildProcessCosts(object):
         with pytest.raises(
             UnitsError,
             match=re.escape(
-                "The argument production_rate was passed with the units kg**2/s "
-                "with dimensions [mass] ** 2 / [time]. Please ensure that the production rate has units of valid_units/time."
+                "The argument production_rate was passed with the units kg "
+                "with dimensions [mass]. Please ensure that the production rate has units of valid_units/time."
             ),
         ):
             m.fs.costing.build_process_costs(
-                production_rate=1 * pyunits.kg**2 / pyunits.s,
+                production_rate=1 * pyunits.kg,
             )
 
     @pytest.mark.unit
@@ -2032,12 +2032,12 @@ class TestQGESSBuildProcessCosts(object):
         with pytest.raises(
             UnitsError,
             match=re.escape(
-                "The argument feedstock_rate was passed with the units kg**2/s "
-                "with dimensions [mass] ** 2 / [time]. Please ensure that the feedstock rate has units of valid_units/time."
+                "The argument feedstock_rate was passed with the units kg "
+                "with dimensions [mass]. Please ensure that the feedstock rate has units of valid_units/time."
             ),
         ):
             m.fs.costing.build_process_costs(
-                feedstock_rate=1 * pyunits.kg**2 / pyunits.s,
+                feedstock_rate=1 * pyunits.kg,
             )
 
     @pytest.mark.unit
@@ -2098,10 +2098,10 @@ class TestQGESSBuildProcessCosts(object):
         with pytest.raises(
             UnitsError,
             match=re.escape(
-                "The argument CO2_capture_rate was passed with the units kg**2/s "
-                "with dimensions [mass] ** 2 / [time]. Please ensure that the CO2 capture rate has units of valid_units/time."
+                "The argument CO2_capture_rate was passed with the units kg "
+                "with dimensions [mass]. Please ensure that the CO2 capture rate has units of valid_units/time."
             ),
         ):
             m.fs.costing.build_process_costs(
-                CO2_capture_rate=1 * pyunits.kg**2 / pyunits.s,
+                CO2_capture_rate=1 * pyunits.kg,
             )
