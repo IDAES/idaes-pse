@@ -61,13 +61,9 @@ jobs:
         with:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
       - name: Install Black
-        # unlike the other jobs, we don't need to install IDAES and/or all the dev dependencies,
-        # but we still want to specify the Black version to use in requirements-dev.txt for local development
-        # so we extract the relevant line and pass it to a simple `pip install`
+        # unlike the other jobs, we don't need to install IDAES and/or all the dev dependencies so we just install black
         run: |
-          # we store the version
-          black_requirement="$(grep 'black==' requirements-dev.txt)"
-          pip --no-cache-dir install --progress-bar off "$black_requirement"
+          pip --no-cache-dir install --progress-bar off black
       - name: Run Black to verify that the committed code is formatted
         run: |
           black --check --diff .
