@@ -602,12 +602,12 @@ class IdealBubbleDew:
                     v_phase,
                     vl_comps,
                     _,
+                    l_only_comps,
                     _,
-                    v_only_comps,
                 ) = identify_VL_component_list(b, pp)
                 if l_phase is None or v_phase is None:
                     continue
-                elif v_only_comps != []:
+                elif l_only_comps != []:
                     continue
 
                 if j in vl_comps:
