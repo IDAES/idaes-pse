@@ -1058,6 +1058,47 @@ class TestGenericParameterBlock(object):
             )
 
     @pytest.mark.unit
+    @pytest.mark.parametrize("coefficient", [-1, 0, 1])
+    def test_inherent_reaction_requires_present_phase_component(self, coefficient):
+        m = ConcreteModel()
+        config = {
+            "components": {"a": {}, "b": {}, "c": {}},
+            "phases": {
+                "p1": {
+                    "type": LiquidPhase,
+                    "component_list": ["a", "b"],
+                    "equation_of_state": DummyEoS,
+                },
+                "p2": {"equation_of_state": DummyEoS},
+            },
+            "state_definition": modules[__name__],
+            "pressure_ref": 100000.0,
+            "temperature_ref": 300,
+            "base_units": base_units,
+            "inherent_reactions": {
+                "e1": {
+                    "stoichiometry": {
+                        ("p1", "a"): -1,
+                        ("p1", "b"): 1,
+                        ("p1", "c"): coefficient,
+                    },
+                    "equilibrium_form": "foo",
+                }
+            },
+        }
+
+        if coefficient:
+            with pytest.raises(
+                ConfigurationError,
+                match=r"inherent reaction e1.*nonzero coefficient for \('p1', 'c'\)",
+            ):
+                m.params = DummyParameterBlock(**config)
+        else:
+            m.params = DummyParameterBlock(**config)
+            assert m.params.inherent_reaction_stoichiometry["e1", "p1", "c"] == 0
+            assert ("p1", "c") not in m.params.reaction_e1.reaction_order
+
+    @pytest.mark.unit
     def test_inherent_reactions_no_form(self):
         m = ConcreteModel()
 

@@ -1801,6 +1801,12 @@ class GenericParameterData(PhysicalParameterBlock):
                                     self.name, r, k[1]
                                 )
                             )
+                        if v != 0 and k not in pcset:
+                            raise ConfigurationError(
+                                f"{self.name} stoichiometry for inherent reaction {r} "
+                                f"includes a nonzero coefficient for {k!r}, which is "
+                                "not a valid phase-component pair for the reaction."
+                            )
                         self.inherent_reaction_stoichiometry[(r, k[0], k[1])] = v
 
                 # Check that a method was provided for the equilibrium form

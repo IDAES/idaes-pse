@@ -30,6 +30,7 @@ from idaes.models.properties.modular_properties.base.tests.dummy_eos import Dumm
 from idaes.models.properties.modular_properties.eos.ideal import Ideal
 
 from idaes.core import FlowsheetBlock
+from idaes.core.util.exceptions import ConfigurationError
 from idaes.models.properties.modular_properties.base.generic_property import (
     GenericParameterBlock,
     StateIndex,
@@ -96,6 +97,28 @@ class TestApparentSpeciesBasis:
         "temperature_ref": (298.15, pyunits.K),
         # Defining phase equilibria
     }
+
+    @pytest.mark.unit
+    @pytest.mark.parametrize("flow_basis", [StateIndex.apparent, StateIndex.true])
+    def test_inherent_reaction_excludes_apparent_only_species(self, flow_basis):
+        m = ConcreteModel()
+        config = dict(self.config)
+        config["state_components"] = flow_basis
+        config["inherent_reactions"] = {
+            "r": {
+                "stoichiometry": {
+                    ("Liq", "KHCO3"): -1,
+                    ("Liq", "K+"): 1,
+                    ("Liq", "HCO3-"): 1,
+                },
+                "equilibrium_form": "foo",
+            }
+        }
+        with pytest.raises(
+            ConfigurationError,
+            match=r"inherent reaction r.*nonzero coefficient for \('Liq', 'KHCO3'\)",
+        ):
+            m.params = GenericParameterBlock(**config)
 
     @pytest.mark.unit
     def test_apparent_component_lists(self):
