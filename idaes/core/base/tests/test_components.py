@@ -148,15 +148,30 @@ class TestComponent:
         assert not m.comp5._is_phase_valid(m.Phase)
 
     @pytest.mark.unit
-    def test_is_phase_valid_aqueous(self, m):
-        m.comp6 = Component(valid_phase_types=PhaseType.aqueousPhase)
-
-        assert not m.comp6._is_phase_valid(m.Liq)
-        assert not m.comp6._is_phase_valid(m.Sol)
-        assert not m.comp6._is_phase_valid(m.Vap)
+    def test_aqueous_phase_type_rejected(self, m):
         # Generic components are never valid in the aqueous phase
-        assert not m.comp6._is_phase_valid(m.Aqu)
-        assert not m.comp6._is_phase_valid(m.Phase)
+        with pytest.raises(
+            ConfigurationError,
+            match=re.escape(
+                "comp6 is not a Component type which can exist in an aqueous "
+                "phase, so PhaseType.aqueousPhase is not a valid entry in "
+                "valid_phase_types. Use a Solute, Solvent, Apparent, Anion or "
+                "Cation Component instead."
+            ),
+        ):
+            m.comp6 = Component(valid_phase_types=PhaseType.aqueousPhase)
+
+    @pytest.mark.unit
+    def test_aqueous_phase_type_rejected_with_other_phases(self, m):
+        with pytest.raises(
+            ConfigurationError,
+            match=re.escape(
+                "comp6b is not a Component type which can exist in an aqueous phase"
+            ),
+        ):
+            m.comp6b = Component(
+                valid_phase_types=[PhaseType.liquidPhase, PhaseType.aqueousPhase]
+            )
 
     @pytest.mark.unit
     def test_is_phase_valid_LV(self, m):

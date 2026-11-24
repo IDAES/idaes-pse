@@ -223,6 +223,22 @@ class ComponentData(ProcessBlockData):
     def build(self):
         super().build()
 
+        # Components which cannot exist in aqueous phases are silently dropped
+        # from the phase-component set, so catch them here instead. Ion and its
+        # subclasses remove the valid_phase_types argument.
+        if (
+            "valid_phase_types" in self.config
+            and self.config.valid_phase_types is not None
+            and PhaseType.aqueousPhase in self.config.valid_phase_types
+            and not self._is_aqueous_phase_valid()
+        ):
+            raise ConfigurationError(
+                f"{self.name} is not a Component type which can exist in an "
+                f"aqueous phase, so PhaseType.aqueousPhase is not a valid "
+                f"entry in valid_phase_types. Use a Solute, Solvent, Apparent, "
+                f"Anion or Cation Component instead."
+            )
+
         # If the component_list does not exist, add reference to new Component
         # The IF is mostly for backwards compatibility, to allow for old-style
         # property packages where the component_list already exists but we
