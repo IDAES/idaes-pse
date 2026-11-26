@@ -174,7 +174,7 @@ jobs:
 
   build-docs:
     name: Build Sphinx docs
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [code-formatting, spell-check]
     steps:
       - uses: actions/checkout@v6
@@ -216,7 +216,7 @@ jobs:
 
   pylint:
     name: Pylint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [code-formatting, spell-check]
     env:
       pylint_target_dir: idaes/
