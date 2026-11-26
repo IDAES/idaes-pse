@@ -556,7 +556,8 @@ class ECFrameData(MSContactorData):
 # -----------------------------------------------------------------------------
 class TestBuild:
     @pytest.fixture
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
 
@@ -577,7 +578,8 @@ class TestBuild:
         return m
 
     @pytest.fixture
-    def dynamic(self):
+    @classmethod
+    def dynamic(cls):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(
             dynamic=True,
@@ -3051,7 +3053,8 @@ class TestBuild:
 
 class TestReactions:
     @pytest.fixture
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
 
@@ -4028,7 +4031,8 @@ class TestReactions:
 
 class TestToyProblem:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(dynamic=False)
 
@@ -4418,7 +4422,8 @@ expected = {
 
 class TestMSContactorInitializerNoHoldup:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         return create_sapon_model(has_holdup=False)
 
     @pytest.mark.unit
@@ -4461,7 +4466,8 @@ class TestMSContactorInitializerNoHoldup:
 
 class TestMSContactorInitializerWithHoldup:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         return create_sapon_model(has_holdup=True)
 
     @pytest.mark.unit

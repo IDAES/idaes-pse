@@ -1196,19 +1196,19 @@ class MSContactorData(UnitModelBlockData):
         rpack = self.config.heterogeneous_reactions
         rpack_args = self.config.heterogeneous_reactions_args
 
-        try:
-            self.heterogeneous_reactions = rpack.build_reaction_block(
-                self.flowsheet().time,
-                self.elements,
-                doc="Heterogeneous reaction block for contactor.",
-                **rpack_args,
-            )
-        except AttributeError:
+        if not hasattr(rpack, "build_reaction_block"):
             raise ConfigurationError(
                 "Heterogeneous reaction package has not implemented a "
                 "build_reaction_block method. Please ensure that your "
                 "reaction block conforms to the required standards."
             )
+
+        self.heterogeneous_reactions = rpack.build_reaction_block(
+            self.flowsheet().time,
+            self.elements,
+            doc="Heterogeneous reaction block for contactor.",
+            **rpack_args,
+        )
 
         if not hasattr(self.config.heterogeneous_reactions, "reaction_idx"):
             raise PropertyNotSupportedError(
@@ -1929,22 +1929,22 @@ def _material_balance_rule(blk, t, s, j, stream, mb_units):
 
 
 def _get_energy_transfer_term(blk, uom):
-    try:
+    if hasattr(blk, "energy_transfer_term"):
         return blk.energy_transfer_term
-    except AttributeError:
-        # Assume that if energy balances are enabled that energy transfer
-        # occurs between all interacting phases.
-        # For now, we will not distinguish different types of energy transfer.
-        # Convention is that a positive energy flow term indicates flow into
-        # the first stream from the second stream.
-        blk.energy_transfer_term = Var(
-            blk.flowsheet().time,
-            blk.elements,
-            blk.stream_interactions,
-            initialize=0,
-            units=uom.POWER,
-            doc="Inter-stream energy transfer term",
-        )
+
+    # Assume that if energy balances are enabled that energy transfer
+    # occurs between all interacting phases.
+    # For now, we will not distinguish different types of energy transfer.
+    # Convention is that a positive energy flow term indicates flow into
+    # the first stream from the second stream.
+    blk.energy_transfer_term = Var(
+        blk.flowsheet().time,
+        blk.elements,
+        blk.stream_interactions,
+        initialize=0,
+        units=uom.POWER,
+        doc="Inter-stream energy transfer term",
+    )
 
     return blk.energy_transfer_term
 

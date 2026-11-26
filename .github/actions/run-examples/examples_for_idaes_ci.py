@@ -136,7 +136,7 @@ def run_pytest(
     if ignore_conftest:
         args += ["--noconftest"]
     if ignore_inifile:
-        empty_file_for_ignoring = rootdir / "__empty__"
+        empty_file_for_ignoring = rootdir / "__empty__.cfg"
         empty_file_for_ignoring.write_text("")
         args += ["-c", empty_file_for_ignoring]
 
