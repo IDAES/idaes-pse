@@ -25,7 +25,7 @@ from pyomo.environ import (
     Var,
 )
 import pyomo.contrib.parmest.parmest as parmest
-
+from pyomo.version import version_info as pyomo_version
 from idaes.apps.uncertainty_propagation.uncertainties import (
     quantify_propagate_uncertainty,
     propagate_uncertainty,
@@ -170,7 +170,11 @@ class TestUncertaintyPropagation:
             obj_function="SSE",
         )
 
-        assert results.obj == pytest.approx(4.331711213656886, abs=1e-4)
+        # Pyomo 6.11 added a factor of 1/2 to parmest's built-in SSE objective
+        expected_obj = 4.331711213656886
+        if pyomo_version >= (6, 11):
+            expected_obj /= 2
+        assert results.obj == pytest.approx(expected_obj, abs=1e-4)
         assert list(results.theta.keys()) == ["asymptote", "rate_constant"]
         assert results.theta["asymptote"] == pytest.approx(
             19.142575284617866,
