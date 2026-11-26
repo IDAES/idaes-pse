@@ -55,6 +55,12 @@ documentation::
                 "    Pressures up to 800 MPa. Journal of Physical and Chemical Reference Data,",
                 "    25, 1509."
             ],
+            "ideal_terms": [
+                ...
+            ],
+            "residual_terms": [
+                ...
+            ],
             ...
         },
         "aux": {
@@ -208,27 +214,98 @@ The following example shows how to set the reference state in the main parameter
 Predefined Expressions
 ----------------------
 
-Commonly used expressions are predefined and can be used by specifying expression types 
-in the main parameter file.
+Common terms are predefined and can be combined to build expressions in a modular fashion by specifying types
+in the main parameter file. The predefined expression types for the ideal and residual contributions of the 
+dimensionless Helmholtz free energy are listed below, alongside an example of how these expressions can be 
+combined within a parameter file.
 
 Ideal Part of Dimensionless Helmholtz Free Energy
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Predefined terms for the dimensionless Helmholtz free energy are outlined below. These expressions reflect the 
+common equation families used to evaluate the Ideal part of Helmholtz energy.
+In each instance, :math:`\delta` is the reduced density amd :math:`\tau` is the inverse reduced temperature, 
+with additional parameters defined within the parameter file for the component.
 
 **Type 1**
-
-The predefined type 1 form of the ideal portion of the dimensionless Helmholtz free energy 
-is shown below. Parameters are provided in the ``"eos"`` section of the main parameter file. 
-This form of the expression requires a dictionary of the :math:`n^\circ_i$`` 
-parameters as ``n0`` and the math `\gamma^\circ$` parameters as ``g0``.  The last term
-index in the sum (:math:`h`) is provided as ``last_term_ideal``.  
+    Lead term for the ideal part of the dimensionless Helmholtz free energy:
 
 .. math::
 
-    \log_e \delta + n^\circ_1 + n^\circ_2 \tau + n^\circ_3 \log_e \tau + 
-    \sum_{i = 4}^h n^\circ_i \log_e \left[ 1 - \exp(-\gamma^\circ_i  \tau)\right]
+   \phi^0_i = \ln(\delta) + a_0 + a_1 \tau
 
-A truncated example of a main parameter file is provided below, which uses this the type 1
-form of the dimensionless Helmholtz free energy::
+
+**Type 2**
+    Log-tau expression for the ideal part of dimensionless Helmholtz free energy
+
+.. math::
+
+   \phi_i^0 = a \ln(\tau)
+
+
+**Type 3**
+Type01 expression for the first Planck Einstein part of dimensionless ideal Helmholtz free energy
+
+.. math::
+
+   \phi_i^0 = \sum_i n_i \ln\left(1 - \exp(-t_i \tau)\right)
+
+
+**Type 4**
+Second Planck Einstein expression for the ideal part of dimensionless Helmholtz free energy
+
+.. math::
+
+   \phi_i^0 = \sum_i n_i \ln\left(l_i + d_i \exp(t_i \tau)\right)
+
+
+**Type 5**
+Third Planck Einstein expression for the ideal part of dimensionless Helmholtz free energy
+
+.. math::
+
+   \phi_i^0 = \sum_i n_i \ln\left(1 - \exp(-t_i \frac{\tau}{T_c})\right)
+
+
+
+**Type 6**
+Expression for the cp constant part of ideal dimensionless Helmholtz free energy
+
+.. math::
+
+   \phi_i^0 = a - a t_0 + a \ln(t_0)
+
+
+**Type 7**
+Power part of dimensionless ideal Helmholtz free energy
+
+.. math::
+
+   \phi_i^0 = \sum_i n_i \tau^{t_i}
+
+
+**Type 8**
+Enthalpy entropy offset term for dimensionless ideal Helmholtz free energy
+
+.. math::
+
+   \phi_i^0 = a_0 + a_1 \tau
+
+**Type 9**
+GERG-cosh term for dimensionless ideal Helmholtz free energy
+
+.. math::
+
+   \phi_i^0 = \sum_i a_i \ln\left|\sinh\left(g_i \frac{T_c}{T^*} \tau\right)\right|
+
+**Type 10**
+GERG-sinh term for dimensionless ideal Helmholtz free energy
+
+.. math::
+
+   \phi_i^0 = \sum_i -a_i \ln\left|\cosh\left(g_i \frac{T_c}{T^*} \tau\right)\right|
+
+A truncated example of a main parameter file is provided below, with the Helmholtz ideal energy contribution,
+ made up of a combination of type 1, 2, and 3 expressions::
 
     {
         "comp": "co2",
@@ -237,68 +314,46 @@ form of the dimensionless Helmholtz free energy::
         },
         "eos": {
             ...
-            "n0": {
-                "1": 8.37304456,
-                "2": -3.70454304,
-                "3": 2.5,
-                "4": 1.99427042,
-                "5": 0.62105248,
-                "6": 0.41195293,
-                "7": 1.04028922,
-                "8": 0.08327678
-            },
-            "g0": {
-                "4": 3.15163,
-                "5": 6.11190,
-                "6": 6.77708,
-                "7": 11.32384,
-                "8": 27.08792
-            },
-            "last_term_ideal": 8,
-            "phi_ideal_type": 1,
+            "ideal_terms": [
+                {"ideal_type": 1,
+                    "a": [
+                        8.37304456,
+                        -3.70454304
+                    ]
+                },
+                {"ideal_type": 2,
+                    "a": 2.5
+                },
+                {"ideal_type": 3,
+                    "a": [
+                        1.99427042,
+                        0.62105248,
+                        0.41195293,
+                        1.04028922,
+                        0.08327678
+                    ],
+                    "g": [
+                        3.15163,
+                        6.11190,
+                        6.77708,
+                        11.32384,
+                        27.08792
+                    ]
+            }
+
+        ],
             ...
         },
         ...
     }
 
-**Type 2**
-
-Parameters for the type 2 version are similar to type 1, but the ``last_term_ideal`` parameter is 
-a list [h1, h2].
-
-.. math::
-
-    \log_e \delta + n^\circ_1 + n^\circ_2 \tau + n^\circ_3 \log_e \tau  + 
-    \sum_{i = 4}^{h_1} n^\circ_i  \tau^{\gamma^\circ_i} + 
-    \sum_{i = h_1 + 1}^{h_2} n^\circ_i \log_e \left[ 1 - \exp(-\gamma^\circ_i  \tau)\right]
-
-
-**Type 3**
-
-Parameters for the type 3 version are similar to type 1.
-
-.. math::
-
-    \log_e \delta + n^\circ_1 + n^\circ_2 \tau + n^\circ_3 \log_e \tau  + 
-    \sum_{i = 4}^{h} n^\circ_i  \tau^{\gamma^\circ_i}
-
-**Type 4**
-
-Parameters for the type 4 version are similar to type 1
-
-.. math::
-     \log_e \delta + n^\circ_1 + n^\circ_2 \tau + (n^\circ_3 - 1) \log_e \tau + 
-     \sum_{i = 4}^h n^\circ_i \log_e \left[ 1 - \exp(\frac{-\gamma^\circ_i  \tau}{T_c})\right]
-
      
 Residual Part of Dimensionless Helmholtz Free Energy
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Predefined residual term expressions are discussed here.  The ``last_term_residual`` 
-parameter is a list [h1, h2, ...].  Equation parameters are given by dictionaries 
-in the ``"eos"`` section.  Greek letter parameters are given by the parameters 
-:math:`\alpha` = ``a``, :math:`\beta` = ``b``, :math:`\varepsilon` = ``e``, and 
-:math:`\gamma` = ``g``.   
+The Residual contribution for the dimensionless Helmholtz free energy follows the same structure 
+as previously outlined for the Ideal contribution.
+Predefined terms can be combined to formulate the appropriate expression for a given compound.
 
 The example below shows how to use a predefined residual dimensionless Helmholtz 
 free energy expression::
@@ -308,103 +363,114 @@ free energy expression::
         ...
         "eos": {
             ...
-            "c": {
-                "8": 1,
+            "residual_terms":[
+            {"residual_type": 1,
+                "n": [
+                    3.88568232031610e-01,
+                    2.93854759427400e00,
+                    -5.58671885349340e00,
+                    -7.67531995924770e-01,
+                    3.17290055804160e-01,
+                    5.48033158977670e-01,
+                    1.22794112203350e-01
+                ],
+                "d": [
+                    1,
+                    1,
+                    1,
+                    1,
+                    2,
+                    2,
+                    3
+                ],
+                "t": [
+                    0.00,
+                    0.75,
+                    1.00,
+                    2.00,
+                    0.75,
+                    2.00,
+                    0.75
+                ]
+            },
+            {"residual_type": 7,
                 ...
-                "34": 6
             },
-            "d": {
-                "1": 1,
-                ...
-                "39": 3
-            },
-            "t": {
-                "1": 0.00,
-                ...
-                "39": 3.00
-            },
-            "n": {
-                "1": 3.88568232031610e-01,
-                ...
-                "42": 5.50686686128420e-02
-            },
-            "a": {
-                "35": 25,
-                ...
-                "39": 20
-            },
-            "b": {
-                "35": 325,
-                ...
-                "39": 275
-            },
-            "g": {
-                "35": 1.16,
-                ...
-                "39": 1.22
-            },
-            "e": {
-                "35": 1,
-                "36": 1,
-                "37": 1,
-                "38": 1,
-                "39": 1
-            },
-            "last_term_residual": [7, 34, 39],
-            "phi_residual_type": 2
-            ...
+            {"residual_type":2,
+               ...
+            }
+        ] 
         }
         ...
     }
 
 **Type 1**
+Power expression for the residual part of dimensionless Helmholtz free energy
 
 .. math::
 
-	\phi^r(\delta, \tau) = \sum^{h_1}_1 n_i \delta^{d_i} \tau^{t_i} + \sum_{h_1 + 1}^{h_2} n_i \delta^{d_i} \tau^{t_i} \exp(-\delta^{c_i})
+   \phi_i^r = \sum_i n_i \delta^{d_i} \tau^{t_i}
 
 **Type 2**
+Gaussian expression for the residual part of dimensionless Helmholtz free energy
 
 .. math::
 
-	\phi^r(\delta, \tau) = \sum^{h_1}_{i=1} n_i \delta^{d_i} \tau^{t_1} + 
-	\sum_{i =h_1 + 1}^{h_2} n_i \delta^{d_i} \tau^{t_1} \exp(-\delta^{c_i}) + 
-	\sum_{i = h_2 + 1}^{h_3} n_i \delta^{d_i} \tau^{t_1} \exp\left[-\alpha_i(\delta - \varepsilon_i)^2 - \beta_i(\tau - \gamma_i)^2 \right]
+   \phi_i^r = \sum_i n_i \delta^{d_i} \tau^{t_i}
+   \exp\left(-a_i (\delta - e_i)^2 - b_i (\tau - g_i)^2\right)
 
 **Type 3**
+Gaussian expression for the residual part of dimensionless Helmholtz free energy - GERG
 
 .. math::
 
-	\phi^r(\delta, \tau) = 
-	\sum^{h_1}_{i=1} n_i \delta^{d_i} \tau^{t_1} + 
-	\sum_{i=h_1 + 1}^{h_2} n_i \delta^{d_i} \tau^{t_1} \exp(-\delta^{c_i})
-	\sum_{i=h_2 + 1}^{h_3} n_i \delta^{d_i} \tau^{t_1} \exp(-\delta^{c_i}) \exp(-\tau^{b_i})
+   \phi_i^r = \sum_i n_i \delta^{d_i} \tau^{t_i}
+   \exp\left(-a_i (\delta - e_i)^2 - b_i (\tau - g_i)\right)
 
 **Type 4**
+Expression for associating term of the residual part of dimensionless Helmholtz free energy
 
 .. math::
 
-	\phi^r(\delta, \tau) = 
-	\sum^{h_0}_{i=1} n_i \delta^{d_i} \tau^{t_1} + 
-	\sum^m_{j=1} \left[ \exp(-\delta^j) \sum^{h_j}_{i = h_{j-1} + 1} n_i \delta^{d_i} \tau^{t_1} \right]
-
+   \phi_i^r = \sum_i n_i \delta^{d_i} \tau^{t_i}
+   \exp\left(
+   -a_i (\delta - e_i)^2
+   + \frac{1}{b_i (\tau - g_i)^2 + b_i^{\mathrm{(offset)}}}
+   \right)
 
 **Type 5**
+Expression for exponentials in the delta and tau family for the residual part of dimensionless Helmholtz free energy
 
 .. math::
-    \phi^r(\delta, \tau) = \sum^{h_1}_{i=1} n_i \delta^{d_i} \tau^{t_1} + 
-	\sum_{i =h_1 + 1}^{h_2} n_i \delta^{d_i} \tau^{t_1} \exp(-\delta^{c_i}) + 
-	\sum_{i = h_2 + 1}^{h_3} n_i \delta^{d_i} \tau^{t_1} \exp\left[-\alpha_i(\delta - \varepsilon_i)^2 - \beta_i(\tau - \gamma_i)^2 \right] +
-    \sum_{i = h_3+1}^{h_4} n_i \delta^{d_i} \tau^{t_1} \exp\left[-\alpha_i(\delta - \varepsilon_i)^2 - \frac{1}{\beta_i(\tau - \gamma_i)^2 + b_i} \right]
-    
+
+   \phi_i^r = \sum_i n_i \delta^{d_i} \tau^{t_i}
+   \exp\left(-\delta^{c_i}\right)
+   \exp\left(-\tau^{d_i}\right)
+
+**Type 6**
+Expression for double exponentials in the delta and tau family for the residual part of dimensionless Helmholtz free energy
+
+.. math::
+
+   \phi_i^r = \sum_i n_i \delta^{d_i} \tau^{t_i}
+   \exp\left(-g_{d,i}\,\delta^{\,l_{d,\left(i - g_{t,i}\tau^{l_{t,i}}\right)}}\right)
+
+**Type 7**
+Expression for reduced density exponentials in the residual part of dimensionless Helmholtz free energy, often just referred to as the exponential term
+
+.. math::
+
+   \phi_i^r = \sum_i n_i \delta^{d_i} \tau^{t_i}
+   \exp\left(-g_i \delta^{c_i}\right)
+
 
 Approximate Saturated Reduced Density
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To assist in the equilibrium calculation, curves for approximate saturated liquid 
 and vapor density are required. These curves are typically provided in the papers 
-where the equations of state are defined. There are two common forms for these 
-curves, which we call type 1 and type 2 for convenience.
+where the equations of state are defined. There are three common forms for these 
+curves, which we call type 1, type 2, and type 3 for convenience.
 
 An example main parameter file entry for the approximate density curves is given 
 below::
@@ -457,17 +523,23 @@ below::
         ...
     }
 
-*Type 1*
+**Type 1**
 
 .. math:: 
  
     \delta = c + \sum_{i=1}^h n_i  \left(1 - \frac{T}{T_c} \right)^{t_i}
     
-*Type 2*
+**Type 2**
 
 .. math::
 
-    \delta = c \exp \left[ \sum_{i=0}^h \left(1 - \frac{T}{T_c} \right)^{t_i} \right]
+    \delta = c \exp \left[ \sum_{i=0}^h n_i  \left(1 - \frac{T}{T_c} \right)^{t_i} \right]
+
+**Type 3**
+
+.. math::
+
+    \delta = c \exp \left[ \tau \sum_{i=0}^h n_i  \left(1 - \frac{T}{T_c} \right)^{t_i} \right]
 
 Surface Tension
 ~~~~~~~~~~~~~~~

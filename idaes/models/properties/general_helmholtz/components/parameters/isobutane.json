@@ -13,10 +13,10 @@
         "rhot_l": 740.339,
         "rhot_v": 0.00000141,
         "P_min": 1e-9,
-        "P_max": 1.1e6,
+        "P_max": 35000.0,
         "rho_max": 1250.0,
-        "T_min": 235,
-        "T_max": 1300
+        "T_min": 113.73,
+        "T_max": 575
     },
     "eos": {
         "reference": [
